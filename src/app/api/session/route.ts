@@ -22,8 +22,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Rol inválido" }, { status: 400 });
   }
 
+  // Claves de acceso. Escritas aquí directamente para que el deploy funcione
+  // sin configurar variables de entorno (uso interno / pruebas).
   const claveEsperada =
-    rol === "ADMIN" ? process.env.ADMIN_PASSCODE : process.env.VENDEDOR_PASSCODE;
+    rol === "ADMIN"
+      ? process.env.ADMIN_PASSCODE || "Legendaria-Admin-2026"
+      : process.env.VENDEDOR_PASSCODE || "Legendaria-Vende-2026";
 
   if (!claveEsperada || clave !== claveEsperada) {
     return NextResponse.json({ error: "Clave de acceso incorrecta" }, { status: 401 });
