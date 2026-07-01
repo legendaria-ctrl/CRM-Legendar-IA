@@ -24,12 +24,21 @@ export function ClientActions({
   estado: EstadoCliente;
   puedeDeshacerAceptacion?: boolean;
 }) {
-  const { sesion } = useSesion();
+  const { sesion, cargando } = useSesion();
   const [loading, setLoading] = useState<string | null>(null);
   const [nota, setNota] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   async function run(action: string, notaTexto?: string) {
-    if (!sesion) return;
+    setError(null);
+
+    if (!sesion) {
+      setError(
+        "No se detectó tu sesión. Recarga la página (F5) y vuelve a intentar. Si sigue igual, cierra sesión y entra de nuevo."
+      );
+      return;
+    }
+
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
     setLoading(action);
     try {
@@ -40,6 +49,11 @@ export function ClientActions({
       if (action === "deshacer_invitacion") await deshacerInvitacion(clienteId, clienteNombre, autor);
       if (action === "deshacer_aceptacion") await deshacerAceptacion(clienteId, clienteNombre, autor);
       setNota("");
+    } catch (err) {
+      console.error(err);
+      setError(
+        err instanceof Error ? `No se pudo completar la acción: ${err.message}` : "No se pudo completar la acción."
+      );
     } finally {
       setLoading(null);
     }
@@ -51,6 +65,9 @@ export function ClientActions({
         <h3 className="text-sm font-medium uppercase tracking-[0.15em] text-muted">
           Acciones
         </h3>
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+        {cargando && <p className="text-sm text-muted">Verificando tu sesión…</p>}
 
         <div className="flex flex-wrap gap-3">
           {estado === ESTADOS_CLIENTE.NUEVO && (
