@@ -5,6 +5,7 @@ import Link from "next/link";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
 import { estadoActual, diasRestantes } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
+import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { ESTADOS_CLIENTE, REGION_LABEL, Region } from "@/lib/constants";
 import { Users, UserPlus, ShieldCheck, AlertTriangle, ArrowUpRight, Radio } from "lucide-react";
 
@@ -113,6 +114,12 @@ export default function DashboardPage() {
                             </span>
                           )}
                         <StatusBadge estado={cliente.estadoCalculado} />
+                        <MensajeBienvenidaToggle
+                          clienteId={cliente.id}
+                          clienteNombre={cliente.nombre}
+                          enviado={cliente.mensajeBienvenida}
+                          compacto
+                        />
                         <ArrowUpRight
                           className="h-4 w-4 text-muted transition-transform duration-500 ease-spring group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                           strokeWidth={1.5}

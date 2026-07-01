@@ -31,6 +31,7 @@ export type ClienteDoc = {
   fechaInvitacion: Timestamp | null;
   fechaAceptacion: Timestamp | null;
   fechaVencimiento: Timestamp | null;
+  mensajeBienvenida: boolean;
   creadoPor: string;
   creadoPorRol: string;
 };
@@ -102,6 +103,8 @@ export async function crearCliente(input: {
   telefono?: string;
   notas?: string;
   region?: string;
+  fechaInscripcion?: Date;
+  mensajeBienvenida?: boolean;
   autor: string;
   autorRol: string;
   origen?: "manual" | "csv";
@@ -113,10 +116,13 @@ export async function crearCliente(input: {
     notas: input.notas || null,
     region: input.region || null,
     estado: ESTADOS_CLIENTE.NUEVO,
-    fechaLlegada: serverTimestamp(),
+    fechaLlegada: input.fechaInscripcion
+      ? Timestamp.fromDate(input.fechaInscripcion)
+      : serverTimestamp(),
     fechaInvitacion: null,
     fechaAceptacion: null,
     fechaVencimiento: null,
+    mensajeBienvenida: input.mensajeBienvenida ?? false,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
   });
@@ -189,6 +195,22 @@ export async function agregarNota(
   nota: string
 ) {
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.NOTA, autor, nota);
+}
+
+export async function actualizarMensajeBienvenida(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  enviado: boolean
+) {
+  await updateDoc(doc(db, "clientes", clienteId), { mensajeBienvenida: enviado });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.MENSAJE_BIENVENIDA,
+    autor,
+    enviado ? "Mensaje de bienvenida marcado como enviado" : "Mensaje de bienvenida desmarcado"
+  );
 }
 
 export async function eliminarCliente(clienteId: string, clienteNombre: string, autor: Autor) {

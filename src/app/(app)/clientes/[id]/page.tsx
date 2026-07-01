@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Timeline } from "@/components/Timeline";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ClientActions } from "@/components/ClientActions";
+import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle } from "lucide-react";
 import { REGION_LABEL, Region, beneficiosDeRegion } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
@@ -107,6 +108,15 @@ export default function ClienteDetallePage() {
             {cliente.notas && (
               <p className="mt-3 max-w-xl text-sm text-muted">{cliente.notas}</p>
             )}
+          </div>
+
+          <div className="flex flex-none items-center gap-2 rounded-2xl bg-surface-2 px-4 py-3">
+            <MensajeBienvenidaToggle
+              clienteId={cliente.id}
+              clienteNombre={cliente.nombre}
+              enviado={cliente.mensajeBienvenida}
+            />
+            <span className="text-sm text-muted">Mensaje de bienvenida</span>
           </div>
         </div>
       </div>

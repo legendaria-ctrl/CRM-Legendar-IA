@@ -8,6 +8,7 @@ import {
   StickyNote,
   Trash2,
   UploadCloud,
+  MessageCircle,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -19,6 +20,7 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   NOTA: StickyNote,
   ELIMINACION: Trash2,
   IMPORTACION: UploadCloud,
+  MENSAJE_BIENVENIDA: MessageCircle,
 };
 
 export type EventoTimelineItem = {

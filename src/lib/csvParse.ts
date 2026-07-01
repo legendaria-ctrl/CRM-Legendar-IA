@@ -54,11 +54,16 @@ export type FilaClienteCSV = {
   telefono: string;
   region: string;
   notas: string;
+  fechaInscripcionTexto: string;
+  fechaInscripcion: Date | null;
+  mensajeBienvenida: boolean;
   valido: boolean;
   error?: string;
 };
 
-const ALIAS_COLUMNAS: Record<string, keyof Omit<FilaClienteCSV, "valido" | "error">> = {
+type CampoTexto = "nombre" | "email" | "telefono" | "region" | "notas" | "fechaInscripcionTexto" | "mensajeBienvenidaTexto";
+
+const ALIAS_COLUMNAS: Record<string, CampoTexto> = {
   nombre: "nombre",
   "nombre completo": "nombre",
   email: "email",
@@ -68,33 +73,92 @@ const ALIAS_COLUMNAS: Record<string, keyof Omit<FilaClienteCSV, "valido" | "erro
   region: "region",
   "región": "region",
   notas: "notas",
+  fecha_inscripcion: "fechaInscripcionTexto",
+  "fecha de inscripcion": "fechaInscripcionTexto",
+  "fecha de inscripción": "fechaInscripcionTexto",
+  fecha_inscripción: "fechaInscripcionTexto",
+  mensaje_bienvenida: "mensajeBienvenidaTexto",
+  "mensaje de bienvenida": "mensajeBienvenidaTexto",
 };
+
+const VALORES_VERDADEROS = new Set(["si", "sí", "true", "1", "x", "yes"]);
+
+function parsearFecha(texto: string): Date | null {
+  const limpio = texto.trim();
+  if (!limpio) return null;
+
+  const isoMatch = limpio.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch;
+    const fecha = new Date(Number(y), Number(m) - 1, Number(d));
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+  }
+
+  const ddmmyyyyMatch = limpio.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, d, m, y] = ddmmyyyyMatch;
+    const fecha = new Date(Number(y), Number(m) - 1, Number(d));
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+  }
+
+  const fallback = new Date(limpio);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
 
 export function filasAClientes(filas: string[][]): FilaClienteCSV[] {
   if (filas.length === 0) return [];
 
   const encabezados = filas[0].map((h) => h.trim().toLowerCase());
-  const indices: Partial<Record<keyof Omit<FilaClienteCSV, "valido" | "error">, number>> = {};
+  const indices: Partial<Record<CampoTexto, number>> = {};
 
   encabezados.forEach((encabezado, i) => {
     const campo = ALIAS_COLUMNAS[encabezado];
     if (campo) indices[campo] = i;
   });
 
-  return filas.slice(1).map((fila) => {
-    const nombre = (indices.nombre !== undefined ? fila[indices.nombre] : "")?.trim() ?? "";
-    const email = (indices.email !== undefined ? fila[indices.email] : "")?.trim() ?? "";
-    const telefono = (indices.telefono !== undefined ? fila[indices.telefono] : "")?.trim() ?? "";
-    const regionCruda = (indices.region !== undefined ? fila[indices.region] : "")?.trim() ?? "";
-    const notas = (indices.notas !== undefined ? fila[indices.notas] : "")?.trim() ?? "";
+  const leer = (fila: string[], campo: CampoTexto) =>
+    (indices[campo] !== undefined ? fila[indices[campo] as number] : "")?.trim() ?? "";
 
-    const region = regionCruda.toUpperCase();
-    const regionValida = region === "MX" || region === "US" ? region : "";
+  return filas.slice(1).map((fila) => {
+    const nombre = leer(fila, "nombre");
+    const email = leer(fila, "email");
+    const telefono = leer(fila, "telefono");
+    const notas = leer(fila, "notas");
+    const fechaInscripcionTexto = leer(fila, "fechaInscripcionTexto");
+    const mensajeBienvenidaTexto = leer(fila, "mensajeBienvenidaTexto");
+
+    const regionCruda = leer(fila, "region").toUpperCase();
+    const region = regionCruda === "MX" || regionCruda === "US" ? regionCruda : "";
+
+    const mensajeBienvenida = VALORES_VERDADEROS.has(mensajeBienvenidaTexto.toLowerCase());
+
+    const base = {
+      nombre,
+      email,
+      telefono,
+      region,
+      notas,
+      fechaInscripcionTexto,
+      mensajeBienvenida,
+    };
 
     if (!nombre) {
-      return { nombre, email, telefono, region: regionValida, notas, valido: false, error: "Falta el nombre" };
+      return { ...base, fechaInscripcion: null, valido: false, error: "Falta el nombre" };
     }
 
-    return { nombre, email, telefono, region: regionValida, notas, valido: true };
+    if (fechaInscripcionTexto) {
+      const fechaInscripcion = parsearFecha(fechaInscripcionTexto);
+      if (!fechaInscripcion) {
+        return {
+          ...base,
+          fechaInscripcion: null,
+          valido: false,
+          error: "Fecha de inscripción inválida (usa AAAA-MM-DD)",
+        };
+      }
+      return { ...base, fechaInscripcion, valido: true };
+    }
+
+    return { ...base, fechaInscripcion: null, valido: true };
   });
 }

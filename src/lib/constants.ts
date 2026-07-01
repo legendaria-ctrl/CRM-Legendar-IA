@@ -28,6 +28,7 @@ export const TIPOS_EVENTO = {
   NOTA: "NOTA",
   ELIMINACION: "ELIMINACION",
   IMPORTACION: "IMPORTACION",
+  MENSAJE_BIENVENIDA: "MENSAJE_BIENVENIDA",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -40,6 +41,7 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   NOTA: "Nota",
   ELIMINACION: "Cliente eliminado",
   IMPORTACION: "Cliente importado por CSV",
+  MENSAJE_BIENVENIDA: "Mensaje de bienvenida",
 };
 
 export const MEMBRESIA_DIAS = 365;
