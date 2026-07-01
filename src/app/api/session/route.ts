@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { firmarSesion, verificarSesion, COOKIE_NAME, DURACION_SEGUNDOS } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return NextResponse.json({ session: null });
+  if (!token) {
+    return NextResponse.json({ session: null }, { headers: { "Cache-Control": "no-store" } });
+  }
 
   const sesion = await verificarSesion(token);
-  return NextResponse.json({ session: sesion });
+  return NextResponse.json({ session: sesion }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(req: Request) {

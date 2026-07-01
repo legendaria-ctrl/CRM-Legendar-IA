@@ -8,7 +8,7 @@ import { useSesion } from "@/lib/session-context";
 
 export default function NuevoClientePage() {
   const router = useRouter();
-  const { sesion } = useSesion();
+  const { sesion, cargando } = useSesion();
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -18,7 +18,12 @@ export default function NuevoClientePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!sesion) return;
+
+    if (!sesion) {
+      setError("No se detectó tu sesión. Recarga la página e inicia sesión de nuevo.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -32,8 +37,13 @@ export default function NuevoClientePage() {
         autorRol: sesion.rol,
       });
       router.push(`/clientes/${id}`);
-    } catch {
-      setError("No se pudo registrar el cliente.");
+    } catch (err) {
+      console.error(err);
+      setError(
+        err instanceof Error
+          ? `No se pudo registrar el cliente: ${err.message}`
+          : "No se pudo registrar el cliente."
+      );
     } finally {
       setLoading(false);
     }
@@ -110,7 +120,7 @@ export default function NuevoClientePage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || cargando}
             className="group mt-2 flex items-center justify-between rounded-full bg-primary py-1 pl-6 pr-1 text-sm font-medium text-white shadow-[0_10px_30px_-8px_rgba(10,92,255,0.55)] transition-all duration-500 ease-spring hover:shadow-[0_14px_36px_-6px_rgba(10,92,255,0.6)] active:scale-[0.98] disabled:opacity-60"
           >
             <span className="flex items-center gap-2 py-2">
