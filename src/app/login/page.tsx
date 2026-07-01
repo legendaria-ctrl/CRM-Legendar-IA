@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, KeyRound, UserRound, ArrowUpRight, LoaderCircle, ShieldCheck, Users } from "lucide-react";
+import { KeyRound, UserRound, ArrowUpRight, LoaderCircle, ShieldCheck, Users } from "lucide-react";
+import { LegendarMark } from "@/components/LegendarMark";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,22 +37,20 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-[100dvh] w-full items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md">
+    <main className="bg-brand relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4 py-16">
+      <div className="relative w-full max-w-md">
         <div className="mb-10 flex flex-col items-center gap-4 text-center">
-          <div className="shell rounded-[1.75rem] p-2 diffused">
-            <div className="core flex h-14 w-14 items-center justify-center rounded-[calc(1.75rem-0.5rem)]">
-              <Sparkles className="h-6 w-6 text-primary" strokeWidth={1.5} />
-            </div>
+          <div className="brand-plate flex h-16 w-16 items-center justify-center rounded-[1.75rem] shadow-[0_20px_45px_-12px_rgba(10,92,255,0.65)]">
+            <LegendarMark className="h-8 w-8 text-white" />
           </div>
           <div>
-            <span className="inline-block rounded-full bg-primary-dim px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-primary-deep">
+            <span className="inline-block rounded-full bg-white/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-white/80">
               Legendar-IA
             </span>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">
               Acceso al CRM
             </h1>
-            <p className="mt-1 text-sm text-muted">
+            <p className="mt-1 text-sm text-white/60">
               Elige tu perfil, escribe tu nombre y la clave de acceso.
             </p>
           </div>

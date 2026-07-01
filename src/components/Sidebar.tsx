@@ -6,11 +6,11 @@ import { useSesion } from "@/lib/session-context";
 import {
   LayoutGrid,
   UserPlus,
-  Sparkles,
   LogOut,
   History,
   Users,
 } from "lucide-react";
+import { LegendarMark } from "./LegendarMark";
 
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
@@ -27,17 +27,15 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-6 flex h-fit w-full flex-col gap-4 md:w-64">
-      <div className="shell rounded-[1.75rem] p-2 diffused">
-        <div className="core flex items-center gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
-            <Sparkles className="h-5 w-5 text-primary" strokeWidth={1.5} />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">
-              Legendar-IA
-            </p>
-            <p className="text-[11px] uppercase tracking-wider text-muted">CRM</p>
-          </div>
+      <div className="brand-plate flex items-center gap-3 rounded-[1.75rem] p-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
+          <LegendarMark className="h-5 w-5 text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-white">
+            Legendar-IA
+          </p>
+          <p className="text-[11px] uppercase tracking-wider text-white/60">CRM</p>
         </div>
       </div>
 

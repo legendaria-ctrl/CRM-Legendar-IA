@@ -83,4 +83,20 @@ body {
   .ease-spring {
     transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
+
+  /* Fondo de marca: azul tecno profundo con destellos diagonales,
+     inspirado en el logo de Legendar-IA. */
+  .bg-brand {
+    background-color: #050b1f;
+    background-image:
+      linear-gradient(115deg, transparent 42%, rgba(87, 161, 255, 0.55) 43%, transparent 44%),
+      linear-gradient(115deg, transparent 68%, rgba(87, 161, 255, 0.35) 69%, transparent 70%),
+      radial-gradient(60rem 40rem at 15% 15%, rgba(10, 92, 255, 0.35), transparent 60%),
+      radial-gradient(50rem 45rem at 100% 100%, rgba(0, 30, 120, 0.65), transparent 55%),
+      linear-gradient(135deg, #04122f 0%, #0a2a6e 45%, #0a5cff 100%);
+  }
+
+  .brand-plate {
+    background: linear-gradient(135deg, #0a2a6e 0%, #0a5cff 100%);
+  }
 }
