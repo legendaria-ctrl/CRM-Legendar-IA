@@ -1,27 +1,124 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
-import { estadoActual, diasRestantes } from "@/lib/membership";
+import { estadoActual, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
-import { ESTADOS_CLIENTE, REGION_LABEL, Region } from "@/lib/constants";
-import { Users, UserPlus, ShieldCheck, AlertTriangle, ArrowUpRight, Radio } from "lucide-react";
+import {
+  ESTADOS_CLIENTE,
+  ESTADO_LABEL,
+  EstadoCliente,
+  REGIONES,
+  REGION_LABEL,
+  Region,
+} from "@/lib/constants";
+import { descargarCSV } from "@/lib/csv";
+import {
+  Users,
+  UserPlus,
+  ShieldCheck,
+  AlertTriangle,
+  ArrowUpRight,
+  Radio,
+  Search,
+  Download,
+  X,
+} from "lucide-react";
+
+const OPCION_TODOS = "TODOS";
 
 export default function DashboardPage() {
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<string>(OPCION_TODOS);
+  const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
+  const [filtroBienvenida, setFiltroBienvenida] = useState<string>(OPCION_TODOS);
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
     return () => unsub();
   }, []);
 
+  const conEstado = useMemo(
+    () => (clientes ?? []).map((c) => ({ ...c, estadoCalculado: estadoActual(c) })),
+    [clientes]
+  );
+
+  const filtrados = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    return conEstado.filter((c) => {
+      if (texto) {
+        const coincide =
+          c.nombre.toLowerCase().includes(texto) ||
+          (c.email ?? "").toLowerCase().includes(texto) ||
+          (c.telefono ?? "").toLowerCase().includes(texto);
+        if (!coincide) return false;
+      }
+      if (filtroEstado !== OPCION_TODOS && c.estadoCalculado !== filtroEstado) return false;
+      if (filtroRegion !== OPCION_TODOS && c.region !== filtroRegion) return false;
+      if (filtroBienvenida !== OPCION_TODOS) {
+        const enviado = filtroBienvenida === "SI";
+        if (c.mensajeBienvenida !== enviado) return false;
+      }
+      return true;
+    });
+  }, [conEstado, busqueda, filtroEstado, filtroRegion, filtroBienvenida]);
+
+  const hayFiltrosActivos =
+    busqueda.trim() !== "" ||
+    filtroEstado !== OPCION_TODOS ||
+    filtroRegion !== OPCION_TODOS ||
+    filtroBienvenida !== OPCION_TODOS;
+
+  function limpiarFiltros() {
+    setBusqueda("");
+    setFiltroEstado(OPCION_TODOS);
+    setFiltroRegion(OPCION_TODOS);
+    setFiltroBienvenida(OPCION_TODOS);
+  }
+
+  function exportarCSV() {
+    if (filtrados.length === 0) return;
+    const filas = filtrados.map((c) => {
+      const llegada = aFecha(c.fechaLlegada);
+      const vencimiento = aFecha(c.fechaVencimiento);
+      return [
+        c.nombre,
+        c.email ?? "",
+        c.telefono ?? "",
+        c.region ? (REGION_LABEL[c.region as Region] ?? c.region) : "",
+        ESTADO_LABEL[c.estadoCalculado],
+        c.creadoPor,
+        llegada ? llegada.toLocaleDateString("es-MX") : "",
+        vencimiento ? vencimiento.toLocaleDateString("es-MX") : "",
+        c.mensajeBienvenida ? "Sí" : "No",
+        c.notas ?? "",
+      ];
+    });
+
+    descargarCSV(
+      "clientes.csv",
+      [
+        "Nombre",
+        "Correo",
+        "Teléfono",
+        "Región",
+        "Estado",
+        "Agregado por",
+        "Fecha de llegada",
+        "Fecha de vencimiento",
+        "Mensaje de bienvenida",
+        "Notas",
+      ],
+      filas
+    );
+  }
+
   if (clientes === null) {
     return <div className="py-16 text-center text-sm text-muted">Cargando clientes…</div>;
   }
-
-  const conEstado = clientes.map((c) => ({ ...c, estadoCalculado: estadoActual(c) }));
 
   const total = conEstado.length;
   const activos = conEstado.filter((c) => c.estadoCalculado === ESTADOS_CLIENTE.ACTIVO).length;
@@ -71,6 +168,83 @@ export default function DashboardPage() {
       </div>
 
       <div className="shell rounded-[2rem] p-2 diffused-lg">
+        <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 transition-all duration-500 ease-spring focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
+              <Search className="h-4 w-4 text-muted" strokeWidth={1.5} />
+              <input
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar por nombre, correo o teléfono…"
+                className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted/60"
+              />
+            </div>
+
+            <button
+              onClick={exportarCSV}
+              disabled={filtrados.length === 0}
+              className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-40"
+            >
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              Descargar CSV
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50"
+            >
+              <option value={OPCION_TODOS}>Todos los estados</option>
+              {Object.values(ESTADOS_CLIENTE).map((estado) => (
+                <option key={estado} value={estado}>
+                  {ESTADO_LABEL[estado as EstadoCliente]}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filtroRegion}
+              onChange={(e) => setFiltroRegion(e.target.value)}
+              className="rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50"
+            >
+              <option value={OPCION_TODOS}>Todas las regiones</option>
+              {Object.values(REGIONES).map((region) => (
+                <option key={region} value={region}>
+                  {REGION_LABEL[region as Region]}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filtroBienvenida}
+              onChange={(e) => setFiltroBienvenida(e.target.value)}
+              className="rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50"
+            >
+              <option value={OPCION_TODOS}>Bienvenida: todos</option>
+              <option value="SI">Bienvenida enviada</option>
+              <option value="NO">Bienvenida pendiente</option>
+            </select>
+
+            {hayFiltrosActivos && (
+              <button
+                onClick={limpiarFiltros}
+                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+                Limpiar filtros
+              </button>
+            )}
+
+            <span className="ml-auto text-xs text-muted">
+              {filtrados.length} de {total} clientes
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="shell rounded-[2rem] p-2 diffused-lg">
         <div className="core rounded-[calc(2rem-0.5rem)] p-2 md:p-3">
           {conEstado.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
@@ -85,9 +259,13 @@ export default function DashboardPage() {
                 </span>
               </Link>
             </div>
+          ) : filtrados.length === 0 ? (
+            <p className="px-6 py-16 text-center text-sm text-muted">
+              Ningún cliente coincide con la búsqueda o los filtros.
+            </p>
           ) : (
             <ul className="flex flex-col divide-y divide-silver">
-              {conEstado.map((cliente) => {
+              {filtrados.map((cliente) => {
                 const dias = diasRestantes(cliente.fechaVencimiento);
                 return (
                   <li key={cliente.id}>
