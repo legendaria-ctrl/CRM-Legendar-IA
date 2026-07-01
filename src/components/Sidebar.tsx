@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSesion } from "@/lib/session-context";
 import {
@@ -10,7 +11,6 @@ import {
   History,
   Users,
 } from "lucide-react";
-import { LegendarMark } from "./LegendarMark";
 
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
@@ -27,15 +27,15 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-6 flex h-fit w-full flex-col gap-4 md:w-64">
-      <div className="brand-plate flex items-center gap-3 rounded-[1.75rem] p-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)]">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
-          <LegendarMark className="h-5 w-5 text-white" />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">
-            Legendar-IA
-          </p>
-          <p className="text-[11px] uppercase tracking-wider text-white/60">CRM</p>
+      <div className="brand-plate relative flex h-16 items-center overflow-hidden rounded-[1.75rem] px-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)]">
+        <div className="relative h-9 w-full">
+          <Image
+            src="/legendar-ia-logo.png"
+            alt="Legendar-IA CRM"
+            fill
+            priority
+            className="object-contain object-left"
+          />
         </div>
       </div>
 

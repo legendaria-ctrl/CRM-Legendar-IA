@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { KeyRound, UserRound, ArrowUpRight, LoaderCircle, ShieldCheck, Users } from "lucide-react";
-import { LegendarMark } from "@/components/LegendarMark";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,17 +40,20 @@ export default function LoginPage() {
     <main className="bg-brand relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4 py-16">
       <div className="relative w-full max-w-md">
         <div className="mb-10 flex flex-col items-center gap-4 text-center">
-          <div className="brand-plate flex h-16 w-16 items-center justify-center rounded-[1.75rem] shadow-[0_20px_45px_-12px_rgba(10,92,255,0.65)]">
-            <LegendarMark className="h-8 w-8 text-white" />
+          <div className="relative h-20 w-full max-w-[300px]">
+            <Image
+              src="/legendar-ia-logo.png"
+              alt="Legendar-IA"
+              fill
+              priority
+              className="object-contain drop-shadow-[0_10px_35px_rgba(10,92,255,0.5)]"
+            />
           </div>
           <div>
-            <span className="inline-block rounded-full bg-white/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-white/80">
-              Legendar-IA
-            </span>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
               Acceso al CRM
             </h1>
-            <p className="mt-1 text-sm text-white/60">
+            <p className="mt-1 text-sm text-white/70">
               Elige tu perfil, escribe tu nombre y la clave de acceso.
             </p>
           </div>
