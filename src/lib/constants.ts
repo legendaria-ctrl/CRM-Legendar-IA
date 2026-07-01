@@ -71,3 +71,10 @@ export function beneficiosDeRegion(region: string | null | undefined): Beneficio
   if (region === "MX" || region === "US") return BENEFICIOS_POR_REGION[region];
   return [];
 }
+
+export const ESTADOS_SOLICITUD = {
+  PENDIENTE: "PENDIENTE",
+  APROBADO: "APROBADO",
+  RECHAZADO: "RECHAZADO",
+} as const;
+export type EstadoSolicitud = (typeof ESTADOS_SOLICITUD)[keyof typeof ESTADOS_SOLICITUD];

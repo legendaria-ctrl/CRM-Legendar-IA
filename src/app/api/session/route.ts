@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { firmarSesion, verificarSesion, COOKIE_NAME, DURACION_SEGUNDOS } from "@/lib/session";
+import { verificarOCrearSolicitud } from "@/lib/vendedoresService";
+import { ESTADOS_SOLICITUD } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,30 @@ export async function POST(req: Request) {
 
   if (!claveEsperada || clave !== claveEsperada) {
     return NextResponse.json({ error: "Clave de acceso incorrecta" }, { status: 401 });
+  }
+
+  // Los vendedores necesitan aprobación de un admin la primera vez que usan
+  // un nombre. Así se evita que cambien de "usuario" cada vez que quieran.
+  if (rol === "VENDEDOR") {
+    const estadoSolicitud = await verificarOCrearSolicitud(nombre.trim());
+
+    if (estadoSolicitud === ESTADOS_SOLICITUD.PENDIENTE) {
+      return NextResponse.json(
+        {
+          error:
+            "Tu acceso está pendiente de aprobación. Pídele a un administrador que te apruebe en la sección Vendedores.",
+          pendiente: true,
+        },
+        { status: 403 }
+      );
+    }
+
+    if (estadoSolicitud === ESTADOS_SOLICITUD.RECHAZADO) {
+      return NextResponse.json(
+        { error: "Tu acceso fue rechazado por un administrador." },
+        { status: 403 }
+      );
+    }
   }
 
   const token = await firmarSesion({ nombre: nombre.trim(), rol });

@@ -9,6 +9,7 @@ import {
   Sparkles,
   LogOut,
   History,
+  Users,
 } from "lucide-react";
 
 const links = [
@@ -17,9 +18,12 @@ const links = [
   { href: "/actividad", label: "Actividad", icon: History },
 ];
 
+const linksAdmin = [{ href: "/vendedores", label: "Vendedores", icon: Users }];
+
 export function Sidebar() {
   const pathname = usePathname();
   const { sesion, cerrarSesion } = useSesion();
+  const itemsNav = sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : links;
 
   return (
     <aside className="sticky top-6 flex h-fit w-full flex-col gap-4 md:w-64">
@@ -39,7 +43,7 @@ export function Sidebar() {
 
       <div className="shell rounded-[1.75rem] p-2 diffused">
         <nav className="core flex flex-col gap-1 rounded-[calc(1.75rem-0.5rem)] p-2">
-          {links.map(({ href, label, icon: Icon }) => {
+          {itemsNav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
