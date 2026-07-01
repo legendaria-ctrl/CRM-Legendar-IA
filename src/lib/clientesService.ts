@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -188,4 +189,25 @@ export async function agregarNota(
 
 export async function eliminarCliente(clienteId: string) {
   await deleteDoc(doc(db, "clientes", clienteId));
+}
+
+export async function obtenerContactosPorIds(
+  ids: string[]
+): Promise<Record<string, { email: string | null; telefono: string | null; notas: string | null }>> {
+  const unicos = Array.from(new Set(ids));
+  const entradas = await Promise.all(
+    unicos.map(async (id) => {
+      const snap = await getDoc(doc(db, "clientes", id));
+      const data = snap.data() as ClienteDoc | undefined;
+      return [
+        id,
+        {
+          email: data?.email ?? null,
+          telefono: data?.telefono ?? null,
+          notas: data?.notas ?? null,
+        },
+      ] as const;
+    })
+  );
+  return Object.fromEntries(entradas);
 }

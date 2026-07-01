@@ -5,6 +5,7 @@ import { startOfDay, endOfDay, startOfWeek, endOfWeek, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Download, Search, History, LoaderCircle } from "lucide-react";
 import { obtenerActividad, ActividadDoc } from "@/lib/activityService";
+import { obtenerContactosPorIds } from "@/lib/clientesService";
 import { EVENTO_LABEL, TipoEvento } from "@/lib/constants";
 import { descargarCSV } from "@/lib/csv";
 
@@ -19,6 +20,7 @@ export default function ActividadPage() {
   const [autor, setAutor] = useState("");
   const [resultados, setResultados] = useState<ActividadDoc[] | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [exportando, setExportando] = useState(false);
 
   async function buscar(rangoDesde = desde, rangoHasta = hasta) {
     setCargando(true);
@@ -50,21 +52,35 @@ export default function ActividadPage() {
     buscar(inicio, fin);
   }
 
-  function exportar() {
+  async function exportar() {
     if (!resultados || resultados.length === 0) return;
-    const filas = resultados.map((r) => [
-      r.fecha ? format(r.fecha.toDate(), "yyyy-MM-dd HH:mm:ss") : "",
-      r.autor,
-      r.autorRol,
-      EVENTO_LABEL[r.accion as TipoEvento] ?? r.accion,
-      r.clienteNombre,
-      r.nota ?? "",
-    ]);
-    descargarCSV(
-      `actividad_${desde}_a_${hasta}.csv`,
-      ["Fecha", "Autor", "Rol", "Acción", "Cliente", "Detalle"],
-      filas
-    );
+    setExportando(true);
+    try {
+      const contactos = await obtenerContactosPorIds(resultados.map((r) => r.clienteId));
+
+      const filas = resultados.map((r) => {
+        const contacto = contactos[r.clienteId];
+        return [
+          r.fecha ? format(r.fecha.toDate(), "yyyy-MM-dd HH:mm:ss") : "",
+          r.autor,
+          r.autorRol,
+          EVENTO_LABEL[r.accion as TipoEvento] ?? r.accion,
+          r.clienteNombre,
+          contacto?.email ?? "",
+          contacto?.telefono ?? "",
+          contacto?.notas ?? "",
+          r.nota ?? "",
+        ];
+      });
+
+      descargarCSV(
+        `actividad_${desde}_a_${hasta}.csv`,
+        ["Fecha", "Autor", "Rol", "Acción", "Cliente", "Correo", "Teléfono", "Notas del cliente", "Detalle"],
+        filas
+      );
+    } finally {
+      setExportando(false);
+    }
   }
 
   return (
@@ -150,10 +166,14 @@ export default function ActividadPage() {
 
             <button
               onClick={exportar}
-              disabled={!resultados || resultados.length === 0}
+              disabled={!resultados || resultados.length === 0 || exportando}
               className="flex items-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 py-2.5 pl-5 pr-5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-40"
             >
-              <Download className="h-4 w-4" strokeWidth={1.75} />
+              {exportando ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+              ) : (
+                <Download className="h-4 w-4" strokeWidth={1.75} />
+              )}
               Descargar CSV
             </button>
           </div>
