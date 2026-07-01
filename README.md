@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Legendar-IA CRM
 
-## Getting Started
+CRM interno para llevar el control de clientes de la certificación **Legendar-IA**: alta manual de clientes, línea de tiempo de cada uno (llegada → invitación → aceptación → renovación), temporizador de membresía anual (365 días desde la aceptación) y sincronización en tiempo real entre varios usuarios conectados a la vez.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Next.js 16** (App Router) + TypeScript + Tailwind CSS v4
+- **Firebase Firestore** como base de datos, con `onSnapshot` para tiempo real
+- Sesión propia por cookie firmada (`jose`) con dos roles: `ADMIN` y `VENDEDOR`, cada uno con una clave de acceso compartida — el usuario solo escribe su nombre, que queda registrado como autor de cada evento del timeline
+- Iconos con `lucide-react`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuración local
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Instala dependencias:
+   ```bash
+   npm install
+   ```
+2. Copia `.env.example` a `.env` y completa los valores:
+   - La config de Firebase la encuentras en Firebase Console → Configuración del proyecto → Tus apps → Config del SDK.
+   - `ADMIN_PASSCODE` y `VENDEDOR_PASSCODE`: las claves de acceso que usarán tus vendedores y administradores.
+   - `SESSION_SECRET`: genera uno con `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+3. En Firebase Console, crea la base de datos de **Firestore** (modo producción) y publica estas reglas (no se usa Firebase Auth, la protección la da el login propio de la app):
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /{document=**} {
+         allow read, write: if true;
+       }
+     }
+   }
+   ```
+4. Corre el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+   Abre [http://localhost:3000](http://localhost:3000).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy en Vercel
 
-## Learn More
+1. Importa este repositorio en [vercel.com/new](https://vercel.com/new).
+2. Vercel detecta Next.js automáticamente, no requiere configuración adicional de build.
+3. Antes del primer deploy, agrega en **Project Settings → Environment Variables** las mismas variables de `.env.example` (con tus valores reales).
+4. Cada push a `main` despliega automáticamente.
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura relevante
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/lib/firebase.ts` — inicialización del cliente de Firestore.
+- `src/lib/clientesService.ts` — CRUD y listeners en tiempo real de clientes/eventos.
+- `src/lib/session.ts` / `src/lib/session-context.tsx` — sesión por cookie firmada y contexto de React.
+- `src/proxy.ts` — protege las rutas privadas (antes `middleware.ts`, renombrado por la convención de Next 16).
+- `src/app/(app)/` — dashboard, alta y detalle de cliente (rutas protegidas).
