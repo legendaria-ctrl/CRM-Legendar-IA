@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --background: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f5f7fb;
+  --foreground: #0b1220;
+  --muted: #5b6472;
+
+  --primary: #0a5cff;
+  --primary-dim: #e8f0ff;
+  --primary-deep: #0037c7;
+  --primary-glow: #57a1ff;
+
+  --silver: #dfe4ec;
+  --silver-deep: #c4ccd9;
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-dim: var(--primary-dim);
+  --color-primary-deep: var(--primary-deep);
+  --color-primary-glow: var(--primary-glow);
+  --color-silver: var(--silver);
+  --color-silver-deep: var(--silver-deep);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+@layer utilities {
+  .bg-mesh {
+    background-image:
+      radial-gradient(60rem 40rem at 90% -10%, rgba(10, 92, 255, 0.10), transparent 60%),
+      radial-gradient(50rem 35rem at -10% 20%, rgba(87, 161, 255, 0.12), transparent 55%);
+  }
+
+  .shell {
+    background: rgba(196, 204, 217, 0.35);
+    border: 1px solid rgba(11, 18, 32, 0.06);
+  }
+
+  .core {
+    background: var(--surface);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  }
+
+  .diffused {
+    box-shadow: 0 1px 2px rgba(11, 18, 32, 0.04), 0 20px 40px -12px rgba(11, 18, 32, 0.10);
+  }
+
+  .diffused-lg {
+    box-shadow: 0 1px 2px rgba(11, 18, 32, 0.04), 0 30px 60px -15px rgba(10, 92, 255, 0.16);
+  }
+
+  .noise::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .ease-spring {
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
