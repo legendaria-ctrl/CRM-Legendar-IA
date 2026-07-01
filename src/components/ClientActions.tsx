@@ -8,9 +8,11 @@ import { useSesion } from "@/lib/session-context";
 
 export function ClientActions({
   clienteId,
+  clienteNombre,
   estado,
 }: {
   clienteId: string;
+  clienteNombre: string;
   estado: EstadoCliente;
 }) {
   const { sesion } = useSesion();
@@ -19,12 +21,13 @@ export function ClientActions({
 
   async function run(action: string, notaTexto?: string) {
     if (!sesion) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
     setLoading(action);
     try {
-      if (action === "enviar_invitacion") await enviarInvitacion(clienteId, sesion.nombre);
-      if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, sesion.nombre);
-      if (action === "renovar") await renovarMembresia(clienteId, sesion.nombre);
-      if (action === "nota" && notaTexto) await agregarNota(clienteId, sesion.nombre, notaTexto);
+      if (action === "enviar_invitacion") await enviarInvitacion(clienteId, clienteNombre, autor);
+      if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, clienteNombre, autor);
+      if (action === "renovar") await renovarMembresia(clienteId, clienteNombre, autor);
+      if (action === "nota" && notaTexto) await agregarNota(clienteId, clienteNombre, autor, notaTexto);
       setNota("");
     } finally {
       setLoading(null);

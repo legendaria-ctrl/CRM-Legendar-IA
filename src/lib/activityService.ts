@@ -1,0 +1,65 @@
+import {
+  addDoc,
+  collection,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  Timestamp,
+  where,
+} from "firebase/firestore";
+import { db } from "./firebase";
+
+export type ActividadDoc = {
+  id: string;
+  clienteId: string;
+  clienteNombre: string;
+  accion: string;
+  autor: string;
+  autorRol: string;
+  nota: string | null;
+  fecha: Timestamp | null;
+};
+
+const actividadRef = collection(db, "actividad");
+
+export async function registrarActividad(input: {
+  clienteId: string;
+  clienteNombre: string;
+  accion: string;
+  autor: string;
+  autorRol: string;
+  nota?: string | null;
+}) {
+  await addDoc(actividadRef, {
+    clienteId: input.clienteId,
+    clienteNombre: input.clienteNombre,
+    accion: input.accion,
+    autor: input.autor,
+    autorRol: input.autorRol,
+    nota: input.nota || null,
+    fecha: serverTimestamp(),
+  });
+}
+
+export async function obtenerActividad(rango: {
+  desde: Date;
+  hasta: Date;
+  autor?: string;
+}): Promise<ActividadDoc[]> {
+  const q = query(
+    actividadRef,
+    where("fecha", ">=", Timestamp.fromDate(rango.desde)),
+    where("fecha", "<=", Timestamp.fromDate(rango.hasta)),
+    orderBy("fecha", "desc")
+  );
+
+  const snap = await getDocs(q);
+  let resultados = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ActividadDoc);
+
+  if (rango.autor) {
+    resultados = resultados.filter((r) => r.autor === rango.autor);
+  }
+
+  return resultados;
+}

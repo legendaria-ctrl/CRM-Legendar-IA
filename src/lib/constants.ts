@@ -39,3 +39,35 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
 };
 
 export const MEMBRESIA_DIAS = 365;
+
+export const REGIONES = {
+  MX: "MX",
+  US: "US",
+} as const;
+export type Region = (typeof REGIONES)[keyof typeof REGIONES];
+
+export const REGION_LABEL: Record<Region, string> = {
+  MX: "Legendar-IA MX",
+  US: "Legendar-IA US",
+};
+
+export type Beneficio = {
+  evento: string;
+  tipo: string;
+  cantidad: number;
+};
+
+// Synergy Unlimited: evento presencial anual. Los boletos que le corresponden
+// a cada cliente dependen de la región a la que pertenece.
+export const BENEFICIOS_POR_REGION: Record<Region, Beneficio[]> = {
+  MX: [{ evento: "Synergy Unlimited MX", tipo: "General", cantidad: 1 }],
+  US: [
+    { evento: "Synergy Unlimited MX", tipo: "VIP", cantidad: 2 },
+    { evento: "Synergy Unlimited US", tipo: "General", cantidad: 1 },
+  ],
+};
+
+export function beneficiosDeRegion(region: string | null | undefined): Beneficio[] {
+  if (region === "MX" || region === "US") return BENEFICIOS_POR_REGION[region];
+  return [];
+}

@@ -13,6 +13,9 @@ import {
 import { db } from "./firebase";
 import { ESTADOS_CLIENTE, TIPOS_EVENTO } from "./constants";
 import { fechaVencimientoDesde } from "./membership";
+import { registrarActividad } from "./activityService";
+
+export type Autor = { nombre: string; rol: string };
 
 export type ClienteDoc = {
   id: string;
@@ -21,6 +24,7 @@ export type ClienteDoc = {
   telefono: string | null;
   estado: string;
   notas: string | null;
+  region: string | null;
   fechaLlegada: Timestamp | null;
   fechaInvitacion: Timestamp | null;
   fechaAceptacion: Timestamp | null;
@@ -67,16 +71,27 @@ export function suscribirEventos(clienteId: string, callback: (eventos: EventoDo
 
 async function agregarEvento(
   clienteId: string,
+  clienteNombre: string,
   tipo: string,
-  autor: string,
+  autor: Autor,
   nota?: string | null
 ) {
-  await addDoc(collection(db, "clientes", clienteId, "eventos"), {
-    tipo,
-    nota: nota || null,
-    autor,
-    fecha: serverTimestamp(),
-  });
+  await Promise.all([
+    addDoc(collection(db, "clientes", clienteId, "eventos"), {
+      tipo,
+      nota: nota || null,
+      autor: autor.nombre,
+      fecha: serverTimestamp(),
+    }),
+    registrarActividad({
+      clienteId,
+      clienteNombre,
+      accion: tipo,
+      autor: autor.nombre,
+      autorRol: autor.rol,
+      nota: nota || null,
+    }),
+  ]);
 }
 
 export async function crearCliente(input: {
@@ -84,6 +99,7 @@ export async function crearCliente(input: {
   email?: string;
   telefono?: string;
   notas?: string;
+  region?: string;
   autor: string;
   autorRol: string;
 }) {
@@ -92,6 +108,7 @@ export async function crearCliente(input: {
     email: input.email || null,
     telefono: input.telefono || null,
     notas: input.notas || null,
+    region: input.region || null,
     estado: ESTADOS_CLIENTE.NUEVO,
     fechaLlegada: serverTimestamp(),
     fechaInvitacion: null,
@@ -101,20 +118,32 @@ export async function crearCliente(input: {
     creadoPorRol: input.autorRol,
   });
 
-  await agregarEvento(nuevo.id, TIPOS_EVENTO.LLEGADA, input.autor, "Cliente registrado en el CRM");
+  await agregarEvento(
+    nuevo.id,
+    input.nombre,
+    TIPOS_EVENTO.LLEGADA,
+    { nombre: input.autor, rol: input.autorRol },
+    "Cliente registrado en el CRM"
+  );
 
   return nuevo.id;
 }
 
-export async function enviarInvitacion(clienteId: string, autor: string) {
+export async function enviarInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
     fechaInvitacion: serverTimestamp(),
   });
-  await agregarEvento(clienteId, TIPOS_EVENTO.INVITACION_ENVIADA, autor, "Invitación enviada al cliente");
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.INVITACION_ENVIADA,
+    autor,
+    "Invitación enviada al cliente"
+  );
 }
 
-export async function aceptarInvitacion(clienteId: string, autor: string) {
+export async function aceptarInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
   const ahora = new Date();
   const vencimiento = fechaVencimientoDesde(ahora);
   await updateDoc(doc(db, "clientes", clienteId), {
@@ -124,13 +153,14 @@ export async function aceptarInvitacion(clienteId: string, autor: string) {
   });
   await agregarEvento(
     clienteId,
+    clienteNombre,
     TIPOS_EVENTO.INVITACION_ACEPTADA,
     autor,
     "El cliente aceptó la invitación. Membresía activada por 1 año."
   );
 }
 
-export async function renovarMembresia(clienteId: string, autor: string) {
+export async function renovarMembresia(clienteId: string, clienteNombre: string, autor: Autor) {
   const ahora = new Date();
   const vencimiento = fechaVencimientoDesde(ahora);
   await updateDoc(doc(db, "clientes", clienteId), {
@@ -138,11 +168,22 @@ export async function renovarMembresia(clienteId: string, autor: string) {
     fechaAceptacion: Timestamp.fromDate(ahora),
     fechaVencimiento: Timestamp.fromDate(vencimiento),
   });
-  await agregarEvento(clienteId, TIPOS_EVENTO.RENOVACION, autor, "Membresía renovada por 1 año más.");
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.RENOVACION,
+    autor,
+    "Membresía renovada por 1 año más."
+  );
 }
 
-export async function agregarNota(clienteId: string, autor: string, nota: string) {
-  await agregarEvento(clienteId, TIPOS_EVENTO.NOTA, autor, nota);
+export async function agregarNota(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  nota: string
+) {
+  await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.NOTA, autor, nota);
 }
 
 export async function eliminarCliente(clienteId: string) {

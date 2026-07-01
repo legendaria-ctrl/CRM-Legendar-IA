@@ -8,11 +8,13 @@ import {
   UserPlus,
   Sparkles,
   LogOut,
+  History,
 } from "lucide-react";
 
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
   { href: "/clientes/nuevo", label: "Nuevo cliente", icon: UserPlus },
+  { href: "/actividad", label: "Actividad", icon: History },
 ];
 
 export function Sidebar() {

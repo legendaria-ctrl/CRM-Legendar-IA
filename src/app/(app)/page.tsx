@@ -5,7 +5,7 @@ import Link from "next/link";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
 import { estadoActual, diasRestantes } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ESTADOS_CLIENTE } from "@/lib/constants";
+import { ESTADOS_CLIENTE, REGION_LABEL, Region } from "@/lib/constants";
 import { Users, UserPlus, ShieldCheck, AlertTriangle, ArrowUpRight, Radio } from "lucide-react";
 
 export default function DashboardPage() {
@@ -101,6 +101,8 @@ export default function DashboardPage() {
                         <p className="truncate text-xs text-muted">
                           {cliente.email || "Sin correo"} · Agregado por:{" "}
                           {cliente.creadoPor}
+                          {cliente.region &&
+                            ` · ${REGION_LABEL[cliente.region as Region] ?? cliente.region}`}
                         </p>
                       </div>
                       <div className="flex flex-none items-center gap-3">

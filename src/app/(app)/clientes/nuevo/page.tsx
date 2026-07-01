@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, ArrowUpRight, LoaderCircle } from "lucide-react";
+import { UserPlus, ArrowUpRight, LoaderCircle, Ticket, Globe2 } from "lucide-react";
 import { crearCliente } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
+import { REGIONES, REGION_LABEL, Region, beneficiosDeRegion } from "@/lib/constants";
 
 export default function NuevoClientePage() {
   const router = useRouter();
@@ -13,8 +14,11 @@ export default function NuevoClientePage() {
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [notas, setNotas] = useState("");
+  const [region, setRegion] = useState<Region>(REGIONES.MX);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const beneficios = beneficiosDeRegion(region);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +37,7 @@ export default function NuevoClientePage() {
         email,
         telefono,
         notas,
+        region,
         autor: sesion.nombre,
         autorRol: sesion.rol,
       });
@@ -102,6 +107,43 @@ export default function NuevoClientePage() {
               className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
             />
           </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted">
+              Región
+            </span>
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-surface-2 p-1">
+              {(Object.keys(REGIONES) as Region[]).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRegion(r)}
+                  className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all duration-500 ease-spring ${
+                    region === r
+                      ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
+                      : "text-muted"
+                  }`}
+                >
+                  <Globe2 className="h-4 w-4" strokeWidth={1.5} />
+                  {REGION_LABEL[r]}
+                </button>
+              ))}
+            </div>
+          </label>
+
+          <div className="flex flex-col gap-2 rounded-2xl bg-primary-dim p-4">
+            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-primary-deep">
+              <Ticket className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Beneficios Synergy Unlimited incluidos
+            </span>
+            <ul className="flex flex-col gap-1">
+              {beneficios.map((b, i) => (
+                <li key={i} className="text-sm text-primary-deep">
+                  {b.cantidad}x {b.tipo} — {b.evento}
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <label className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wider text-muted">
