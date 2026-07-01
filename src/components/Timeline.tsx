@@ -6,6 +6,8 @@ import {
   RefreshCcw,
   XCircle,
   StickyNote,
+  Trash2,
+  UploadCloud,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -15,6 +17,8 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   RENOVACION: RefreshCcw,
   VENCIMIENTO: XCircle,
   NOTA: StickyNote,
+  ELIMINACION: Trash2,
+  IMPORTACION: UploadCloud,
 };
 
 export type EventoTimelineItem = {

@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -103,6 +104,7 @@ export async function crearCliente(input: {
   region?: string;
   autor: string;
   autorRol: string;
+  origen?: "manual" | "csv";
 }) {
   const nuevo = await addDoc(clientesRef, {
     nombre: input.nombre,
@@ -119,12 +121,14 @@ export async function crearCliente(input: {
     creadoPorRol: input.autorRol,
   });
 
+  const esImportacion = input.origen === "csv";
+
   await agregarEvento(
     nuevo.id,
     input.nombre,
-    TIPOS_EVENTO.LLEGADA,
+    esImportacion ? TIPOS_EVENTO.IMPORTACION : TIPOS_EVENTO.LLEGADA,
     { nombre: input.autor, rol: input.autorRol },
-    "Cliente registrado en el CRM"
+    esImportacion ? "Cliente importado desde un archivo CSV" : "Cliente registrado en el CRM"
   );
 
   return nuevo.id;
@@ -187,7 +191,19 @@ export async function agregarNota(
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.NOTA, autor, nota);
 }
 
-export async function eliminarCliente(clienteId: string) {
+export async function eliminarCliente(clienteId: string, clienteNombre: string, autor: Autor) {
+  await registrarActividad({
+    clienteId,
+    clienteNombre,
+    accion: TIPOS_EVENTO.ELIMINACION,
+    autor: autor.nombre,
+    autorRol: autor.rol,
+    nota: `Cliente "${clienteNombre}" eliminado del CRM`,
+  });
+
+  const eventosSnap = await getDocs(collection(db, "clientes", clienteId, "eventos"));
+  await Promise.all(eventosSnap.docs.map((d) => deleteDoc(d.ref)));
+
   await deleteDoc(doc(db, "clientes", clienteId));
 }
 

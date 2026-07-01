@@ -26,6 +26,8 @@ export const TIPOS_EVENTO = {
   RENOVACION: "RENOVACION",
   VENCIMIENTO: "VENCIMIENTO",
   NOTA: "NOTA",
+  ELIMINACION: "ELIMINACION",
+  IMPORTACION: "IMPORTACION",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -36,6 +38,8 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   RENOVACION: "Membresía renovada",
   VENCIMIENTO: "Membresía vencida",
   NOTA: "Nota",
+  ELIMINACION: "Cliente eliminado",
+  IMPORTACION: "Cliente importado por CSV",
 };
 
 export const MEMBRESIA_DIAS = 365;

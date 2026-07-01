@@ -1,19 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { suscribirCliente, suscribirEventos, ClienteDoc, EventoDoc } from "@/lib/clientesService";
+import { useParams, useRouter } from "next/navigation";
+import {
+  suscribirCliente,
+  suscribirEventos,
+  eliminarCliente,
+  ClienteDoc,
+  EventoDoc,
+} from "@/lib/clientesService";
 import { estadoActual, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Timeline } from "@/components/Timeline";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ClientActions } from "@/components/ClientActions";
-import { Mail, Phone, User, Ticket, Globe2 } from "lucide-react";
+import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle } from "lucide-react";
 import { REGION_LABEL, Region, beneficiosDeRegion } from "@/lib/constants";
+import { useSesion } from "@/lib/session-context";
 
 export default function ClienteDetallePage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const { sesion } = useSesion();
   const id = params.id;
+  const [eliminando, setEliminando] = useState(false);
 
   const [cliente, setCliente] = useState<ClienteDoc | null | undefined>(undefined);
   const [eventos, setEventos] = useState<EventoDoc[]>([]);
@@ -39,6 +49,25 @@ export default function ClienteDetallePage() {
   const fechaAceptacion = aFecha(cliente.fechaAceptacion);
   const fechaVencimiento = aFecha(cliente.fechaVencimiento);
   const beneficios = beneficiosDeRegion(cliente.region);
+
+  async function handleEliminar() {
+    if (!sesion || !cliente) return;
+    const confirmado = window.confirm(
+      `¿Seguro que quieres eliminar a "${cliente.nombre}"? Esta acción no se puede deshacer.`
+    );
+    if (!confirmado) return;
+
+    setEliminando(true);
+    try {
+      await eliminarCliente(cliente.id, cliente.nombre, {
+        nombre: sesion.nombre,
+        rol: sesion.rol,
+      });
+      router.push("/");
+    } finally {
+      setEliminando(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -124,6 +153,31 @@ export default function ClienteDetallePage() {
           autor: e.autor,
         }))}
       />
+
+      {sesion?.rol === "ADMIN" && (
+        <div className="shell rounded-[2rem] p-2 diffused-lg">
+          <div className="core flex flex-col gap-3 rounded-[calc(2rem-0.5rem)] p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-foreground">Eliminar cliente</h3>
+              <p className="text-sm text-muted">
+                Borra permanentemente a este cliente y su línea de tiempo. No se puede deshacer.
+              </p>
+            </div>
+            <button
+              onClick={handleEliminar}
+              disabled={eliminando}
+              className="flex items-center gap-2 rounded-full bg-danger/10 px-5 py-2.5 text-sm font-medium text-danger transition-all duration-500 ease-spring hover:bg-danger/20 active:scale-[0.98] disabled:opacity-50"
+            >
+              {eliminando ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+              ) : (
+                <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+              )}
+              Eliminar cliente
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
