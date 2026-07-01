@@ -16,7 +16,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { ClientActions } from "@/components/ClientActions";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle } from "lucide-react";
-import { REGION_LABEL, Region, beneficiosDeRegion } from "@/lib/constants";
+import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 
 export default function ClienteDetallePage() {
@@ -50,6 +50,8 @@ export default function ClienteDetallePage() {
   const fechaAceptacion = aFecha(cliente.fechaAceptacion);
   const fechaVencimiento = aFecha(cliente.fechaVencimiento);
   const beneficios = beneficiosDeRegion(cliente.region);
+  const ultimoEvento = eventos[eventos.length - 1];
+  const puedeDeshacerAceptacion = ultimoEvento?.tipo === TIPOS_EVENTO.INVITACION_ACEPTADA;
 
   async function handleEliminar() {
     if (!sesion || !cliente) return;
@@ -145,7 +147,12 @@ export default function ClienteDetallePage() {
         </div>
       )}
 
-      <ClientActions clienteId={cliente.id} clienteNombre={cliente.nombre} estado={estado} />
+      <ClientActions
+        clienteId={cliente.id}
+        clienteNombre={cliente.nombre}
+        estado={estado}
+        puedeDeshacerAceptacion={puedeDeshacerAceptacion}
+      />
 
       {fechaAceptacion && fechaVencimiento && (
         <CountdownTimer

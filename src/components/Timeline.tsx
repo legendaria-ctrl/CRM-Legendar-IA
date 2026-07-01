@@ -9,6 +9,7 @@ import {
   Trash2,
   UploadCloud,
   MessageCircle,
+  Undo2,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -21,6 +22,7 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   ELIMINACION: Trash2,
   IMPORTACION: UploadCloud,
   MENSAJE_BIENVENIDA: MessageCircle,
+  RESTAURACION: Undo2,
 };
 
 export type EventoTimelineItem = {

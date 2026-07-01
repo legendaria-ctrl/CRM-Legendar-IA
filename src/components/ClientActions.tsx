@@ -1,19 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Send, CheckCircle2, RefreshCcw, StickyNote, LoaderCircle } from "lucide-react";
+import { Send, CheckCircle2, RefreshCcw, StickyNote, LoaderCircle, Undo2 } from "lucide-react";
 import { EstadoCliente, ESTADOS_CLIENTE } from "@/lib/constants";
-import { enviarInvitacion, aceptarInvitacion, renovarMembresia, agregarNota } from "@/lib/clientesService";
+import {
+  enviarInvitacion,
+  aceptarInvitacion,
+  renovarMembresia,
+  agregarNota,
+  deshacerInvitacion,
+  deshacerAceptacion,
+} from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
 
 export function ClientActions({
   clienteId,
   clienteNombre,
   estado,
+  puedeDeshacerAceptacion = false,
 }: {
   clienteId: string;
   clienteNombre: string;
   estado: EstadoCliente;
+  puedeDeshacerAceptacion?: boolean;
 }) {
   const { sesion } = useSesion();
   const [loading, setLoading] = useState<string | null>(null);
@@ -28,6 +37,8 @@ export function ClientActions({
       if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, clienteNombre, autor);
       if (action === "renovar") await renovarMembresia(clienteId, clienteNombre, autor);
       if (action === "nota" && notaTexto) await agregarNota(clienteId, clienteNombre, autor, notaTexto);
+      if (action === "deshacer_invitacion") await deshacerInvitacion(clienteId, clienteNombre, autor);
+      if (action === "deshacer_aceptacion") await deshacerAceptacion(clienteId, clienteNombre, autor);
       setNota("");
     } finally {
       setLoading(null);
@@ -52,21 +63,37 @@ export function ClientActions({
           )}
 
           {estado === ESTADOS_CLIENTE.INVITACION_ENVIADA && (
-            <ActionButton
-              icon={CheckCircle2}
-              label="Marcar invitación aceptada"
-              loading={loading === "aceptar_invitacion"}
-              onClick={() => run("aceptar_invitacion")}
-            />
+            <>
+              <ActionButton
+                icon={CheckCircle2}
+                label="Marcar invitación aceptada"
+                loading={loading === "aceptar_invitacion"}
+                onClick={() => run("aceptar_invitacion")}
+              />
+              <UndoButton
+                label="Deshacer invitación"
+                loading={loading === "deshacer_invitacion"}
+                onClick={() => run("deshacer_invitacion")}
+              />
+            </>
           )}
 
           {(estado === ESTADOS_CLIENTE.ACTIVO || estado === ESTADOS_CLIENTE.VENCIDO) && (
-            <ActionButton
-              icon={RefreshCcw}
-              label="Renovar membresía (1 año)"
-              loading={loading === "renovar"}
-              onClick={() => run("renovar")}
-            />
+            <>
+              <ActionButton
+                icon={RefreshCcw}
+                label="Renovar membresía (1 año)"
+                loading={loading === "renovar"}
+                onClick={() => run("renovar")}
+              />
+              {puedeDeshacerAceptacion && (
+                <UndoButton
+                  label="Deshacer aceptación"
+                  loading={loading === "deshacer_aceptacion"}
+                  onClick={() => run("deshacer_aceptacion")}
+                />
+              )}
+            </>
           )}
         </div>
 
@@ -97,6 +124,35 @@ export function ClientActions({
         </div>
       </div>
     </div>
+  );
+}
+
+function UndoButton({
+  label,
+  loading,
+  onClick,
+}: {
+  label: string;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={() => {
+        if (window.confirm(`${label}? Esto no borra el historial, solo revierte el estado actual.`)) {
+          onClick();
+        }
+      }}
+      disabled={loading}
+      className="flex items-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98] disabled:opacity-50"
+    >
+      {loading ? (
+        <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+      ) : (
+        <Undo2 className="h-4 w-4" strokeWidth={1.75} />
+      )}
+      {label}
+    </button>
   );
 }
 

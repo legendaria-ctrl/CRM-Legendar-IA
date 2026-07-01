@@ -154,6 +154,20 @@ export async function enviarInvitacion(clienteId: string, clienteNombre: string,
   );
 }
 
+export async function deshacerInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    estado: ESTADOS_CLIENTE.NUEVO,
+    fechaInvitacion: null,
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.RESTAURACION,
+    autor,
+    "Se deshizo el envío de la invitación. El cliente vuelve a estado Nuevo."
+  );
+}
+
 export async function aceptarInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
   const ahora = new Date();
   const vencimiento = fechaVencimientoDesde(ahora);
@@ -168,6 +182,21 @@ export async function aceptarInvitacion(clienteId: string, clienteNombre: string
     TIPOS_EVENTO.INVITACION_ACEPTADA,
     autor,
     "El cliente aceptó la invitación. Membresía activada por 1 año."
+  );
+}
+
+export async function deshacerAceptacion(clienteId: string, clienteNombre: string, autor: Autor) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
+    fechaAceptacion: null,
+    fechaVencimiento: null,
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.RESTAURACION,
+    autor,
+    "Se deshizo la aceptación de la invitación. El cliente vuelve a Invitación enviada."
   );
 }
 
