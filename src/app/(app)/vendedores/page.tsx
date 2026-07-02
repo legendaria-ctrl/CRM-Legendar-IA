@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Check, X, ShieldAlert, Clock, UserCheck, UserX } from "lucide-react";
+import { Check, X, ShieldAlert, Clock, UserCheck, UserX, TriangleAlert } from "lucide-react";
 import { useSesion } from "@/lib/session-context";
-import { suscribirVendedores, decidirSolicitud, VendedorDoc } from "@/lib/vendedoresService";
+import { suscribirVendedores, decidirSolicitud, normalizarNombre, VendedorDoc } from "@/lib/vendedoresService";
 import { ESTADOS_SOLICITUD } from "@/lib/constants";
+import { nombresParecidos } from "@/lib/similitud";
 
 export default function VendedoresPage() {
   const { sesion, cargando } = useSesion();
@@ -48,6 +49,14 @@ export default function VendedoresPage() {
 
   const pendientes = (vendedores ?? []).filter((v) => v.estado === ESTADOS_SOLICITUD.PENDIENTE);
   const decididos = (vendedores ?? []).filter((v) => v.estado !== ESTADOS_SOLICITUD.PENDIENTE);
+  const aprobados = (vendedores ?? []).filter((v) => v.estado === ESTADOS_SOLICITUD.APROBADO);
+
+  function posibleDuplicado(pendiente: VendedorDoc): VendedorDoc | undefined {
+    const normalizado = normalizarNombre(pendiente.nombre);
+    return aprobados.find(
+      (ap) => ap.id !== pendiente.id && nombresParecidos(normalizado, normalizarNombre(ap.nombre))
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -75,7 +84,9 @@ export default function VendedoresPage() {
             <p className="text-sm text-muted">No hay solicitudes pendientes.</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {pendientes.map((v) => (
+              {pendientes.map((v) => {
+                const duplicado = posibleDuplicado(v);
+                return (
                 <li
                   key={v.id}
                   className="flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3"
@@ -87,6 +98,12 @@ export default function VendedoresPage() {
                         ? `Solicitó acceso el ${format(v.creadoEn.toDate(), "d MMM yyyy, HH:mm", { locale: es })}`
                         : "Solicitando…"}
                     </p>
+                    {duplicado && (
+                      <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-warning">
+                        <TriangleAlert className="h-3.5 w-3.5" strokeWidth={2} />
+                        Posible duplicado de &quot;{duplicado.nombre}&quot; (ya aprobado) — verifica antes de aprobar
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-none gap-2">
                     <button
@@ -107,7 +124,8 @@ export default function VendedoresPage() {
                     </button>
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>

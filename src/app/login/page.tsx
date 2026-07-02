@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { KeyRound, UserRound, ArrowUpRight, LoaderCircle, ShieldCheck, Users } from "lucide-react";
+import { KeyRound, UserRound, ArrowUpRight, LoaderCircle, ShieldCheck, Users, Lock } from "lucide-react";
+
+function claveNombreRecordado(rol: "ADMIN" | "VENDEDOR") {
+  return `legendaria_nombre_${rol}`;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +16,23 @@ export default function LoginPage() {
   const [clave, setClave] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [nombreBloqueado, setNombreBloqueado] = useState(false);
+
+  useEffect(() => {
+    const recordado = window.localStorage.getItem(claveNombreRecordado(rol));
+    if (recordado) {
+      setNombre(recordado);
+      setNombreBloqueado(true);
+    } else {
+      setNombre("");
+      setNombreBloqueado(false);
+    }
+  }, [rol]);
+
+  function cambiarPersona() {
+    setNombreBloqueado(false);
+    setNombre("");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +52,8 @@ export default function LoginPage() {
       setError(data.error || "No se pudo iniciar sesión.");
       return;
     }
+
+    window.localStorage.setItem(claveNombreRecordado(rol), nombre.trim());
 
     router.push("/");
     router.refresh();
@@ -89,19 +112,45 @@ export default function LoginPage() {
             </div>
 
             <label className="flex flex-col gap-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted">
-                Tu nombre
-              </span>
-              <div className="flex items-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3 transition-all duration-500 ease-spring focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
-                <UserRound className="h-4 w-4 text-muted" strokeWidth={1.5} />
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Tu nombre
+                </span>
+                {nombreBloqueado && (
+                  <button
+                    type="button"
+                    onClick={cambiarPersona}
+                    className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    ¿No eres tú?
+                  </button>
+                )}
+              </div>
+              <div
+                className={`flex items-center gap-2 rounded-2xl border border-silver-deep/60 px-4 py-3 transition-all duration-500 ease-spring focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 ${
+                  nombreBloqueado ? "bg-primary-dim" : "bg-surface-2"
+                }`}
+              >
+                {nombreBloqueado ? (
+                  <Lock className="h-4 w-4 text-primary" strokeWidth={1.5} />
+                ) : (
+                  <UserRound className="h-4 w-4 text-muted" strokeWidth={1.5} />
+                )}
                 <input
                   required
+                  readOnly={nombreBloqueado}
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Escribe tu nombre"
                   className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted/60"
                 />
               </div>
+              {nombreBloqueado && (
+                <p className="text-xs text-muted">
+                  Ya iniciaste sesión antes en este dispositivo como <strong>{nombre}</strong>. Usa
+                  siempre el mismo nombre para que el Admin no tenga que aprobarte de nuevo.
+                </p>
+              )}
             </label>
 
             <label className="flex flex-col gap-2">
