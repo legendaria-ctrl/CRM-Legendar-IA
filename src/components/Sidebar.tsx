@@ -79,7 +79,7 @@ export function Sidebar() {
             </p>
           </div>
           <button
-            onClick={cerrarSesion}
+            onClick={() => cerrarSesion()}
             className="group flex items-center justify-center gap-2 rounded-xl border border-silver-deep/60 bg-surface-2 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98]"
           >
             <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />

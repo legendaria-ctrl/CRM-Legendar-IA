@@ -17,6 +17,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [nombreBloqueado, setNombreBloqueado] = useState(false);
+  const [avisoRevocado, setAvisoRevocado] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("motivo") === "revocado") {
+      setAvisoRevocado(true);
+      window.localStorage.removeItem(claveNombreRecordado("VENDEDOR"));
+    }
+  }, []);
 
   useEffect(() => {
     const recordado = window.localStorage.getItem(claveNombreRecordado(rol));
@@ -81,6 +90,13 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
+
+        {avisoRevocado && (
+          <div className="mb-4 rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger">
+            Tu acceso fue revocado por un administrador. Pídele que te vuelva a aprobar en la
+            sección Vendedores.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="shell rounded-[2rem] p-2 diffused-lg">
           <div className="core flex flex-col gap-5 rounded-[calc(2rem-0.5rem)] p-8">
