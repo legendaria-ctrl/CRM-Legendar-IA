@@ -25,6 +25,8 @@ import {
   Search,
   Download,
   X,
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
 } from "lucide-react";
 
 const OPCION_TODOS = "TODOS";
@@ -35,6 +37,7 @@ export default function DashboardPage() {
   const [filtroEstado, setFiltroEstado] = useState<string>(OPCION_TODOS);
   const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
   const [filtroBienvenida, setFiltroBienvenida] = useState<string>(OPCION_TODOS);
+  const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
@@ -66,6 +69,16 @@ export default function DashboardPage() {
     });
   }, [conEstado, busqueda, filtroEstado, filtroRegion, filtroBienvenida]);
 
+  const ordenados = useMemo(() => {
+    const copia = [...filtrados];
+    copia.sort((a, b) => {
+      const fechaA = aFecha(a.fechaLlegada)?.getTime() ?? 0;
+      const fechaB = aFecha(b.fechaLlegada)?.getTime() ?? 0;
+      return orden === "recientes" ? fechaB - fechaA : fechaA - fechaB;
+    });
+    return copia;
+  }, [filtrados, orden]);
+
   const hayFiltrosActivos =
     busqueda.trim() !== "" ||
     filtroEstado !== OPCION_TODOS ||
@@ -80,8 +93,8 @@ export default function DashboardPage() {
   }
 
   function exportarCSV() {
-    if (filtrados.length === 0) return;
-    const filas = filtrados.map((c) => {
+    if (ordenados.length === 0) return;
+    const filas = ordenados.map((c) => {
       const llegada = aFecha(c.fechaLlegada);
       const vencimiento = aFecha(c.fechaVencimiento);
       return [
@@ -182,7 +195,7 @@ export default function DashboardPage() {
 
             <button
               onClick={exportarCSV}
-              disabled={filtrados.length === 0}
+              disabled={ordenados.length === 0}
               className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-40"
             >
               <Download className="h-4 w-4" strokeWidth={1.75} />
@@ -191,6 +204,18 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setOrden(orden === "recientes" ? "antiguos" : "recientes")}
+              className="flex items-center gap-1.5 rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary"
+            >
+              {orden === "recientes" ? (
+                <ArrowDownWideNarrow className="h-3.5 w-3.5" strokeWidth={2} />
+              ) : (
+                <ArrowUpWideNarrow className="h-3.5 w-3.5" strokeWidth={2} />
+              )}
+              {orden === "recientes" ? "Más nuevos primero" : "Más antiguos primero"}
+            </button>
+
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
@@ -238,7 +263,7 @@ export default function DashboardPage() {
             )}
 
             <span className="ml-auto text-xs text-muted">
-              {filtrados.length} de {total} clientes
+              {ordenados.length} de {total} clientes
             </span>
           </div>
         </div>
@@ -259,13 +284,13 @@ export default function DashboardPage() {
                 </span>
               </Link>
             </div>
-          ) : filtrados.length === 0 ? (
+          ) : ordenados.length === 0 ? (
             <p className="px-6 py-16 text-center text-sm text-muted">
               Ningún cliente coincide con la búsqueda o los filtros.
             </p>
           ) : (
             <ul className="flex flex-col divide-y divide-silver">
-              {filtrados.map((cliente) => {
+              {ordenados.map((cliente) => {
                 const dias = diasRestantes(cliente.fechaVencimiento);
                 return (
                   <li key={cliente.id}>
