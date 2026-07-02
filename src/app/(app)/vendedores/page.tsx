@@ -47,6 +47,13 @@ export default function VendedoresPage() {
     }
   }
 
+  function revocar(v: VendedorDoc) {
+    const confirmado = window.confirm(
+      `¿Revocar el acceso de "${v.nombre}"? No podrá entrar hasta que lo vuelvas a aprobar.`
+    );
+    if (confirmado) decidir(v.id, "RECHAZADO");
+  }
+
   const pendientes = (vendedores ?? []).filter((v) => v.estado === ESTADOS_SOLICITUD.PENDIENTE);
   const decididos = (vendedores ?? []).filter((v) => v.estado !== ESTADOS_SOLICITUD.PENDIENTE);
   const aprobados = (vendedores ?? []).filter((v) => v.estado === ESTADOS_SOLICITUD.APROBADO);
@@ -162,9 +169,19 @@ export default function VendedoresPage() {
                   {v.estado === ESTADOS_SOLICITUD.RECHAZADO && (
                     <button
                       onClick={() => decidir(v.id, "APROBADO")}
-                      className="rounded-full bg-success/10 px-4 py-1.5 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/20"
+                      disabled={procesando === v.id}
+                      className="rounded-full bg-success/10 px-4 py-1.5 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/20 disabled:opacity-50"
                     >
                       Aprobar ahora
+                    </button>
+                  )}
+                  {v.estado === ESTADOS_SOLICITUD.APROBADO && (
+                    <button
+                      onClick={() => revocar(v)}
+                      disabled={procesando === v.id}
+                      className="rounded-full bg-danger/10 px-4 py-1.5 text-xs font-medium text-danger transition-all duration-500 ease-spring hover:bg-danger/20 disabled:opacity-50"
+                    >
+                      Revocar acceso
                     </button>
                   )}
                 </li>
