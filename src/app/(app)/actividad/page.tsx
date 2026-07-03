@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, format } from "date-fns";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Download, Search, History, LoaderCircle } from "lucide-react";
 import { obtenerActividad, ActividadDoc } from "@/lib/activityService";
@@ -36,13 +36,21 @@ export default function ActividadPage() {
     }
   }
 
-  function preset(tipo: "hoy" | "semana") {
+  function preset(tipo: "hoy" | "semana" | "mes") {
     const ahora = new Date();
     if (tipo === "hoy") {
       const d = aInputDate(ahora);
       setDesde(d);
       setHasta(d);
       buscar(d, d);
+      return;
+    }
+    if (tipo === "mes") {
+      const inicio = aInputDate(startOfMonth(ahora));
+      const fin = aInputDate(endOfMonth(ahora));
+      setDesde(inicio);
+      setHasta(fin);
+      buscar(inicio, fin);
       return;
     }
     const inicio = aInputDate(startOfWeek(ahora, { weekStartsOn: 1 }));
@@ -111,6 +119,12 @@ export default function ActividadPage() {
               className="rounded-full bg-surface-2 px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:bg-primary-dim hover:text-primary-deep"
             >
               Esta semana
+            </button>
+            <button
+              onClick={() => preset("mes")}
+              className="rounded-full bg-surface-2 px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:bg-primary-dim hover:text-primary-deep"
+            >
+              Este mes
             </button>
           </div>
 
