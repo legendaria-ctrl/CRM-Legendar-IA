@@ -38,34 +38,46 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="sticky top-6 flex h-fit w-full flex-col gap-4 md:w-64">
-      <button
-        onClick={irAInicio}
-        title="Ir a Certificaciones"
-        className="brand-plate relative flex h-16 items-center justify-center gap-2.5 rounded-[1.75rem] px-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)] transition-transform duration-500 ease-spring active:scale-[0.98]"
-      >
-        <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-white/15">
-          <Layers className="h-5 w-5 text-white" strokeWidth={1.75} />
-        </span>
-        <span className="text-lg font-semibold tracking-tight text-white">Certificaciones</span>
-      </button>
+    <aside className="flex h-fit w-full flex-col gap-4 md:sticky md:top-6 md:w-64">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={irAInicio}
+          title="Ir a Certificaciones"
+          className="brand-plate relative flex h-14 flex-1 items-center justify-center gap-2.5 rounded-[1.75rem] px-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)] transition-transform duration-500 ease-spring active:scale-[0.98] md:h-16"
+        >
+          <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-white/15 md:h-9 md:w-9">
+            <Layers className="h-4 w-4 text-white md:h-5 md:w-5" strokeWidth={1.75} />
+          </span>
+          <span className="truncate text-base font-semibold tracking-tight text-white md:text-lg">
+            Certificaciones
+          </span>
+        </button>
+
+        <button
+          onClick={() => cerrarSesion()}
+          title="Cerrar sesión"
+          className="flex h-14 w-14 flex-none items-center justify-center rounded-[1.75rem] border border-silver-deep/60 bg-surface-2 text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98] md:hidden"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+      </div>
 
       <div className="shell rounded-[1.75rem] p-2 diffused">
-        <nav className="core flex flex-col gap-1 rounded-[calc(1.75rem-0.5rem)] p-2">
+        <nav className="core flex gap-1 overflow-x-auto rounded-[calc(1.75rem-0.5rem)] p-2 md:flex-col md:overflow-visible">
           {itemsNav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-500 ease-spring ${
+                className={`group flex flex-none items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-500 ease-spring ${
                   active
                     ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
                     : "text-muted hover:bg-surface-2 hover:text-foreground"
                 }`}
               >
                 <Icon
-                  className={`h-4 w-4 transition-transform duration-500 ease-spring group-hover:translate-x-0.5 ${
+                  className={`h-4 w-4 flex-none transition-transform duration-500 ease-spring group-hover:translate-x-0.5 ${
                     active ? "text-white" : "text-muted"
                   }`}
                   strokeWidth={1.5}
@@ -77,23 +89,25 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="shell rounded-[1.75rem] p-2 diffused">
-        <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">
-              {sesion?.nombre ?? "…"}
-            </p>
-            <p className="text-[11px] uppercase tracking-wider text-muted">
-              {sesion?.rol ?? ""}
-            </p>
+      <div className="hidden md:block">
+        <div className="shell rounded-[1.75rem] p-2 diffused">
+          <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">
+                {sesion?.nombre ?? "…"}
+              </p>
+              <p className="text-[11px] uppercase tracking-wider text-muted">
+                {sesion?.rol ?? ""}
+              </p>
+            </div>
+            <button
+              onClick={() => cerrarSesion()}
+              className="group flex items-center justify-center gap-2 rounded-xl border border-silver-deep/60 bg-surface-2 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98]"
+            >
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Cerrar sesión
+            </button>
           </div>
-          <button
-            onClick={() => cerrarSesion()}
-            className="group flex items-center justify-center gap-2 rounded-xl border border-silver-deep/60 bg-surface-2 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98]"
-          >
-            <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Cerrar sesión
-          </button>
         </div>
       </div>
     </aside>
