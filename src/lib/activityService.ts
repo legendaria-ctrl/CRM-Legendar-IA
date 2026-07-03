@@ -63,3 +63,13 @@ export async function obtenerActividad(rango: {
 
   return resultados;
 }
+
+export async function obtenerAutoresUnicos(): Promise<string[]> {
+  const snap = await getDocs(query(actividadRef, orderBy("autor")));
+  const autores = new Set<string>();
+  snap.docs.forEach((d) => {
+    const autor = (d.data() as ActividadDoc).autor;
+    if (autor) autores.add(autor);
+  });
+  return Array.from(autores).sort((a, b) => a.localeCompare(b));
+}

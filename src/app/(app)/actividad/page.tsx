@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Download, Search, History, LoaderCircle } from "lucide-react";
-import { obtenerActividad, ActividadDoc } from "@/lib/activityService";
+import { obtenerActividad, obtenerAutoresUnicos, ActividadDoc } from "@/lib/activityService";
 import { obtenerContactosPorIds } from "@/lib/clientesService";
 import { EVENTO_LABEL, TipoEvento } from "@/lib/constants";
 import { descargarCSV } from "@/lib/csv";
+import { UsuarioSelect } from "@/components/UsuarioSelect";
 
 function aInputDate(d: Date): string {
   return format(d, "yyyy-MM-dd");
@@ -18,9 +19,14 @@ export default function ActividadPage() {
   const [desde, setDesde] = useState(aInputDate(hoy));
   const [hasta, setHasta] = useState(aInputDate(hoy));
   const [autor, setAutor] = useState("");
+  const [usuarios, setUsuarios] = useState<string[]>([]);
   const [resultados, setResultados] = useState<ActividadDoc[] | null>(null);
   const [cargando, setCargando] = useState(false);
   const [exportando, setExportando] = useState(false);
+
+  useEffect(() => {
+    obtenerAutoresUnicos().then(setUsuarios);
+  }, []);
 
   async function buscar(rangoDesde = desde, rangoHasta = hasta) {
     setCargando(true);
@@ -157,12 +163,7 @@ export default function ActividadPage() {
               <span className="text-xs font-medium uppercase tracking-wider text-muted">
                 Usuario (opcional)
               </span>
-              <input
-                value={autor}
-                onChange={(e) => setAutor(e.target.value)}
-                placeholder="Nombre exacto del usuario"
-                className="rounded-xl border border-silver-deep/60 bg-surface-2 px-3 py-2 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
-              />
+              <UsuarioSelect usuarios={usuarios} valor={autor} onChange={setAutor} />
             </label>
 
             <button
