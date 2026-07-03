@@ -434,7 +434,9 @@ export default function DashboardPage() {
                         </div>
                         <p className="truncate text-xs text-muted">
                           {cliente.email || "Sin correo"}
-                          {" · Ingreso: "}
+                        </p>
+                        <p className="truncate text-xs text-muted">
+                          {"Ingreso: "}
                           {aFecha(cliente.fechaLlegada)?.toLocaleDateString("es-MX") ?? "—"}
                           {" · Vence: "}
                           {aFecha(cliente.fechaVencimiento)?.toLocaleDateString("es-MX") ?? "—"}
