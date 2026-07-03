@@ -2,7 +2,7 @@
   "name": "Certificaciones",
   "short_name": "Certificaciones",
   "description": "Plataforma de certificaciones Legendar-IA",
-  "start_url": "/",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0b1220",
