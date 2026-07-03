@@ -76,12 +76,12 @@ export default function ActividadPage() {
         const contacto = contactos[r.clienteId];
         return [
           r.fecha ? format(r.fecha.toDate(), "yyyy-MM-dd HH:mm:ss") : "",
-          r.autor,
-          r.autorRol,
-          EVENTO_LABEL[r.accion as TipoEvento] ?? r.accion,
           r.clienteNombre,
           contacto?.email ?? "",
           contacto?.telefono ?? "",
+          r.autor,
+          r.autorRol,
+          EVENTO_LABEL[r.accion as TipoEvento] ?? r.accion,
           contacto?.notas ?? "",
           r.nota ?? "",
         ];
@@ -89,7 +89,7 @@ export default function ActividadPage() {
 
       descargarCSV(
         `actividad_${desde}_a_${hasta}.csv`,
-        ["Fecha", "Autor", "Rol", "Acción", "Cliente", "Correo", "Teléfono", "Notas del cliente", "Detalle"],
+        ["Fecha", "Nombre", "Correo", "Teléfono", "Autor", "Rol", "Acción", "Notas del cliente", "Detalle"],
         filas
       );
     } finally {
