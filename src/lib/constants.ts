@@ -104,7 +104,7 @@ export type Beneficio = {
 export const BENEFICIOS_POR_REGION: Record<Region, Beneficio[]> = {
   MX: [{ evento: "Synergy Unlimited MX", tipo: "General", cantidad: 1 }],
   US: [
-    { evento: "Synergy Unlimited MX", tipo: "VIP", cantidad: 2 },
+    { evento: "Synergy Unlimited MX", tipo: "VIP", cantidad: 1 },
     { evento: "Synergy Unlimited US", tipo: "General", cantidad: 1 },
   ],
 };
