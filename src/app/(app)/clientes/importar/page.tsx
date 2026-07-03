@@ -255,6 +255,7 @@ export default function ImportarClientesPage() {
                       <td className="px-4 py-3">
                         <VendedorSelect
                           compacto
+                          vendedoresAprobados={vendedoresAprobados}
                           valor={vendedoresPorFila[i] ?? null}
                           onChange={(nombre) =>
                             setVendedoresPorFila((prev) => {

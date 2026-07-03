@@ -10,24 +10,31 @@ export function VendedorSelect({
   onChange,
   placeholder = "Sin vendedor asignado",
   compacto = false,
+  vendedoresAprobados,
 }: {
   valor: string | null;
   onChange: (nombre: string | null) => void | Promise<void>;
   placeholder?: string;
   compacto?: boolean;
+  /** Si ya tienes la lista (p. ej. una tabla con muchas filas), pásala aquí
+   * para no abrir una suscripción de Firestore por cada instancia. */
+  vendedoresAprobados?: string[];
 }) {
-  const [vendedores, setVendedores] = useState<string[]>([]);
+  const [vendedoresPropios, setVendedoresPropios] = useState<string[]>([]);
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
 
   useEffect(() => {
+    if (vendedoresAprobados) return;
     const unsub = suscribirVendedores((lista) => {
-      setVendedores(
+      setVendedoresPropios(
         lista.filter((v) => v.estado === ESTADOS_SOLICITUD.APROBADO).map((v) => v.nombre)
       );
     });
     return () => unsub();
-  }, []);
+  }, [vendedoresAprobados]);
+
+  const vendedores = vendedoresAprobados ?? vendedoresPropios;
 
   const filtrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
