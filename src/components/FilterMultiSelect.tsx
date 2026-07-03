@@ -41,18 +41,18 @@ export function FilterMultiSelect({
         : `${label} (${seleccionados.length})`;
 
   return (
-    <div className="relative">
+    <div className="relative w-full sm:w-auto">
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-medium outline-none transition-all duration-500 ease-spring ${
+        className={`flex w-full items-center justify-between gap-1.5 truncate rounded-full border px-4 py-2 text-xs font-medium outline-none transition-all duration-500 ease-spring sm:w-auto sm:justify-start ${
           seleccionados.length > 0
             ? "border-primary/50 bg-primary-dim text-primary-deep"
             : "border-silver-deep/60 bg-surface-2 text-muted"
         }`}
       >
-        {textoBoton}
-        <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
+        <span className="truncate">{textoBoton}</span>
+        <ChevronDown className="h-3.5 w-3.5 flex-none" strokeWidth={2} />
       </button>
 
       {abierto && (

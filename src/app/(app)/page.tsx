@@ -366,17 +366,19 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <button
               onClick={() => setOrden(orden === "recientes" ? "antiguos" : "recientes")}
-              className="flex items-center gap-1.5 rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary"
+              className="flex items-center justify-center gap-1.5 truncate rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary sm:justify-start"
             >
               {orden === "recientes" ? (
-                <ArrowDownWideNarrow className="h-3.5 w-3.5" strokeWidth={2} />
+                <ArrowDownWideNarrow className="h-3.5 w-3.5 flex-none" strokeWidth={2} />
               ) : (
-                <ArrowUpWideNarrow className="h-3.5 w-3.5" strokeWidth={2} />
+                <ArrowUpWideNarrow className="h-3.5 w-3.5 flex-none" strokeWidth={2} />
               )}
-              {orden === "recientes" ? "Más nuevos primero" : "Más antiguos primero"}
+              <span className="truncate">
+                {orden === "recientes" ? "Más nuevos primero" : "Más antiguos primero"}
+              </span>
             </button>
 
             <FilterMultiSelect
@@ -389,7 +391,7 @@ export default function DashboardPage() {
             <select
               value={filtroRegion}
               onChange={(e) => setFiltroRegion(e.target.value)}
-              className="rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50"
+              className="w-full rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50 sm:w-auto"
             >
               <option value={OPCION_TODOS}>Todas las regiones</option>
               {Object.values(REGIONES).map((region) => (
@@ -431,14 +433,14 @@ export default function DashboardPage() {
             {hayFiltrosActivos && (
               <button
                 onClick={limpiarFiltros}
-                className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger"
+                className="col-span-2 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger sm:col-span-1 sm:justify-start"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2} />
                 Limpiar filtros
               </button>
             )}
 
-            <span className="ml-auto text-xs text-muted">
+            <span className="col-span-2 text-center text-xs text-muted sm:col-span-1 sm:ml-auto sm:text-right">
               {ordenados.length} de {total} clientes
             </span>
           </div>
@@ -554,7 +556,7 @@ export default function DashboardPage() {
                     />
                     <Link
                       href={`/clientes/${cliente.id}`}
-                      className="group flex flex-1 items-center justify-between gap-4 rounded-2xl py-4 transition-colors duration-300 hover:bg-surface-2"
+                      className="group flex flex-1 flex-wrap items-center justify-between gap-3 rounded-2xl py-4 transition-colors duration-300 hover:bg-surface-2"
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -607,7 +609,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-none items-center gap-3">
+                      <div className="flex w-full flex-none items-center justify-end gap-2 sm:w-auto sm:justify-start sm:gap-3">
                         {activo && dias !== null && (
                           <span className="hidden text-xs text-muted sm:inline">
                             {dias > 0 ? `${dias} días restantes` : "Vence hoy"}
