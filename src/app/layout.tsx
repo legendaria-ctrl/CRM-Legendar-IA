@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -14,8 +14,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Legendar-IA CRM",
-  description: "Control de clientes y membresías de la certificación Legendar-IA",
+  title: "Certificaciones",
+  description: "Plataforma de certificaciones Legendar-IA",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Certificaciones",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a5cff",
 };
 
 export default function RootLayout({

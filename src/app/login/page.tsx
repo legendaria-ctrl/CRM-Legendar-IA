@@ -72,10 +72,10 @@ export default function LoginPage() {
     <main className="bg-brand relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4 py-16">
       <div className="relative w-full max-w-md">
         <div className="mb-10 flex flex-col items-center gap-4 text-center">
-          <div className="relative h-20 w-full max-w-[300px]">
+          <div className="relative h-24 w-24">
             <Image
-              src="/legendar-ia-logo.png"
-              alt="Legendar-IA"
+              src="/certificaciones-logo.png"
+              alt="Certificaciones"
               fill
               priority
               className="object-contain drop-shadow-[0_10px_35px_rgba(10,92,255,0.5)]"
@@ -83,7 +83,7 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
-              Acceso al CRM
+              Acceso a Certificaciones
             </h1>
             <p className="mt-1 text-sm text-white/70">
               Elige tu perfil, escribe tu nombre y la clave de acceso.
