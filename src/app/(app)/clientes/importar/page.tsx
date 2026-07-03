@@ -25,12 +25,17 @@ export default function ImportarClientesPage() {
   const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [nombreArchivo, setNombreArchivo] = useState("");
   const [tagLote, setTagLote] = useState<string | null>(null);
-  const [etiquetaLote, setEtiquetaLote] = useState<string>(
-    certificacionActual?.etiqueta ?? CERTIFICACIONES[0]?.etiqueta ?? ""
-  );
+  const [etiquetaLote, setEtiquetaLote] = useState<string>(CERTIFICACIONES[0]?.etiqueta ?? "");
+  const etiquetaLoteTocada = useRef(false);
   const [importando, setImportando] = useState(false);
   const [progreso, setProgreso] = useState(0);
   const [resultado, setResultado] = useState<{ ok: number; error: number } | null>(null);
+
+  useEffect(() => {
+    if (!etiquetaLoteTocada.current && certificacionActual) {
+      setEtiquetaLote(certificacionActual.etiqueta);
+    }
+  }, [certificacionActual]);
 
   useEffect(() => {
     const unsub = suscribirVendedores((lista) => {
@@ -172,7 +177,10 @@ export default function ImportarClientesPage() {
               <button
                 key={cert.id}
                 type="button"
-                onClick={() => setEtiquetaLote(cert.etiqueta)}
+                onClick={() => {
+                  etiquetaLoteTocada.current = true;
+                  setEtiquetaLote(cert.etiqueta);
+                }}
                 className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-500 ease-spring ${
                   etiquetaLote === cert.etiqueta
                     ? "border-primary/50 bg-primary-dim text-primary-deep"

@@ -50,7 +50,6 @@ export default function ActividadPage() {
         hasta: endOfDay(new Date(rangoHasta + "T00:00:00")),
         autor: autor.trim() || undefined,
       });
-      setResultados(datos);
       const contactos = await obtenerContactosPorIds(datos.map((r) => r.clienteId));
       setVendedorPorCliente(
         Object.fromEntries(Object.entries(contactos).map(([id, c]) => [id, c.vendedor]))
@@ -58,6 +57,7 @@ export default function ActividadPage() {
       setEtiquetasPorCliente(
         Object.fromEntries(Object.entries(contactos).map(([id, c]) => [id, c.etiquetas]))
       );
+      setResultados(datos);
     } finally {
       setCargando(false);
     }

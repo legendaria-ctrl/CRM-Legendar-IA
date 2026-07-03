@@ -175,7 +175,13 @@ export default function DashboardPage() {
     filtroTags,
     filtroVendedor,
     filtroEtiquetas,
+    certificacionActual,
   ]);
+
+  useEffect(() => {
+    limpiarFiltros();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [certificacionActual]);
 
   function limpiarFiltros() {
     setBusqueda("");
@@ -500,7 +506,11 @@ export default function DashboardPage() {
         <div className="core rounded-[calc(2rem-0.5rem)] p-2 md:p-3">
           {conEstado.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-              <p className="text-sm text-muted">Todavía no hay clientes registrados.</p>
+              <p className="text-sm text-muted">
+                {certificacionActual
+                  ? `Ningún cliente está etiquetado con ${certificacionActual.nombre} todavía.`
+                  : "Todavía no hay clientes registrados."}
+              </p>
               <Link
                 href="/clientes/nuevo"
                 className="group flex items-center gap-2 rounded-full bg-primary py-1 pl-5 pr-1 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98]"

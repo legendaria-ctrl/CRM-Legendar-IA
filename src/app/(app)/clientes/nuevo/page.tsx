@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, ArrowUpRight, LoaderCircle, Ticket, Globe2, Layers } from "lucide-react";
 import { crearCliente } from "@/lib/clientesService";
@@ -20,11 +20,16 @@ export default function NuevoClientePage() {
   const [notas, setNotas] = useState("");
   const [vendedor, setVendedor] = useState<string | null>(null);
   const [region, setRegion] = useState<Region>(REGIONES.MX);
-  const [etiqueta, setEtiqueta] = useState<string>(
-    certificacionActual?.etiqueta ?? CERTIFICACIONES[0]?.etiqueta ?? ""
-  );
+  const [etiqueta, setEtiqueta] = useState<string>(CERTIFICACIONES[0]?.etiqueta ?? "");
+  const etiquetaTocada = useRef(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!etiquetaTocada.current && certificacionActual) {
+      setEtiqueta(certificacionActual.etiqueta);
+    }
+  }, [certificacionActual]);
 
   const beneficios = beneficiosDeRegion(region);
 
@@ -134,7 +139,10 @@ export default function NuevoClientePage() {
                 <button
                   key={cert.id}
                   type="button"
-                  onClick={() => setEtiqueta(cert.etiqueta)}
+                  onClick={() => {
+                    etiquetaTocada.current = true;
+                    setEtiqueta(cert.etiqueta);
+                  }}
                   className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all duration-500 ease-spring ${
                     etiqueta === cert.etiqueta
                       ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
