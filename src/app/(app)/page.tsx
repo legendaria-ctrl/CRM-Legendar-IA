@@ -564,7 +564,7 @@ export default function DashboardPage() {
                             {cliente.nombre}
                           </p>
                           <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            className={`hidden items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium sm:inline-flex ${
                               pausado
                                 ? "bg-warning/10 text-warning"
                                 : activo
@@ -583,7 +583,7 @@ export default function DashboardPage() {
                         <p className="truncate text-xs text-muted">
                           {cliente.email || "Sin correo"}
                         </p>
-                        <p className="truncate text-xs text-muted">
+                        <p className="hidden truncate text-xs text-muted sm:block">
                           {"Ingreso: "}
                           {aFecha(cliente.fechaLlegada)?.toLocaleDateString("es-MX") ?? "—"}
                           {" · Vence: "}
@@ -609,7 +609,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex w-full flex-none items-center justify-end gap-2 sm:w-auto sm:justify-start sm:gap-3">
+                      <div className="hidden flex-none items-center gap-3 sm:flex">
                         {activo && dias !== null && (
                           <span className="hidden text-xs text-muted sm:inline">
                             {dias > 0 ? `${dias} días restantes` : "Vence hoy"}
