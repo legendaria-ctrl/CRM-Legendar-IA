@@ -273,13 +273,17 @@ export async function agregarDiasMembresia(
   );
 }
 
-export async function renovarMembresia(clienteId: string, clienteNombre: string, autor: Autor) {
+export async function renovarMembresia(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  fechaVencimientoActual: Date
+) {
   const ahora = new Date();
-  const vencimiento = fechaVencimientoDesde(ahora);
+  const nuevoVencimiento = fechaVencimientoDesde(fechaVencimientoActual);
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.ACTIVO,
-    fechaAceptacion: Timestamp.fromDate(ahora),
-    fechaVencimiento: Timestamp.fromDate(vencimiento),
+    fechaVencimiento: Timestamp.fromDate(nuevoVencimiento),
     pausada: false,
     fechaPausa: null,
   });
@@ -288,7 +292,7 @@ export async function renovarMembresia(clienteId: string, clienteNombre: string,
     clienteNombre,
     TIPOS_EVENTO.RENOVACION,
     autor,
-    "Membresía renovada por 1 año más."
+    `Membresía renovada por 1 año más (se sumaron 365 días a lo que quedaba). Renovada el ${ahora.toLocaleDateString("es-MX")}.`
   );
 }
 

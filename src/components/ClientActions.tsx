@@ -63,7 +63,8 @@ export function ClientActions({
     try {
       if (action === "enviar_invitacion") await enviarInvitacion(clienteId, clienteNombre, autor);
       if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, clienteNombre, autor);
-      if (action === "renovar") await renovarMembresia(clienteId, clienteNombre, autor);
+      if (action === "renovar" && fechaVencimiento)
+        await renovarMembresia(clienteId, clienteNombre, autor, fechaVencimiento);
       if (action === "nota" && notaTexto) await agregarNota(clienteId, clienteNombre, autor, notaTexto);
       if (action === "deshacer_invitacion") await deshacerInvitacion(clienteId, clienteNombre, autor);
       if (action === "deshacer_aceptacion") await deshacerAceptacion(clienteId, clienteNombre, autor);
