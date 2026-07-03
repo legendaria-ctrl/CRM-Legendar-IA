@@ -26,14 +26,15 @@ export function CertificacionTabs() {
               key={cert.id}
               onClick={() => irACertificacion(cert.id)}
               title={cert.nombre}
-              className="flex flex-none items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)] transition-all duration-500 ease-spring"
+              className="flex h-11 flex-none items-center rounded-2xl bg-primary px-4 shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)] transition-all duration-500 ease-spring"
             >
               {cert.logo ? (
-                <span className="relative h-5 w-5 flex-none overflow-hidden rounded-md bg-white/90">
+                <span className="relative h-7 w-28 flex-none">
                   <Image src={cert.logo} alt={cert.nombre} fill className="object-contain" />
                 </span>
-              ) : null}
-              {cert.nombre}
+              ) : (
+                <span className="text-sm font-medium text-white">{cert.nombre}</span>
+              )}
             </button>
           );
         })}
