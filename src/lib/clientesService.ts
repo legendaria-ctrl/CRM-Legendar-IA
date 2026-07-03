@@ -344,7 +344,25 @@ export async function agregarTagsCliente(
     clienteNombre,
     TIPOS_EVENTO.TAGS,
     autor,
-    `Se agregaron etiquetas: ${unicos.join(", ")}`
+    `Se agregaron tags: ${unicos.join(", ")}`
+  );
+}
+
+export async function agregarEtiquetasCliente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  etiquetas: string[]
+) {
+  const unicas = Array.from(new Set(etiquetas.map((e) => e.trim()).filter(Boolean)));
+  if (unicas.length === 0) return;
+  await updateDoc(doc(db, "clientes", clienteId), { etiquetas: arrayUnion(...unicas) });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.ETIQUETAS,
+    autor,
+    `Se agregó a la(s) certificación(es): ${unicas.join(", ")}`
   );
 }
 

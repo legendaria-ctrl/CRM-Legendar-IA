@@ -48,6 +48,7 @@ export const TIPOS_EVENTO = {
   EXTENSION: "EXTENSION",
   TAGS: "TAGS",
   VENDEDOR: "VENDEDOR",
+  ETIQUETAS: "ETIQUETAS",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -65,8 +66,9 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   PAUSA: "Membresía pausada",
   REANUDACION: "Membresía reanudada",
   EXTENSION: "Membresía extendida",
-  TAGS: "Etiquetas actualizadas",
+  TAGS: "Tags actualizados",
   VENDEDOR: "Vendedor actualizado",
+  ETIQUETAS: "Certificación asignada",
 };
 
 export const COLORES_TAG = [

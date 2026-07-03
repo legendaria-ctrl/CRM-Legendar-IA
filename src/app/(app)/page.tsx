@@ -8,6 +8,7 @@ import {
   enviarInvitacion,
   actualizarMensajeBienvenida,
   agregarTagsCliente,
+  agregarEtiquetasCliente,
 } from "@/lib/clientesService";
 import { estadoActual, estaActivo, estadoBienvenidaDe, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -48,6 +49,7 @@ import {
   Send,
   CheckCheck,
   LoaderCircle,
+  Layers,
 } from "lucide-react";
 
 const OPCION_TODOS = "TODOS";
@@ -228,6 +230,21 @@ export default function DashboardPage() {
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
     const objetivos = ordenados.filter((c) => seleccionados.has(c.id));
     await Promise.all(objetivos.map((c) => agregarTagsCliente(c.id, c.nombre, autor, tags)));
+  }
+
+  async function aplicarEtiquetaEnLote(etiqueta: string) {
+    if (!sesion || seleccionados.size === 0 || procesandoLote) return;
+    setProcesandoLote(true);
+    try {
+      const autor = { nombre: sesion.nombre, rol: sesion.rol };
+      const objetivos = ordenados.filter((c) => seleccionados.has(c.id));
+      await Promise.all(
+        objetivos.map((c) => agregarEtiquetasCliente(c.id, c.nombre, autor, [etiqueta]))
+      );
+      setSeleccionados(new Set());
+    } finally {
+      setProcesandoLote(false);
+    }
   }
 
   function exportarCSV() {
@@ -453,6 +470,21 @@ export default function DashboardPage() {
               Marcar MB enviado
             </button>
             <TagPicker seleccionados={[]} onAgregar={aplicarTagsEnLote} />
+            {CERTIFICACIONES.map((cert) => (
+              <button
+                key={cert.id}
+                onClick={() => aplicarEtiquetaEnLote(cert.etiqueta)}
+                disabled={procesandoLote}
+                className="flex items-center gap-2 rounded-full bg-warning/10 px-4 py-2 text-xs font-medium text-warning transition-all duration-500 ease-spring hover:bg-warning/20 disabled:opacity-50"
+              >
+                {procesandoLote ? (
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+                ) : (
+                  <Layers className="h-3.5 w-3.5" strokeWidth={2} />
+                )}
+                Agregar a {cert.nombre}
+              </button>
+            ))}
             <button
               onClick={() => setSeleccionados(new Set())}
               className="ml-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger"

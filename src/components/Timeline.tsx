@@ -15,6 +15,7 @@ import {
   CalendarPlus,
   Tag,
   UserCheck,
+  Layers,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -33,6 +34,7 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   EXTENSION: CalendarPlus,
   TAGS: Tag,
   VENDEDOR: UserCheck,
+  ETIQUETAS: Layers,
 };
 
 export type EventoTimelineItem = {
