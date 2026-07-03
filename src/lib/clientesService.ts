@@ -37,6 +37,7 @@ export type ClienteDoc = {
   pausada: boolean;
   fechaPausa: Timestamp | null;
   tags: string[];
+  vendedor: string | null;
   creadoPor: string;
   creadoPorRol: string;
 };
@@ -111,6 +112,7 @@ export async function crearCliente(input: {
   fechaInscripcion?: Date;
   mensajeBienvenida?: boolean;
   tags?: string[];
+  vendedor?: string;
   autor: string;
   autorRol: string;
   origen?: "manual" | "csv";
@@ -134,6 +136,7 @@ export async function crearCliente(input: {
     pausada: false,
     fechaPausa: null,
     tags: input.tags?.length ? Array.from(new Set(input.tags)) : [],
+    vendedor: input.vendedor?.trim() || null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
   });

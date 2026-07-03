@@ -54,10 +54,10 @@ export type FilaClienteCSV = {
   telefono: string;
   region: string;
   notas: string;
+  vendedor: string;
   fechaInscripcionTexto: string;
   fechaInscripcion: Date | null;
   mensajeBienvenida: boolean;
-  tags: string[];
   valido: boolean;
   error?: string;
 };
@@ -68,9 +68,9 @@ type CampoTexto =
   | "telefono"
   | "region"
   | "notas"
+  | "vendedor"
   | "fechaInscripcionTexto"
-  | "mensajeBienvenidaTexto"
-  | "tagsTexto";
+  | "mensajeBienvenidaTexto";
 
 const ALIAS_COLUMNAS: Record<string, CampoTexto> = {
   nombre: "nombre",
@@ -82,16 +82,13 @@ const ALIAS_COLUMNAS: Record<string, CampoTexto> = {
   region: "region",
   "región": "region",
   notas: "notas",
+  vendedor: "vendedor",
   fecha_inscripcion: "fechaInscripcionTexto",
   "fecha de inscripcion": "fechaInscripcionTexto",
   "fecha de inscripción": "fechaInscripcionTexto",
   fecha_inscripción: "fechaInscripcionTexto",
   mensaje_bienvenida: "mensajeBienvenidaTexto",
   "mensaje de bienvenida": "mensajeBienvenidaTexto",
-  tags: "tagsTexto",
-  tag: "tagsTexto",
-  etiquetas: "tagsTexto",
-  etiqueta: "tagsTexto",
 };
 
 const VALORES_VERDADEROS = new Set(["si", "sí", "true", "1", "x", "yes"]);
@@ -137,22 +134,14 @@ export function filasAClientes(filas: string[][]): FilaClienteCSV[] {
     const email = leer(fila, "email");
     const telefono = leer(fila, "telefono");
     const notas = leer(fila, "notas");
+    const vendedor = leer(fila, "vendedor");
     const fechaInscripcionTexto = leer(fila, "fechaInscripcionTexto");
     const mensajeBienvenidaTexto = leer(fila, "mensajeBienvenidaTexto");
-    const tagsTexto = leer(fila, "tagsTexto");
 
     const regionCruda = leer(fila, "region").toUpperCase();
     const region = regionCruda === "MX" || regionCruda === "US" ? regionCruda : "";
 
     const mensajeBienvenida = VALORES_VERDADEROS.has(mensajeBienvenidaTexto.toLowerCase());
-    const tags = Array.from(
-      new Set(
-        tagsTexto
-          .split(/[,;]/)
-          .map((t) => t.trim())
-          .filter(Boolean)
-      )
-    );
 
     const base = {
       nombre,
@@ -160,9 +149,9 @@ export function filasAClientes(filas: string[][]): FilaClienteCSV[] {
       telefono,
       region,
       notas,
+      vendedor,
       fechaInscripcionTexto,
       mensajeBienvenida,
-      tags,
     };
 
     if (!nombre) {

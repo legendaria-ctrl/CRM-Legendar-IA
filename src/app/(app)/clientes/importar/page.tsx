@@ -2,11 +2,12 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UploadCloud, Download, CheckCircle2, XCircle, LoaderCircle, ArrowUpRight } from "lucide-react";
+import { UploadCloud, Download, CheckCircle2, XCircle, LoaderCircle, ArrowUpRight, X, Tag as TagIcon } from "lucide-react";
 import { parsearCSV, filasAClientes, FilaClienteCSV } from "@/lib/csvParse";
 import { descargarCSV } from "@/lib/csv";
 import { crearCliente } from "@/lib/clientesService";
 import { asegurarTags } from "@/lib/tagsService";
+import { TagPicker } from "@/components/TagPicker";
 import { useSesion } from "@/lib/session-context";
 import { REGION_LABEL, Region } from "@/lib/constants";
 
@@ -16,6 +17,7 @@ export default function ImportarClientesPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [filas, setFilas] = useState<FilaClienteCSV[] | null>(null);
   const [nombreArchivo, setNombreArchivo] = useState("");
+  const [tagLote, setTagLote] = useState<string | null>(null);
   const [importando, setImportando] = useState(false);
   const [progreso, setProgreso] = useState(0);
   const [resultado, setResultado] = useState<{ ok: number; error: number } | null>(null);
@@ -31,7 +33,7 @@ export default function ImportarClientesPage() {
         "fecha_inscripcion",
         "mensaje_bienvenida",
         "notas",
-        "tags",
+        "vendedor",
       ],
       [
         [
@@ -42,7 +44,7 @@ export default function ImportarClientesPage() {
           "2026-06-15",
           "si",
           "Contactado en evento",
-          "Certificación 2026, VIP",
+          "María López",
         ],
       ]
     );
@@ -67,9 +69,8 @@ export default function ImportarClientesPage() {
     let ok = 0;
     let error = 0;
 
-    const todosLosTags = validas.flatMap((f) => f.tags);
-    if (todosLosTags.length > 0) {
-      await asegurarTags(todosLosTags, sesion.nombre);
+    if (tagLote) {
+      await asegurarTags([tagLote], sesion.nombre);
     }
 
     for (const fila of validas) {
@@ -80,9 +81,10 @@ export default function ImportarClientesPage() {
           telefono: fila.telefono,
           notas: fila.notas,
           region: fila.region,
+          vendedor: fila.vendedor,
           fechaInscripcion: fila.fechaInscripcion ?? undefined,
           mensajeBienvenida: fila.mensajeBienvenida,
-          tags: fila.tags,
+          tags: tagLote ? [tagLote] : [],
           autor: sesion.nombre,
           autorRol: sesion.rol,
           origen: "csv",
@@ -112,7 +114,7 @@ export default function ImportarClientesPage() {
         </h1>
         <p className="text-sm text-muted">
           Sube un archivo con columnas nombre, email, telefono, region (MX o US), fecha_inscripcion
-          (AAAA-MM-DD), mensaje_bienvenida (si/no), notas y tags (separados por coma).
+          (AAAA-MM-DD), mensaje_bienvenida (si/no), notas y vendedor (opcional).
         </p>
       </div>
 
@@ -148,6 +150,23 @@ export default function ImportarClientesPage() {
             />
           </div>
 
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted">
+              Tag para todo el lote (opcional)
+            </span>
+            {tagLote ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-dim px-3 py-1 text-xs font-medium text-primary-deep">
+                <TagIcon className="h-3 w-3" strokeWidth={2} />
+                {tagLote}
+                <button onClick={() => setTagLote(null)} title="Quitar tag">
+                  <X className="h-3 w-3" strokeWidth={2.5} />
+                </button>
+              </span>
+            ) : (
+              <TagPicker seleccionados={[]} onAgregar={(tags) => setTagLote(tags[0] ?? null)} />
+            )}
+          </div>
+
           {filas && (
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <span className="flex items-center gap-1.5 text-success">
@@ -179,7 +198,7 @@ export default function ImportarClientesPage() {
                     <th className="px-4 py-3 font-medium">Inscripción</th>
                     <th className="px-4 py-3 font-medium">Bienvenida</th>
                     <th className="px-4 py-3 font-medium">Notas</th>
-                    <th className="px-4 py-3 font-medium">Tags</th>
+                    <th className="px-4 py-3 font-medium">Vendedor</th>
                     <th className="px-4 py-3 font-medium">Estado</th>
                   </tr>
                 </thead>
@@ -203,7 +222,7 @@ export default function ImportarClientesPage() {
                         />
                       </td>
                       <td className="px-4 py-3 text-muted">{f.notas || "—"}</td>
-                      <td className="px-4 py-3 text-muted">{f.tags.join(", ") || "—"}</td>
+                      <td className="px-4 py-3 text-muted">{f.vendedor || "—"}</td>
                       <td className="px-4 py-3">
                         {f.valido ? (
                           <span className="text-success">Listo</span>

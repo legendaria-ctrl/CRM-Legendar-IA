@@ -14,6 +14,7 @@ export default function NuevoClientePage() {
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [notas, setNotas] = useState("");
+  const [vendedor, setVendedor] = useState("");
   const [region, setRegion] = useState<Region>(REGIONES.MX);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export default function NuevoClientePage() {
         email,
         telefono,
         notas,
+        vendedor,
         region,
         autor: sesion.nombre,
         autorRol: sesion.rol,
@@ -104,6 +106,18 @@ export default function NuevoClientePage() {
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
               placeholder="+52 55 1234 5678"
+              className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted">
+              Vendedor
+            </span>
+            <input
+              value={vendedor}
+              onChange={(e) => setVendedor(e.target.value)}
+              placeholder="Nombre del vendedor (si es distinto a quien lo registra)"
               className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
             />
           </label>

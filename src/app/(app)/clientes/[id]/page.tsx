@@ -6,12 +6,10 @@ import {
   suscribirCliente,
   suscribirEventos,
   eliminarCliente,
-  ClienteDoc,
-  EventoDoc,
-} from "@/lib/clientesService";
-import {
   agregarTagsCliente,
   quitarTagCliente,
+  ClienteDoc,
+  EventoDoc,
 } from "@/lib/clientesService";
 import { estadoActual, estadoBienvenidaDe, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -21,7 +19,7 @@ import { ClientActions } from "@/components/ClientActions";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { TagPicker } from "@/components/TagPicker";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
-import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle, Tag as TagIcon, X } from "lucide-react";
+import { Mail, Phone, User, UserCheck, Ticket, Globe2, Trash2, LoaderCircle, Tag as TagIcon, X } from "lucide-react";
 import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 
@@ -120,6 +118,12 @@ export default function ClienteDetallePage() {
                 <User className="h-3.5 w-3.5" strokeWidth={1.5} />
                 Agregado por: {cliente.creadoPor}
               </span>
+              {cliente.vendedor && (
+                <span className="flex items-center gap-1.5">
+                  <UserCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  Vendedor: {cliente.vendedor}
+                </span>
+              )}
               {cliente.region && (
                 <span className="flex items-center gap-1.5">
                   <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
