@@ -202,9 +202,9 @@ export default function ImportarClientesPage() {
                     <th className="px-4 py-3 font-medium">Correo</th>
                     <th className="px-4 py-3 font-medium">Teléfono</th>
                     <th className="px-4 py-3 font-medium">Región</th>
+                    <th className="px-4 py-3 font-medium">Vendedor</th>
                     <th className="px-4 py-3 font-medium">Inscripción</th>
                     <th className="px-4 py-3 font-medium">Notas</th>
-                    <th className="px-4 py-3 font-medium">Vendedor</th>
                     <th className="px-4 py-3 font-medium">Estado</th>
                   </tr>
                 </thead>
@@ -217,12 +217,9 @@ export default function ImportarClientesPage() {
                       <td className="px-4 py-3 text-muted">
                         {f.region ? REGION_LABEL[f.region as Region] : "—"}
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {f.fechaInscripcion ? f.fechaInscripcion.toLocaleDateString("es-MX") : "Hoy"}
-                      </td>
-                      <td className="px-4 py-3 text-muted">{f.notas || "—"}</td>
                       <td className="px-4 py-3">
                         <VendedorSelect
+                          compacto
                           valor={vendedoresPorFila[i] ?? null}
                           onChange={(nombre) =>
                             setVendedoresPorFila((prev) => {
@@ -233,12 +230,15 @@ export default function ImportarClientesPage() {
                           }
                         />
                         {f.vendedor && !vendedoresAprobados.includes(f.vendedor) && (
-                          <p className="mt-1 text-[11px] text-warning">
-                            &quot;{f.vendedor}&quot; no coincide con ningún vendedor dado de alta; no se
-                            asignará salvo que elijas uno.
+                          <p className="mt-1 whitespace-nowrap text-[10px] text-warning">
+                            &quot;{f.vendedor}&quot; no coincide, elige uno
                           </p>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-muted">
+                        {f.fechaInscripcion ? f.fechaInscripcion.toLocaleDateString("es-MX") : "Hoy"}
+                      </td>
+                      <td className="px-4 py-3 text-muted">{f.notas || "—"}</td>
                       <td className="px-4 py-3">
                         {f.valido ? (
                           <span className="text-success">Listo</span>

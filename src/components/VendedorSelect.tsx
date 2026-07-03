@@ -9,10 +9,12 @@ export function VendedorSelect({
   valor,
   onChange,
   placeholder = "Sin vendedor asignado",
+  compacto = false,
 }: {
   valor: string | null;
   onChange: (nombre: string | null) => void | Promise<void>;
   placeholder?: string;
+  compacto?: boolean;
 }) {
   const [vendedores, setVendedores] = useState<string[]>([]);
   const [abierto, setAbierto] = useState(false);
@@ -44,11 +46,17 @@ export function VendedorSelect({
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="flex min-w-[220px] items-center justify-between gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+        className={`flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-2xl border border-silver-deep/60 bg-surface-2 text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10 ${
+          compacto ? "min-w-[160px] px-3 py-1.5 text-xs" : "min-w-[220px] px-4 py-3 text-sm"
+        }`}
       >
-        <span className={`flex items-center gap-1.5 ${valor ? "text-foreground" : "text-muted/60"}`}>
+        <span
+          className={`flex min-w-0 items-center gap-1.5 truncate ${
+            valor ? "text-foreground" : "text-muted/60"
+          }`}
+        >
           <UserCheck className="h-3.5 w-3.5 flex-none" strokeWidth={1.75} />
-          {valor || placeholder}
+          <span className="truncate">{valor || placeholder}</span>
         </span>
         <ChevronDown className="h-4 w-4 flex-none text-muted" strokeWidth={1.75} />
       </button>
