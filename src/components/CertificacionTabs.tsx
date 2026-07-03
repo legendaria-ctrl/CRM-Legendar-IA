@@ -26,10 +26,10 @@ export function CertificacionTabs() {
               key={cert.id}
               onClick={() => irACertificacion(cert.id)}
               title={cert.nombre}
-              className="flex h-14 flex-none items-center rounded-2xl bg-primary px-4 shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)] transition-all duration-500 ease-spring"
+              className="flex h-11 flex-none items-center overflow-visible rounded-2xl bg-primary px-4 shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)] transition-all duration-500 ease-spring"
             >
               {cert.logo ? (
-                <span className="relative h-10 w-24 flex-none">
+                <span className="relative h-24 w-32 flex-none">
                   <Image src={cert.logo} alt={cert.nombre} fill className="object-contain" />
                 </span>
               ) : (
@@ -42,7 +42,7 @@ export function CertificacionTabs() {
         <button
           disabled
           title="Agregar certificación (próximamente)"
-          className="flex h-14 flex-none items-center gap-1.5 rounded-2xl border border-dashed border-silver-deep/60 px-4 text-xs font-medium text-muted/60"
+          className="flex h-11 flex-none items-center gap-1.5 rounded-2xl border border-dashed border-silver-deep/60 px-3 py-2.5 text-xs font-medium text-muted/60"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2} />
           Agregar
