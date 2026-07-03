@@ -69,7 +69,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="bg-brand relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4 py-16">
+    <main
+      className="bg-brand relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4 pb-16"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 4rem)" }}
+    >
       <div className="relative w-full max-w-md">
         <div className="mb-10 flex flex-col items-center gap-4 text-center">
           <div className="relative h-24 w-24">
