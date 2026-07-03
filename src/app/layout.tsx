@@ -22,6 +22,11 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Certificaciones",
   },
+  other: {
+    // Next solo emite "mobile-web-app-capable" (genérico); iOS Safari
+    // necesita además esta específica para abrir en modo standalone.
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
