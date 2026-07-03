@@ -65,6 +65,7 @@ export default function DashboardPage() {
   const [filtroEstado, setFiltroEstado] = useState<string[]>([]);
   const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
   const [filtroBienvenida, setFiltroBienvenida] = useState<string[]>([]);
+  const [filtroTags, setFiltroTags] = useState<string[]>([]);
   const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [procesandoLote, setProcesandoLote] = useState(false);
@@ -101,9 +102,11 @@ export default function DashboardPage() {
         !filtroBienvenida.includes(estadoBienvenidaDe(c.mensajeBienvenida))
       )
         return false;
+      if (filtroTags.length > 0 && !(c.tags ?? []).some((t) => filtroTags.includes(t)))
+        return false;
       return true;
     });
-  }, [conEstado, busqueda, filtroEstado, filtroRegion, filtroBienvenida]);
+  }, [conEstado, busqueda, filtroEstado, filtroRegion, filtroBienvenida, filtroTags]);
 
   const ordenados = useMemo(() => {
     const copia = [...filtrados];
@@ -119,17 +122,19 @@ export default function DashboardPage() {
     busqueda.trim() !== "" ||
     filtroEstado.length > 0 ||
     filtroRegion !== OPCION_TODOS ||
-    filtroBienvenida.length > 0;
+    filtroBienvenida.length > 0 ||
+    filtroTags.length > 0;
 
   useEffect(() => {
     setSeleccionados(new Set());
-  }, [busqueda, filtroEstado, filtroRegion, filtroBienvenida]);
+  }, [busqueda, filtroEstado, filtroRegion, filtroBienvenida, filtroTags]);
 
   function limpiarFiltros() {
     setBusqueda("");
     setFiltroEstado([]);
     setFiltroRegion(OPCION_TODOS);
     setFiltroBienvenida([]);
+    setFiltroTags([]);
   }
 
   function alternarSeleccion(id: string) {
@@ -326,6 +331,13 @@ export default function DashboardPage() {
               opciones={OPCIONES_BIENVENIDA}
               seleccionados={filtroBienvenida}
               onChange={setFiltroBienvenida}
+            />
+
+            <FilterMultiSelect
+              label="Todos los tags"
+              opciones={catalogoTags.map((t) => ({ value: t.nombre, label: t.nombre }))}
+              seleccionados={filtroTags}
+              onChange={setFiltroTags}
             />
 
             {hayFiltrosActivos && (
