@@ -3,16 +3,36 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Check, X, ShieldAlert, Clock, UserCheck, UserX, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  X,
+  ShieldAlert,
+  Clock,
+  UserCheck,
+  UserX,
+  TriangleAlert,
+  UserPlus,
+  LoaderCircle,
+} from "lucide-react";
 import { useSesion } from "@/lib/session-context";
-import { suscribirVendedores, decidirSolicitud, normalizarNombre, VendedorDoc } from "@/lib/vendedoresService";
-import { ESTADOS_SOLICITUD } from "@/lib/constants";
+import {
+  suscribirVendedores,
+  decidirSolicitud,
+  crearVendedorAprobado,
+  normalizarNombre,
+  VendedorDoc,
+} from "@/lib/vendedoresService";
+import { ESTADOS_SOLICITUD, ROLES, Rol } from "@/lib/constants";
 import { nombresParecidos } from "@/lib/similitud";
 
 export default function VendedoresPage() {
   const { sesion, cargando } = useSesion();
   const [vendedores, setVendedores] = useState<VendedorDoc[] | null>(null);
   const [procesando, setProcesando] = useState<string | null>(null);
+  const [nombreNuevo, setNombreNuevo] = useState("");
+  const [rolNuevo, setRolNuevo] = useState<Rol>(ROLES.VENDEDOR);
+  const [creando, setCreando] = useState(false);
+  const [errorCrear, setErrorCrear] = useState<string | null>(null);
 
   useEffect(() => {
     if (sesion?.rol !== "ADMIN") return;
@@ -47,6 +67,20 @@ export default function VendedoresPage() {
     }
   }
 
+  async function handleCrear() {
+    if (!sesion || !nombreNuevo.trim() || creando) return;
+    setCreando(true);
+    setErrorCrear(null);
+    try {
+      await crearVendedorAprobado(nombreNuevo, sesion.nombre, rolNuevo);
+      setNombreNuevo("");
+    } catch (err) {
+      setErrorCrear(err instanceof Error ? err.message : "No se pudo agregar a la persona.");
+    } finally {
+      setCreando(false);
+    }
+  }
+
   function revocar(v: VendedorDoc) {
     const confirmado = window.confirm(
       `¿Revocar el acceso de "${v.nombre}"? No podrá entrar hasta que lo vuelvas a aprobar.`
@@ -61,7 +95,10 @@ export default function VendedoresPage() {
   function posibleDuplicado(pendiente: VendedorDoc): VendedorDoc | undefined {
     const normalizado = normalizarNombre(pendiente.nombre);
     return aprobados.find(
-      (ap) => ap.id !== pendiente.id && nombresParecidos(normalizado, normalizarNombre(ap.nombre))
+      (ap) =>
+        ap.id !== pendiente.id &&
+        ap.rol === pendiente.rol &&
+        nombresParecidos(normalizado, normalizarNombre(ap.nombre))
     );
   }
 
@@ -73,9 +110,70 @@ export default function VendedoresPage() {
         </span>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Vendedores</h1>
         <p className="text-sm text-muted">
-          Aprueba a un vendedor la primera vez que intenta entrar. Después de aprobado, debe usar
-          siempre el mismo nombre.
+          Aprueba a un vendedor la primera vez que intenta entrar, o agrégalo tú directamente ya
+          aprobado. Después de aprobado, debe usar siempre el mismo nombre.
         </p>
+      </div>
+
+      <div className="shell rounded-[2rem] p-2 diffused-lg">
+        <div className="core flex flex-col gap-3 rounded-[calc(2rem-0.5rem)] p-6">
+          <h3 className="flex items-center gap-2 text-sm font-medium uppercase tracking-[0.15em] text-muted">
+            <UserPlus className="h-4 w-4 text-primary" strokeWidth={1.5} />
+            Agregar persona
+          </h3>
+          <p className="text-xs text-muted">
+            Se agrega ya aprobada. Dale este nombre exacto junto con la clave de acceso
+            compartida de su rol para que pueda entrar.
+          </p>
+          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-surface-2 p-1 sm:w-64">
+            <button
+              type="button"
+              onClick={() => setRolNuevo(ROLES.VENDEDOR)}
+              className={`rounded-xl py-2 text-sm font-medium transition-all duration-500 ease-spring ${
+                rolNuevo === ROLES.VENDEDOR
+                  ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
+                  : "text-muted"
+              }`}
+            >
+              Vendedor
+            </button>
+            <button
+              type="button"
+              onClick={() => setRolNuevo(ROLES.ADMIN)}
+              className={`rounded-xl py-2 text-sm font-medium transition-all duration-500 ease-spring ${
+                rolNuevo === ROLES.ADMIN
+                  ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
+                  : "text-muted"
+              }`}
+            >
+              Admin
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={nombreNuevo}
+              onChange={(e) => setNombreNuevo(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCrear()}
+              placeholder={rolNuevo === ROLES.ADMIN ? "Nombre del admin" : "Nombre del vendedor"}
+              className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+            />
+            <button
+              onClick={handleCrear}
+              disabled={!nombreNuevo.trim() || creando}
+              className="group flex items-center gap-2 rounded-full bg-primary py-1 pl-5 pr-1 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
+            >
+              <span className="py-2">Agregar</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform duration-500 ease-spring group-hover:translate-x-1">
+                {creando ? (
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
+                ) : (
+                  <UserPlus className="h-3.5 w-3.5" strokeWidth={1.75} />
+                )}
+              </span>
+            </button>
+          </div>
+          {errorCrear && <p className="text-sm text-danger">{errorCrear}</p>}
+        </div>
       </div>
 
       <div className="shell rounded-[2rem] p-2 diffused-lg">
@@ -99,7 +197,18 @@ export default function VendedoresPage() {
                   className="flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">{v.nombre}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground">{v.nombre}</p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
+                          v.rol === ROLES.ADMIN
+                            ? "bg-primary/10 text-primary"
+                            : "bg-silver text-muted"
+                        }`}
+                      >
+                        {v.rol === ROLES.ADMIN ? "Admin" : "Vendedor"}
+                      </span>
+                    </div>
                     <p className="text-xs text-muted">
                       {v.creadoEn
                         ? `Solicitó acceso el ${format(v.creadoEn.toDate(), "d MMM yyyy, HH:mm", { locale: es })}`
@@ -157,7 +266,18 @@ export default function VendedoresPage() {
                       <UserX className="h-4 w-4 text-danger" strokeWidth={1.5} />
                     )}
                     <div>
-                      <p className="text-sm font-medium text-foreground">{v.nombre}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">{v.nombre}</p>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
+                            v.rol === ROLES.ADMIN
+                              ? "bg-primary/10 text-primary"
+                              : "bg-silver text-muted"
+                          }`}
+                        >
+                          {v.rol === ROLES.ADMIN ? "Admin" : "Vendedor"}
+                        </span>
+                      </div>
                       <p className="text-xs text-muted">
                         {v.estado === ESTADOS_SOLICITUD.APROBADO ? "Aprobado" : "Rechazado"} por{" "}
                         {v.decididoPor ?? "—"}

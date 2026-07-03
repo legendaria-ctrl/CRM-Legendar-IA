@@ -39,28 +39,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Clave de acceso incorrecta" }, { status: 401 });
   }
 
-  // Los vendedores necesitan aprobación de un admin la primera vez que usan
-  // un nombre. Así se evita que cambien de "usuario" cada vez que quieran.
-  if (rol === "VENDEDOR") {
-    const estadoSolicitud = await verificarOCrearSolicitud(nombre.trim());
+  // Tanto vendedores como admins necesitan aprobación la primera vez que usan
+  // un nombre para ese rol. Así se evita que cambien de "usuario" cada vez
+  // que quieran, y que cualquiera con la clave entre como admin sin control.
+  const estadoSolicitud = await verificarOCrearSolicitud(nombre.trim(), rol);
 
-    if (estadoSolicitud === ESTADOS_SOLICITUD.PENDIENTE) {
-      return NextResponse.json(
-        {
-          error:
-            "Tu acceso está pendiente de aprobación. Pídele a un administrador que te apruebe en la sección Vendedores.",
-          pendiente: true,
-        },
-        { status: 403 }
-      );
-    }
+  if (estadoSolicitud === ESTADOS_SOLICITUD.PENDIENTE) {
+    return NextResponse.json(
+      {
+        error:
+          "Tu acceso está pendiente de aprobación. Pídele a un administrador que te apruebe en la sección Vendedores.",
+        pendiente: true,
+      },
+      { status: 403 }
+    );
+  }
 
-    if (estadoSolicitud === ESTADOS_SOLICITUD.RECHAZADO) {
-      return NextResponse.json(
-        { error: "Tu acceso fue rechazado por un administrador." },
-        { status: 403 }
-      );
-    }
+  if (estadoSolicitud === ESTADOS_SOLICITUD.RECHAZADO) {
+    return NextResponse.json(
+      { error: "Tu acceso fue rechazado por un administrador." },
+      { status: 403 }
+    );
   }
 
   const token = await firmarSesion({ nombre: nombre.trim(), rol });
