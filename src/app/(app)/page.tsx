@@ -7,12 +7,15 @@ import {
   ClienteDoc,
   enviarInvitacion,
   actualizarMensajeBienvenida,
+  agregarTagsCliente,
 } from "@/lib/clientesService";
 import { estadoActual, estaActivo, estadoBienvenidaDe, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { InvitacionToggle } from "@/components/InvitacionToggle";
 import { FilterMultiSelect } from "@/components/FilterMultiSelect";
+import { TagPicker } from "@/components/TagPicker";
+import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { useSesion } from "@/lib/session-context";
 import {
   ESTADOS_CLIENTE,
@@ -65,10 +68,15 @@ export default function DashboardPage() {
   const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [procesandoLote, setProcesandoLote] = useState(false);
+  const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
-    return () => unsub();
+    const unsubTags = suscribirTags(setCatalogoTags);
+    return () => {
+      unsub();
+      unsubTags();
+    };
   }, []);
 
   const conEstado = useMemo(
@@ -156,6 +164,13 @@ export default function DashboardPage() {
     } finally {
       setProcesandoLote(false);
     }
+  }
+
+  async function aplicarTagsEnLote(tags: string[]) {
+    if (!sesion || seleccionados.size === 0) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    const objetivos = ordenados.filter((c) => seleccionados.has(c.id));
+    await Promise.all(objetivos.map((c) => agregarTagsCliente(c.id, c.nombre, autor, tags)));
   }
 
   function exportarCSV() {
@@ -356,6 +371,7 @@ export default function DashboardPage() {
               )}
               Marcar MB enviado
             </button>
+            <TagPicker seleccionados={[]} onAgregar={aplicarTagsEnLote} />
             <button
               onClick={() => setSeleccionados(new Set())}
               className="ml-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger"
@@ -450,6 +466,23 @@ export default function DashboardPage() {
                           {cliente.region &&
                             ` · ${REGION_LABEL[cliente.region as Region] ?? cliente.region}`}
                         </p>
+                        {(cliente.tags ?? []).length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(cliente.tags ?? []).map((tag) => {
+                              const color =
+                                catalogoTags.find((t) => t.nombre === tag)?.color ??
+                                "bg-silver text-muted";
+                              return (
+                                <span
+                                  key={tag}
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${color}`}
+                                >
+                                  {tag}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-none items-center gap-3">
                         {activo && dias !== null && (

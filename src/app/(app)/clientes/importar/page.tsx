@@ -6,6 +6,7 @@ import { UploadCloud, Download, CheckCircle2, XCircle, LoaderCircle, ArrowUpRigh
 import { parsearCSV, filasAClientes, FilaClienteCSV } from "@/lib/csvParse";
 import { descargarCSV } from "@/lib/csv";
 import { crearCliente } from "@/lib/clientesService";
+import { asegurarTags } from "@/lib/tagsService";
 import { useSesion } from "@/lib/session-context";
 import { REGION_LABEL, Region } from "@/lib/constants";
 
@@ -22,7 +23,16 @@ export default function ImportarClientesPage() {
   function plantilla() {
     descargarCSV(
       "plantilla_clientes.csv",
-      ["nombre", "email", "telefono", "region", "fecha_inscripcion", "mensaje_bienvenida", "notas"],
+      [
+        "nombre",
+        "email",
+        "telefono",
+        "region",
+        "fecha_inscripcion",
+        "mensaje_bienvenida",
+        "notas",
+        "tags",
+      ],
       [
         [
           "Juan Pérez",
@@ -32,6 +42,7 @@ export default function ImportarClientesPage() {
           "2026-06-15",
           "si",
           "Contactado en evento",
+          "Certificación 2026, VIP",
         ],
       ]
     );
@@ -56,6 +67,11 @@ export default function ImportarClientesPage() {
     let ok = 0;
     let error = 0;
 
+    const todosLosTags = validas.flatMap((f) => f.tags);
+    if (todosLosTags.length > 0) {
+      await asegurarTags(todosLosTags, sesion.nombre);
+    }
+
     for (const fila of validas) {
       try {
         await crearCliente({
@@ -66,6 +82,7 @@ export default function ImportarClientesPage() {
           region: fila.region,
           fechaInscripcion: fila.fechaInscripcion ?? undefined,
           mensajeBienvenida: fila.mensajeBienvenida,
+          tags: fila.tags,
           autor: sesion.nombre,
           autorRol: sesion.rol,
           origen: "csv",
@@ -95,7 +112,7 @@ export default function ImportarClientesPage() {
         </h1>
         <p className="text-sm text-muted">
           Sube un archivo con columnas nombre, email, telefono, region (MX o US), fecha_inscripcion
-          (AAAA-MM-DD), mensaje_bienvenida (si/no) y notas.
+          (AAAA-MM-DD), mensaje_bienvenida (si/no), notas y tags (separados por coma).
         </p>
       </div>
 
@@ -162,6 +179,7 @@ export default function ImportarClientesPage() {
                     <th className="px-4 py-3 font-medium">Inscripción</th>
                     <th className="px-4 py-3 font-medium">Bienvenida</th>
                     <th className="px-4 py-3 font-medium">Notas</th>
+                    <th className="px-4 py-3 font-medium">Tags</th>
                     <th className="px-4 py-3 font-medium">Estado</th>
                   </tr>
                 </thead>
@@ -185,6 +203,7 @@ export default function ImportarClientesPage() {
                         />
                       </td>
                       <td className="px-4 py-3 text-muted">{f.notas || "—"}</td>
+                      <td className="px-4 py-3 text-muted">{f.tags.join(", ") || "—"}</td>
                       <td className="px-4 py-3">
                         {f.valido ? (
                           <span className="text-success">Listo</span>

@@ -1,5 +1,7 @@
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -34,6 +36,7 @@ export type ClienteDoc = {
   mensajeBienvenida: EstadoBienvenida | boolean;
   pausada: boolean;
   fechaPausa: Timestamp | null;
+  tags: string[];
   creadoPor: string;
   creadoPorRol: string;
 };
@@ -107,6 +110,7 @@ export async function crearCliente(input: {
   region?: string;
   fechaInscripcion?: Date;
   mensajeBienvenida?: boolean;
+  tags?: string[];
   autor: string;
   autorRol: string;
   origen?: "manual" | "csv";
@@ -129,6 +133,7 @@ export async function crearCliente(input: {
       : ESTADOS_BIENVENIDA.PENDIENTE,
     pausada: false,
     fechaPausa: null,
+    tags: input.tags?.length ? Array.from(new Set(input.tags)) : [],
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
   });
@@ -313,6 +318,34 @@ export async function actualizarMensajeBienvenida(
     autor,
     BIENVENIDA_NOTA[estado]
   );
+}
+
+export async function agregarTagsCliente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  tags: string[]
+) {
+  const unicos = Array.from(new Set(tags.map((t) => t.trim()).filter(Boolean)));
+  if (unicos.length === 0) return;
+  await updateDoc(doc(db, "clientes", clienteId), { tags: arrayUnion(...unicos) });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.TAGS,
+    autor,
+    `Se agregaron etiquetas: ${unicos.join(", ")}`
+  );
+}
+
+export async function quitarTagCliente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  tag: string
+) {
+  await updateDoc(doc(db, "clientes", clienteId), { tags: arrayRemove(tag) });
+  await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.TAGS, autor, `Se quitó la etiqueta: ${tag}`);
 }
 
 export async function eliminarCliente(clienteId: string, clienteNombre: string, autor: Autor) {

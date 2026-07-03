@@ -13,6 +13,7 @@ import {
   Pause,
   Play,
   CalendarPlus,
+  Tag,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -29,6 +30,7 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   PAUSA: Pause,
   REANUDACION: Play,
   EXTENSION: CalendarPlus,
+  TAGS: Tag,
 };
 
 export type EventoTimelineItem = {

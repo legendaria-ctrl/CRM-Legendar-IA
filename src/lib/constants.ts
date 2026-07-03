@@ -46,6 +46,7 @@ export const TIPOS_EVENTO = {
   PAUSA: "PAUSA",
   REANUDACION: "REANUDACION",
   EXTENSION: "EXTENSION",
+  TAGS: "TAGS",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -63,7 +64,19 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   PAUSA: "Membresía pausada",
   REANUDACION: "Membresía reanudada",
   EXTENSION: "Membresía extendida",
+  TAGS: "Etiquetas actualizadas",
 };
+
+export const COLORES_TAG = [
+  "bg-primary/10 text-primary",
+  "bg-success/10 text-success",
+  "bg-warning/10 text-warning",
+  "bg-danger/10 text-danger",
+  "bg-purple-500/10 text-purple-600",
+  "bg-pink-500/10 text-pink-600",
+  "bg-cyan-500/10 text-cyan-600",
+  "bg-amber-500/10 text-amber-600",
+] as const;
 
 export const MEMBRESIA_DIAS = 365;
 

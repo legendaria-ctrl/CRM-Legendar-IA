@@ -9,13 +9,19 @@ import {
   ClienteDoc,
   EventoDoc,
 } from "@/lib/clientesService";
+import {
+  agregarTagsCliente,
+  quitarTagCliente,
+} from "@/lib/clientesService";
 import { estadoActual, estadoBienvenidaDe, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Timeline } from "@/components/Timeline";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ClientActions } from "@/components/ClientActions";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
-import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle } from "lucide-react";
+import { TagPicker } from "@/components/TagPicker";
+import { suscribirTags, TagDoc } from "@/lib/tagsService";
+import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle, Tag as TagIcon, X } from "lucide-react";
 import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 
@@ -28,13 +34,16 @@ export default function ClienteDetallePage() {
 
   const [cliente, setCliente] = useState<ClienteDoc | null | undefined>(undefined);
   const [eventos, setEventos] = useState<EventoDoc[]>([]);
+  const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
 
   useEffect(() => {
     const unsubCliente = suscribirCliente(id, setCliente);
     const unsubEventos = suscribirEventos(id, setEventos);
+    const unsubTags = suscribirTags(setCatalogoTags);
     return () => {
       unsubCliente();
       unsubEventos();
+      unsubTags();
     };
   }, [id]);
 
@@ -53,6 +62,16 @@ export default function ClienteDetallePage() {
   const beneficios = beneficiosDeRegion(cliente.region);
   const ultimoEvento = eventos[eventos.length - 1];
   const puedeDeshacerAceptacion = ultimoEvento?.tipo === TIPOS_EVENTO.INVITACION_ACEPTADA;
+
+  async function handleAgregarTags(tags: string[]) {
+    if (!sesion || !cliente) return;
+    await agregarTagsCliente(cliente.id, cliente.nombre, { nombre: sesion.nombre, rol: sesion.rol }, tags);
+  }
+
+  async function handleQuitarTag(tag: string) {
+    if (!sesion || !cliente) return;
+    await quitarTagCliente(cliente.id, cliente.nombre, { nombre: sesion.nombre, rol: sesion.rol }, tag);
+  }
 
   async function handleEliminar() {
     if (!sesion || !cliente) return;
@@ -123,6 +142,32 @@ export default function ClienteDetallePage() {
               estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="shell rounded-[2rem] p-2 diffused-lg">
+        <div className="core flex flex-wrap items-center gap-2 rounded-[calc(2rem-0.5rem)] p-6">
+          <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted">Tags</span>
+          {(cliente.tags ?? []).map((tag) => {
+            const color = catalogoTags.find((t) => t.nombre === tag)?.color ?? "bg-silver text-muted";
+            return (
+              <span
+                key={tag}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${color}`}
+              >
+                <TagIcon className="h-3 w-3" strokeWidth={2} />
+                {tag}
+                <button
+                  onClick={() => handleQuitarTag(tag)}
+                  className="ml-0.5 rounded-full p-0.5 transition-colors duration-200 hover:bg-black/10"
+                  title="Quitar tag"
+                >
+                  <X className="h-3 w-3" strokeWidth={2.5} />
+                </button>
+              </span>
+            );
+          })}
+          <TagPicker seleccionados={cliente.tags ?? []} onAgregar={handleAgregarTags} />
         </div>
       </div>
 

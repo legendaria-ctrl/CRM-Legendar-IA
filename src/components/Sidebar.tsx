@@ -11,12 +11,14 @@ import {
   History,
   Users,
   UploadCloud,
+  Tag,
 } from "lucide-react";
 
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
   { href: "/clientes/nuevo", label: "Nuevo cliente", icon: UserPlus },
   { href: "/clientes/importar", label: "Importar CSV", icon: UploadCloud },
+  { href: "/tags", label: "Tags", icon: Tag },
   { href: "/actividad", label: "Actividad", icon: History },
 ];
 
