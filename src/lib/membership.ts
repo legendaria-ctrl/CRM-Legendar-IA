@@ -1,5 +1,17 @@
 import { Timestamp } from "firebase/firestore";
-import { ESTADOS_CLIENTE, EstadoCliente, MEMBRESIA_DIAS } from "./constants";
+import {
+  ESTADOS_CLIENTE,
+  EstadoCliente,
+  ESTADOS_BIENVENIDA,
+  EstadoBienvenida,
+  MEMBRESIA_DIAS,
+} from "./constants";
+
+export function estadoBienvenidaDe(valor: boolean | string | null | undefined): EstadoBienvenida {
+  if (valor === true) return ESTADOS_BIENVENIDA.ENVIADA;
+  if (valor === false || valor === null || valor === undefined) return ESTADOS_BIENVENIDA.PENDIENTE;
+  return valor as EstadoBienvenida;
+}
 
 export function fechaVencimientoDesde(fechaAceptacion: Date): Date {
   const vencimiento = new Date(fechaAceptacion);

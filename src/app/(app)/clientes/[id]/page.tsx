@@ -9,7 +9,7 @@ import {
   ClienteDoc,
   EventoDoc,
 } from "@/lib/clientesService";
-import { estadoActual, aFecha } from "@/lib/membership";
+import { estadoActual, estadoBienvenidaDe, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Timeline } from "@/components/Timeline";
 import { CountdownTimer } from "@/components/CountdownTimer";
@@ -113,13 +113,15 @@ export default function ClienteDetallePage() {
             )}
           </div>
 
-          <div className="flex flex-none items-center gap-2 rounded-2xl bg-surface-2 px-4 py-3">
+          <div className="flex flex-none flex-col items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted">
+              Bienvenida WA
+            </span>
             <MensajeBienvenidaToggle
               clienteId={cliente.id}
               clienteNombre={cliente.nombre}
-              enviado={cliente.mensajeBienvenida}
+              estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
             />
-            <span className="text-sm text-muted">Mensaje de bienvenida</span>
           </div>
         </div>
       </div>

@@ -13,7 +13,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { ESTADOS_CLIENTE, TIPOS_EVENTO } from "./constants";
+import { ESTADOS_CLIENTE, ESTADOS_BIENVENIDA, EstadoBienvenida, TIPOS_EVENTO } from "./constants";
 import { fechaVencimientoDesde } from "./membership";
 import { registrarActividad } from "./activityService";
 
@@ -31,7 +31,7 @@ export type ClienteDoc = {
   fechaInvitacion: Timestamp | null;
   fechaAceptacion: Timestamp | null;
   fechaVencimiento: Timestamp | null;
-  mensajeBienvenida: boolean;
+  mensajeBienvenida: EstadoBienvenida | boolean;
   pausada: boolean;
   fechaPausa: Timestamp | null;
   creadoPor: string;
@@ -124,7 +124,9 @@ export async function crearCliente(input: {
     fechaInvitacion: null,
     fechaAceptacion: null,
     fechaVencimiento: null,
-    mensajeBienvenida: input.mensajeBienvenida ?? false,
+    mensajeBienvenida: input.mensajeBienvenida
+      ? ESTADOS_BIENVENIDA.ENVIADA
+      : ESTADOS_BIENVENIDA.PENDIENTE,
     pausada: false,
     fechaPausa: null,
     creadoPor: input.autor,
@@ -291,19 +293,25 @@ export async function agregarNota(
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.NOTA, autor, nota);
 }
 
+const BIENVENIDA_NOTA: Record<EstadoBienvenida, string> = {
+  PENDIENTE: "Mensaje de bienvenida marcado como pendiente",
+  ENVIADA: "Mensaje de bienvenida marcado como enviado",
+  INVALIDO: "Mensaje de bienvenida marcado como número inválido",
+};
+
 export async function actualizarMensajeBienvenida(
   clienteId: string,
   clienteNombre: string,
   autor: Autor,
-  enviado: boolean
+  estado: EstadoBienvenida
 ) {
-  await updateDoc(doc(db, "clientes", clienteId), { mensajeBienvenida: enviado });
+  await updateDoc(doc(db, "clientes", clienteId), { mensajeBienvenida: estado });
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.MENSAJE_BIENVENIDA,
     autor,
-    enviado ? "Mensaje de bienvenida marcado como enviado" : "Mensaje de bienvenida desmarcado"
+    BIENVENIDA_NOTA[estado]
   );
 }
 

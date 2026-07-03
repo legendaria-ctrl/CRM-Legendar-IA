@@ -8,15 +8,19 @@ import {
   enviarInvitacion,
   actualizarMensajeBienvenida,
 } from "@/lib/clientesService";
-import { estadoActual, estaActivo, diasRestantes, aFecha } from "@/lib/membership";
+import { estadoActual, estaActivo, estadoBienvenidaDe, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { InvitacionToggle } from "@/components/InvitacionToggle";
+import { FilterMultiSelect } from "@/components/FilterMultiSelect";
 import { useSesion } from "@/lib/session-context";
 import {
   ESTADOS_CLIENTE,
   ESTADO_LABEL,
   EstadoCliente,
+  ESTADOS_BIENVENIDA,
+  BIENVENIDA_LABEL,
+  EstadoBienvenida,
   REGIONES,
   REGION_LABEL,
   Region,
@@ -41,13 +45,23 @@ import {
 
 const OPCION_TODOS = "TODOS";
 
+const OPCIONES_ESTADO = Object.values(ESTADOS_CLIENTE).map((estado) => ({
+  value: estado,
+  label: ESTADO_LABEL[estado as EstadoCliente],
+}));
+
+const OPCIONES_BIENVENIDA = Object.values(ESTADOS_BIENVENIDA).map((estado) => ({
+  value: estado,
+  label: BIENVENIDA_LABEL[estado as EstadoBienvenida],
+}));
+
 export default function DashboardPage() {
   const { sesion } = useSesion();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<string>(OPCION_TODOS);
+  const [filtroEstado, setFiltroEstado] = useState<string[]>([]);
   const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
-  const [filtroBienvenida, setFiltroBienvenida] = useState<string>(OPCION_TODOS);
+  const [filtroBienvenida, setFiltroBienvenida] = useState<string[]>([]);
   const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [procesandoLote, setProcesandoLote] = useState(false);
@@ -72,12 +86,13 @@ export default function DashboardPage() {
           (c.telefono ?? "").toLowerCase().includes(texto);
         if (!coincide) return false;
       }
-      if (filtroEstado !== OPCION_TODOS && c.estadoCalculado !== filtroEstado) return false;
+      if (filtroEstado.length > 0 && !filtroEstado.includes(c.estadoCalculado)) return false;
       if (filtroRegion !== OPCION_TODOS && c.region !== filtroRegion) return false;
-      if (filtroBienvenida !== OPCION_TODOS) {
-        const enviado = filtroBienvenida === "SI";
-        if (c.mensajeBienvenida !== enviado) return false;
-      }
+      if (
+        filtroBienvenida.length > 0 &&
+        !filtroBienvenida.includes(estadoBienvenidaDe(c.mensajeBienvenida))
+      )
+        return false;
       return true;
     });
   }, [conEstado, busqueda, filtroEstado, filtroRegion, filtroBienvenida]);
@@ -94,15 +109,15 @@ export default function DashboardPage() {
 
   const hayFiltrosActivos =
     busqueda.trim() !== "" ||
-    filtroEstado !== OPCION_TODOS ||
+    filtroEstado.length > 0 ||
     filtroRegion !== OPCION_TODOS ||
-    filtroBienvenida !== OPCION_TODOS;
+    filtroBienvenida.length > 0;
 
   function limpiarFiltros() {
     setBusqueda("");
-    setFiltroEstado(OPCION_TODOS);
+    setFiltroEstado([]);
     setFiltroRegion(OPCION_TODOS);
-    setFiltroBienvenida(OPCION_TODOS);
+    setFiltroBienvenida([]);
   }
 
   function alternarSeleccion(id: string) {
@@ -132,8 +147,9 @@ export default function DashboardPage() {
             if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
             return enviarInvitacion(c.id, c.nombre, autor);
           }
-          if (c.mensajeBienvenida) return Promise.resolve();
-          return actualizarMensajeBienvenida(c.id, c.nombre, autor, true);
+          if (estadoBienvenidaDe(c.mensajeBienvenida) === ESTADOS_BIENVENIDA.ENVIADA)
+            return Promise.resolve();
+          return actualizarMensajeBienvenida(c.id, c.nombre, autor, ESTADOS_BIENVENIDA.ENVIADA);
         })
       );
       setSeleccionados(new Set());
@@ -156,7 +172,7 @@ export default function DashboardPage() {
         c.creadoPor,
         llegada ? llegada.toLocaleDateString("es-MX") : "",
         vencimiento ? vencimiento.toLocaleDateString("es-MX") : "",
-        c.mensajeBienvenida ? "Sí" : "No",
+        BIENVENIDA_LABEL[estadoBienvenidaDe(c.mensajeBienvenida)],
         c.notas ?? "",
       ];
     });
@@ -266,18 +282,12 @@ export default function DashboardPage() {
               {orden === "recientes" ? "Más nuevos primero" : "Más antiguos primero"}
             </button>
 
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className="rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50"
-            >
-              <option value={OPCION_TODOS}>Todos los estados</option>
-              {Object.values(ESTADOS_CLIENTE).map((estado) => (
-                <option key={estado} value={estado}>
-                  {ESTADO_LABEL[estado as EstadoCliente]}
-                </option>
-              ))}
-            </select>
+            <FilterMultiSelect
+              label="Todos los estados"
+              opciones={OPCIONES_ESTADO}
+              seleccionados={filtroEstado}
+              onChange={setFiltroEstado}
+            />
 
             <select
               value={filtroRegion}
@@ -292,15 +302,12 @@ export default function DashboardPage() {
               ))}
             </select>
 
-            <select
-              value={filtroBienvenida}
-              onChange={(e) => setFiltroBienvenida(e.target.value)}
-              className="rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50"
-            >
-              <option value={OPCION_TODOS}>Bienvenida: todos</option>
-              <option value="SI">Bienvenida enviada</option>
-              <option value="NO">Bienvenida pendiente</option>
-            </select>
+            <FilterMultiSelect
+              label="Bienvenida WA: todos"
+              opciones={OPCIONES_BIENVENIDA}
+              seleccionados={filtroBienvenida}
+              onChange={setFiltroBienvenida}
+            />
 
             {hayFiltrosActivos && (
               <button
@@ -461,7 +468,7 @@ export default function DashboardPage() {
                         <MensajeBienvenidaToggle
                           clienteId={cliente.id}
                           clienteNombre={cliente.nombre}
-                          enviado={cliente.mensajeBienvenida}
+                          estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
                           compacto
                         />
                         <ArrowUpRight

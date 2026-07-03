@@ -15,8 +15,21 @@ export type EstadoCliente = (typeof ESTADOS_CLIENTE)[keyof typeof ESTADOS_CLIENT
 export const ESTADO_LABEL: Record<EstadoCliente, string> = {
   NUEVO: "Nuevo",
   INVITACION_ENVIADA: "Invitación enviada",
-  ACTIVO: "Membresía activa",
+  ACTIVO: "Miembro",
   VENCIDO: "Vencido",
+};
+
+export const ESTADOS_BIENVENIDA = {
+  PENDIENTE: "PENDIENTE",
+  ENVIADA: "ENVIADA",
+  INVALIDO: "INVALIDO",
+} as const;
+export type EstadoBienvenida = (typeof ESTADOS_BIENVENIDA)[keyof typeof ESTADOS_BIENVENIDA];
+
+export const BIENVENIDA_LABEL: Record<EstadoBienvenida, string> = {
+  PENDIENTE: "Pendiente",
+  ENVIADA: "Enviada",
+  INVALIDO: "Número inválido",
 };
 
 export const TIPOS_EVENTO = {
