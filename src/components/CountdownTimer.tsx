@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Timer } from "lucide-react";
+import { Timer, Pause } from "lucide-react";
 
 function partes(msRestante: number) {
   const total = Math.max(0, msRestante);
@@ -13,28 +13,39 @@ function partes(msRestante: number) {
 }
 
 export function CountdownTimer({
-  fechaAceptacion,
+  fechaInicio,
   fechaVencimiento,
+  pausada = false,
+  fechaPausa = null,
 }: {
-  fechaAceptacion: string;
+  fechaInicio: string;
   fechaVencimiento: string;
+  pausada?: boolean;
+  fechaPausa?: string | null;
 }) {
-  const inicio = new Date(fechaAceptacion).getTime();
+  const inicio = new Date(fechaInicio).getTime();
   const fin = new Date(fechaVencimiento).getTime();
   const [ahora, setAhora] = useState<number | null>(null);
 
   useEffect(() => {
+    if (pausada) return;
     setAhora(Date.now());
     const id = setInterval(() => setAhora(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [pausada]);
 
-  if (ahora === null) return null;
+  const referencia = pausada
+    ? fechaPausa
+      ? new Date(fechaPausa).getTime()
+      : Date.now()
+    : ahora;
 
-  const restante = fin - ahora;
+  if (referencia === null) return null;
+
+  const restante = fin - referencia;
   const { dias, horas, minutos, segundos } = partes(restante);
   const vencida = restante <= 0;
-  const progreso = Math.min(100, Math.max(0, ((ahora - inicio) / (fin - inicio)) * 100));
+  const progreso = Math.min(100, Math.max(0, ((referencia - inicio) / (fin - inicio)) * 100));
 
   const unidades = [
     { valor: dias, label: "días" },
@@ -47,9 +58,17 @@ export function CountdownTimer({
     <div className="shell rounded-[2rem] p-2 diffused-lg">
       <div className="core rounded-[calc(2rem-0.5rem)] p-6">
         <div className="mb-5 flex items-center gap-2">
-          <Timer className="h-4 w-4 text-primary" strokeWidth={1.5} />
+          {pausada ? (
+            <Pause className="h-4 w-4 text-warning" strokeWidth={1.5} />
+          ) : (
+            <Timer className="h-4 w-4 text-primary" strokeWidth={1.5} />
+          )}
           <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
-            {vencida ? "Membresía vencida" : "Tiempo restante de membresía"}
+            {pausada
+              ? "Temporizador en pausa"
+              : vencida
+                ? "Membresía vencida"
+                : "Tiempo restante de membresía"}
           </span>
         </div>
 
@@ -57,12 +76,22 @@ export function CountdownTimer({
           {unidades.map(({ valor, label }) => (
             <div
               key={label}
-              className="flex flex-col items-center rounded-2xl bg-primary-dim py-4"
+              className={`flex flex-col items-center rounded-2xl py-4 ${
+                pausada ? "bg-warning/10" : "bg-primary-dim"
+              }`}
             >
-              <span className="font-mono text-2xl font-semibold tabular-nums text-primary-deep">
+              <span
+                className={`font-mono text-2xl font-semibold tabular-nums ${
+                  pausada ? "text-warning" : "text-primary-deep"
+                }`}
+              >
                 {String(valor).padStart(2, "0")}
               </span>
-              <span className="mt-1 text-[10px] uppercase tracking-wider text-primary-deep/60">
+              <span
+                className={`mt-1 text-[10px] uppercase tracking-wider ${
+                  pausada ? "text-warning/70" : "text-primary-deep/60"
+                }`}
+              >
                 {label}
               </span>
             </div>
@@ -72,7 +101,9 @@ export function CountdownTimer({
         <div className="mt-6">
           <div className="h-2 w-full overflow-hidden rounded-full bg-silver">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary-glow to-primary transition-all duration-1000 ease-spring"
+              className={`h-full rounded-full transition-all duration-1000 ease-spring ${
+                pausada ? "bg-warning" : "bg-gradient-to-r from-primary-glow to-primary"
+              }`}
               style={{ width: `${progreso}%` }}
             />
           </div>

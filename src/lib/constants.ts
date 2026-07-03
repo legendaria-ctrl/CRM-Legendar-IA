@@ -30,6 +30,9 @@ export const TIPOS_EVENTO = {
   IMPORTACION: "IMPORTACION",
   MENSAJE_BIENVENIDA: "MENSAJE_BIENVENIDA",
   RESTAURACION: "RESTAURACION",
+  PAUSA: "PAUSA",
+  REANUDACION: "REANUDACION",
+  EXTENSION: "EXTENSION",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -44,6 +47,9 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   IMPORTACION: "Cliente importado por CSV",
   MENSAJE_BIENVENIDA: "Mensaje de bienvenida",
   RESTAURACION: "Acción deshecha",
+  PAUSA: "Membresía pausada",
+  REANUDACION: "Membresía reanudada",
+  EXTENSION: "Membresía extendida",
 };
 
 export const MEMBRESIA_DIAS = 365;

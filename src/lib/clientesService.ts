@@ -32,6 +32,8 @@ export type ClienteDoc = {
   fechaAceptacion: Timestamp | null;
   fechaVencimiento: Timestamp | null;
   mensajeBienvenida: boolean;
+  pausada: boolean;
+  fechaPausa: Timestamp | null;
   creadoPor: string;
   creadoPorRol: string;
 };
@@ -123,6 +125,8 @@ export async function crearCliente(input: {
     fechaAceptacion: null,
     fechaVencimiento: null,
     mensajeBienvenida: input.mensajeBienvenida ?? false,
+    pausada: false,
+    fechaPausa: null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
   });
@@ -141,16 +145,19 @@ export async function crearCliente(input: {
 }
 
 export async function enviarInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
+  const ahora = new Date();
+  const vencimiento = fechaVencimientoDesde(ahora);
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
-    fechaInvitacion: serverTimestamp(),
+    fechaInvitacion: Timestamp.fromDate(ahora),
+    fechaVencimiento: Timestamp.fromDate(vencimiento),
   });
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.INVITACION_ENVIADA,
     autor,
-    "Invitación enviada al cliente"
+    "Invitación enviada al cliente. El temporizador de membresía de 1 año comenzó a correr."
   );
 }
 
@@ -158,6 +165,7 @@ export async function deshacerInvitacion(clienteId: string, clienteNombre: strin
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.NUEVO,
     fechaInvitacion: null,
+    fechaVencimiento: null,
   });
   await agregarEvento(
     clienteId,
@@ -169,19 +177,16 @@ export async function deshacerInvitacion(clienteId: string, clienteNombre: strin
 }
 
 export async function aceptarInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
-  const ahora = new Date();
-  const vencimiento = fechaVencimientoDesde(ahora);
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.ACTIVO,
-    fechaAceptacion: Timestamp.fromDate(ahora),
-    fechaVencimiento: Timestamp.fromDate(vencimiento),
+    fechaAceptacion: Timestamp.fromDate(new Date()),
   });
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.INVITACION_ACEPTADA,
     autor,
-    "El cliente aceptó la invitación. Membresía activada por 1 año."
+    "El cliente aceptó la invitación."
   );
 }
 
@@ -189,7 +194,6 @@ export async function deshacerAceptacion(clienteId: string, clienteNombre: strin
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
     fechaAceptacion: null,
-    fechaVencimiento: null,
   });
   await agregarEvento(
     clienteId,
@@ -200,6 +204,65 @@ export async function deshacerAceptacion(clienteId: string, clienteNombre: strin
   );
 }
 
+export async function pausarMembresia(clienteId: string, clienteNombre: string, autor: Autor) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    pausada: true,
+    fechaPausa: Timestamp.fromDate(new Date()),
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.PAUSA,
+    autor,
+    "Se pausó el temporizador de la membresía."
+  );
+}
+
+export async function reanudarMembresia(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  fechaVencimientoActual: Date,
+  fechaPausaActual: Date
+) {
+  const ahora = new Date();
+  const msPausada = ahora.getTime() - fechaPausaActual.getTime();
+  const nuevoVencimiento = new Date(fechaVencimientoActual.getTime() + msPausada);
+  await updateDoc(doc(db, "clientes", clienteId), {
+    pausada: false,
+    fechaPausa: null,
+    fechaVencimiento: Timestamp.fromDate(nuevoVencimiento),
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.REANUDACION,
+    autor,
+    "Se reanudó el temporizador de la membresía."
+  );
+}
+
+export async function agregarDiasMembresia(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  fechaVencimientoActual: Date,
+  dias: number
+) {
+  const nuevoVencimiento = new Date(fechaVencimientoActual);
+  nuevoVencimiento.setDate(nuevoVencimiento.getDate() + dias);
+  await updateDoc(doc(db, "clientes", clienteId), {
+    fechaVencimiento: Timestamp.fromDate(nuevoVencimiento),
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.EXTENSION,
+    autor,
+    `Se agregaron ${dias} días a la membresía.`
+  );
+}
+
 export async function renovarMembresia(clienteId: string, clienteNombre: string, autor: Autor) {
   const ahora = new Date();
   const vencimiento = fechaVencimientoDesde(ahora);
@@ -207,6 +270,8 @@ export async function renovarMembresia(clienteId: string, clienteNombre: string,
     estado: ESTADOS_CLIENTE.ACTIVO,
     fechaAceptacion: Timestamp.fromDate(ahora),
     fechaVencimiento: Timestamp.fromDate(vencimiento),
+    pausada: false,
+    fechaPausa: null,
   });
   await agregarEvento(
     clienteId,

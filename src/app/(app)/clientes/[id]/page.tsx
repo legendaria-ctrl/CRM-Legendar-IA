@@ -47,8 +47,9 @@ export default function ClienteDetallePage() {
   }
 
   const estado = estadoActual(cliente);
-  const fechaAceptacion = aFecha(cliente.fechaAceptacion);
+  const fechaInvitacion = aFecha(cliente.fechaInvitacion);
   const fechaVencimiento = aFecha(cliente.fechaVencimiento);
+  const fechaPausa = aFecha(cliente.fechaPausa);
   const beneficios = beneficiosDeRegion(cliente.region);
   const ultimoEvento = eventos[eventos.length - 1];
   const puedeDeshacerAceptacion = ultimoEvento?.tipo === TIPOS_EVENTO.INVITACION_ACEPTADA;
@@ -152,12 +153,17 @@ export default function ClienteDetallePage() {
         clienteNombre={cliente.nombre}
         estado={estado}
         puedeDeshacerAceptacion={puedeDeshacerAceptacion}
+        pausada={cliente.pausada}
+        fechaVencimiento={fechaVencimiento}
+        fechaPausa={fechaPausa}
       />
 
-      {fechaAceptacion && fechaVencimiento && (
+      {fechaInvitacion && fechaVencimiento && (
         <CountdownTimer
-          fechaAceptacion={fechaAceptacion.toISOString()}
+          fechaInicio={fechaInvitacion.toISOString()}
           fechaVencimiento={fechaVencimiento.toISOString()}
+          pausada={cliente.pausada}
+          fechaPausa={fechaPausa?.toISOString() ?? null}
         />
       )}
 

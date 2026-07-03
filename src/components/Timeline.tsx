@@ -10,6 +10,9 @@ import {
   UploadCloud,
   MessageCircle,
   Undo2,
+  Pause,
+  Play,
+  CalendarPlus,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -23,6 +26,9 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   IMPORTACION: UploadCloud,
   MENSAJE_BIENVENIDA: MessageCircle,
   RESTAURACION: Undo2,
+  PAUSA: Pause,
+  REANUDACION: Play,
+  EXTENSION: CalendarPlus,
 };
 
 export type EventoTimelineItem = {

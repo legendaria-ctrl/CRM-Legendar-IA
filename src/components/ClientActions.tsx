@@ -1,7 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Send, CheckCircle2, RefreshCcw, StickyNote, LoaderCircle, Undo2 } from "lucide-react";
+import {
+  Send,
+  CheckCircle2,
+  RefreshCcw,
+  StickyNote,
+  LoaderCircle,
+  Undo2,
+  Pause,
+  Play,
+  CalendarPlus,
+} from "lucide-react";
 import { EstadoCliente, ESTADOS_CLIENTE } from "@/lib/constants";
 import {
   enviarInvitacion,
@@ -10,6 +20,9 @@ import {
   agregarNota,
   deshacerInvitacion,
   deshacerAceptacion,
+  pausarMembresia,
+  reanudarMembresia,
+  agregarDiasMembresia,
 } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
 
@@ -18,11 +31,17 @@ export function ClientActions({
   clienteNombre,
   estado,
   puedeDeshacerAceptacion = false,
+  pausada = false,
+  fechaVencimiento = null,
+  fechaPausa = null,
 }: {
   clienteId: string;
   clienteNombre: string;
   estado: EstadoCliente;
   puedeDeshacerAceptacion?: boolean;
+  pausada?: boolean;
+  fechaVencimiento?: Date | null;
+  fechaPausa?: Date | null;
 }) {
   const { sesion, cargando } = useSesion();
   const [loading, setLoading] = useState<string | null>(null);
@@ -48,6 +67,11 @@ export function ClientActions({
       if (action === "nota" && notaTexto) await agregarNota(clienteId, clienteNombre, autor, notaTexto);
       if (action === "deshacer_invitacion") await deshacerInvitacion(clienteId, clienteNombre, autor);
       if (action === "deshacer_aceptacion") await deshacerAceptacion(clienteId, clienteNombre, autor);
+      if (action === "pausar") await pausarMembresia(clienteId, clienteNombre, autor);
+      if (action === "reanudar" && fechaVencimiento && fechaPausa)
+        await reanudarMembresia(clienteId, clienteNombre, autor, fechaVencimiento, fechaPausa);
+      if (action === "agregar_dias" && fechaVencimiento)
+        await agregarDiasMembresia(clienteId, clienteNombre, autor, fechaVencimiento, 30);
       setNota("");
     } catch (err) {
       console.error(err);
@@ -112,6 +136,32 @@ export function ClientActions({
               )}
             </>
           )}
+
+          {fechaVencimiento && (
+            <>
+              {pausada ? (
+                <ActionButton
+                  icon={Play}
+                  label="Reanudar temporizador"
+                  loading={loading === "reanudar"}
+                  onClick={() => run("reanudar")}
+                />
+              ) : (
+                <UndoButton
+                  label="Pausar temporizador"
+                  icon={Pause}
+                  loading={loading === "pausar"}
+                  onClick={() => run("pausar")}
+                />
+              )}
+              <UndoButton
+                label="Agregar 30 días"
+                icon={CalendarPlus}
+                loading={loading === "agregar_dias"}
+                onClick={() => run("agregar_dias")}
+              />
+            </>
+          )}
         </div>
 
         <div className="mt-2 flex flex-col gap-2">
@@ -148,15 +198,17 @@ function UndoButton({
   label,
   loading,
   onClick,
+  icon: Icon = Undo2,
 }: {
   label: string;
   loading: boolean;
   onClick: () => void;
+  icon?: typeof Undo2;
 }) {
   return (
     <button
       onClick={() => {
-        if (window.confirm(`${label}? Esto no borra el historial, solo revierte el estado actual.`)) {
+        if (window.confirm(`${label}?`)) {
           onClick();
         }
       }}
@@ -166,7 +218,7 @@ function UndoButton({
       {loading ? (
         <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
       ) : (
-        <Undo2 className="h-4 w-4" strokeWidth={1.75} />
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
       )}
       {label}
     </button>

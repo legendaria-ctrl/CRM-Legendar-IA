@@ -17,32 +17,38 @@ export function estadoActual(cliente: {
   estado: string;
   fechaAceptacion: Timestamp | Date | null;
   fechaVencimiento: Timestamp | Date | null;
+  pausada?: boolean;
 }): EstadoCliente {
   const aceptacion = aFecha(cliente.fechaAceptacion);
   const vencimiento = aFecha(cliente.fechaVencimiento);
 
-  if (vencimiento && aceptacion) {
+  if (vencimiento && !cliente.pausada) {
     if (new Date() > vencimiento) return ESTADOS_CLIENTE.VENCIDO;
-    return ESTADOS_CLIENTE.ACTIVO;
+    if (aceptacion) return ESTADOS_CLIENTE.ACTIVO;
   }
   return cliente.estado as EstadoCliente;
 }
 
-export function diasRestantes(fechaVencimiento: Timestamp | Date | null): number | null {
+export function diasRestantes(
+  fechaVencimiento: Timestamp | Date | null,
+  fechaPausa?: Timestamp | Date | null
+): number | null {
   const vencimiento = aFecha(fechaVencimiento);
   if (!vencimiento) return null;
-  const ms = vencimiento.getTime() - Date.now();
+  const pausa = aFecha(fechaPausa ?? null);
+  const ahora = pausa ? pausa.getTime() : Date.now();
+  const ms = vencimiento.getTime() - ahora;
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
 export function porcentajeTranscurrido(
-  fechaAceptacion: Timestamp | Date | null,
+  fechaInicio: Timestamp | Date | null,
   fechaVencimiento: Timestamp | Date | null
 ): number {
-  const aceptacion = aFecha(fechaAceptacion);
+  const inicio = aFecha(fechaInicio);
   const vencimiento = aFecha(fechaVencimiento);
-  if (!aceptacion || !vencimiento) return 0;
-  const total = vencimiento.getTime() - aceptacion.getTime();
-  const transcurrido = Date.now() - aceptacion.getTime();
+  if (!inicio || !vencimiento) return 0;
+  const total = vencimiento.getTime() - inicio.getTime();
+  const transcurrido = Date.now() - inicio.getTime();
   return Math.min(100, Math.max(0, (transcurrido / total) * 100));
 }

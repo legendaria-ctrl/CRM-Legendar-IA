@@ -2,10 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
+import {
+  suscribirClientes,
+  ClienteDoc,
+  enviarInvitacion,
+  actualizarMensajeBienvenida,
+} from "@/lib/clientesService";
 import { estadoActual, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
+import { InvitacionToggle } from "@/components/InvitacionToggle";
+import { useSesion } from "@/lib/session-context";
 import {
   ESTADOS_CLIENTE,
   ESTADO_LABEL,
@@ -27,17 +34,23 @@ import {
   X,
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
+  Send,
+  CheckCheck,
+  LoaderCircle,
 } from "lucide-react";
 
 const OPCION_TODOS = "TODOS";
 
 export default function DashboardPage() {
+  const { sesion } = useSesion();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<string>(OPCION_TODOS);
   const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
   const [filtroBienvenida, setFiltroBienvenida] = useState<string>(OPCION_TODOS);
   const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
+  const [procesandoLote, setProcesandoLote] = useState(false);
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
@@ -90,6 +103,43 @@ export default function DashboardPage() {
     setFiltroEstado(OPCION_TODOS);
     setFiltroRegion(OPCION_TODOS);
     setFiltroBienvenida(OPCION_TODOS);
+  }
+
+  function alternarSeleccion(id: string) {
+    setSeleccionados((prev) => {
+      const copia = new Set(prev);
+      if (copia.has(id)) copia.delete(id);
+      else copia.add(id);
+      return copia;
+    });
+  }
+
+  function alternarTodos() {
+    setSeleccionados((prev) =>
+      prev.size === ordenados.length ? new Set() : new Set(ordenados.map((c) => c.id))
+    );
+  }
+
+  async function aplicarAccionEnLote(accion: "invitacion" | "bienvenida") {
+    if (!sesion || seleccionados.size === 0 || procesandoLote) return;
+    setProcesandoLote(true);
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    try {
+      const objetivos = ordenados.filter((c) => seleccionados.has(c.id));
+      await Promise.all(
+        objetivos.map((c) => {
+          if (accion === "invitacion") {
+            if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
+            return enviarInvitacion(c.id, c.nombre, autor);
+          }
+          if (c.mensajeBienvenida) return Promise.resolve();
+          return actualizarMensajeBienvenida(c.id, c.nombre, autor, true);
+        })
+      );
+      setSeleccionados(new Set());
+    } finally {
+      setProcesandoLote(false);
+    }
   }
 
   function exportarCSV() {
@@ -269,6 +319,47 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {seleccionados.size > 0 && (
+        <div className="shell rounded-[1.75rem] p-2 diffused-lg">
+          <div className="core flex flex-wrap items-center gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
+            <span className="text-xs font-medium text-muted">
+              {seleccionados.size} seleccionado{seleccionados.size === 1 ? "" : "s"}
+            </span>
+            <button
+              onClick={() => aplicarAccionEnLote("invitacion")}
+              disabled={procesandoLote}
+              className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-medium text-primary transition-all duration-500 ease-spring hover:bg-primary/20 disabled:opacity-50"
+            >
+              {procesandoLote ? (
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+              ) : (
+                <Send className="h-3.5 w-3.5" strokeWidth={2} />
+              )}
+              Marcar invitación enviada
+            </button>
+            <button
+              onClick={() => aplicarAccionEnLote("bienvenida")}
+              disabled={procesandoLote}
+              className="flex items-center gap-2 rounded-full bg-success/10 px-4 py-2 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/20 disabled:opacity-50"
+            >
+              {procesandoLote ? (
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+              ) : (
+                <CheckCheck className="h-3.5 w-3.5" strokeWidth={2} />
+              )}
+              Marcar MB enviado
+            </button>
+            <button
+              onClick={() => setSeleccionados(new Set())}
+              className="ml-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger"
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+              Limpiar selección
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="shell rounded-[2rem] p-2 diffused-lg">
         <div className="core rounded-[calc(2rem-0.5rem)] p-2 md:p-3">
           {conEstado.length === 0 ? (
@@ -290,18 +381,52 @@ export default function DashboardPage() {
             </p>
           ) : (
             <ul className="flex flex-col divide-y divide-silver">
+              <li className="flex items-center gap-3 px-4 py-2">
+                <input
+                  type="checkbox"
+                  checked={seleccionados.size > 0 && seleccionados.size === ordenados.length}
+                  onChange={alternarTodos}
+                  className="h-4 w-4 flex-none rounded border-silver-deep/60 accent-primary"
+                />
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted">
+                  Seleccionar todos
+                </span>
+              </li>
               {ordenados.map((cliente) => {
                 const dias = diasRestantes(cliente.fechaVencimiento);
+                const activo = cliente.estadoCalculado === ESTADOS_CLIENTE.ACTIVO;
+                const invitacionEnviada = cliente.estado !== ESTADOS_CLIENTE.NUEVO;
                 return (
-                  <li key={cliente.id}>
+                  <li key={cliente.id} className="flex items-center gap-3 px-4">
+                    <input
+                      type="checkbox"
+                      checked={seleccionados.has(cliente.id)}
+                      onChange={() => alternarSeleccion(cliente.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-4 w-4 flex-none rounded border-silver-deep/60 accent-primary"
+                    />
                     <Link
                       href={`/clientes/${cliente.id}`}
-                      className="group flex items-center justify-between gap-4 rounded-2xl px-4 py-4 transition-colors duration-300 hover:bg-surface-2"
+                      className="group flex flex-1 items-center justify-between gap-4 rounded-2xl py-4 transition-colors duration-300 hover:bg-surface-2"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {cliente.nombre}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {cliente.nombre}
+                          </p>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                              activo ? "bg-success/10 text-success" : "bg-silver text-muted"
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                activo ? "bg-success" : "bg-muted"
+                              }`}
+                            />
+                            {activo ? "Activo" : "Inactivo"}
+                          </span>
+                        </div>
                         <p className="truncate text-xs text-muted">
                           {cliente.email || "Sin correo"} · Agregado por:{" "}
                           {cliente.creadoPor}
@@ -310,13 +435,19 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       <div className="flex flex-none items-center gap-3">
-                        {cliente.estadoCalculado === ESTADOS_CLIENTE.ACTIVO &&
-                          dias !== null && (
-                            <span className="hidden text-xs text-muted sm:inline">
-                              {dias > 0 ? `${dias} días restantes` : "Vence hoy"}
-                            </span>
-                          )}
+                        {activo && dias !== null && (
+                          <span className="hidden text-xs text-muted sm:inline">
+                            {dias > 0 ? `${dias} días restantes` : "Vence hoy"}
+                          </span>
+                        )}
                         <StatusBadge estado={cliente.estadoCalculado} />
+                        <InvitacionToggle
+                          clienteId={cliente.id}
+                          clienteNombre={cliente.nombre}
+                          enviada={invitacionEnviada}
+                          puedeDeshacer={cliente.estado === ESTADOS_CLIENTE.INVITACION_ENVIADA}
+                          compacto
+                        />
                         <MensajeBienvenidaToggle
                           clienteId={cliente.id}
                           clienteNombre={cliente.nombre}
