@@ -34,9 +34,9 @@ export function estadoActual(cliente: {
   const aceptacion = aFecha(cliente.fechaAceptacion);
   const vencimiento = aFecha(cliente.fechaVencimiento);
 
-  if (vencimiento && aceptacion && !cliente.pausada) {
+  if (vencimiento && !cliente.pausada) {
     if (new Date() > vencimiento) return ESTADOS_CLIENTE.VENCIDO;
-    return ESTADOS_CLIENTE.ACTIVO;
+    if (aceptacion) return ESTADOS_CLIENTE.ACTIVO;
   }
   return cliente.estado as EstadoCliente;
 }

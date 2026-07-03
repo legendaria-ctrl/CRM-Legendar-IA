@@ -121,6 +121,10 @@ export default function DashboardPage() {
     filtroRegion !== OPCION_TODOS ||
     filtroBienvenida.length > 0;
 
+  useEffect(() => {
+    setSeleccionados(new Set());
+  }, [busqueda, filtroEstado, filtroRegion, filtroBienvenida]);
+
   function limpiarFiltros() {
     setBusqueda("");
     setFiltroEstado([]);
