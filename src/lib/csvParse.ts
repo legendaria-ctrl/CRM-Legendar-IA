@@ -57,7 +57,6 @@ export type FilaClienteCSV = {
   vendedor: string;
   fechaInscripcionTexto: string;
   fechaInscripcion: Date | null;
-  mensajeBienvenida: boolean;
   valido: boolean;
   error?: string;
 };
@@ -69,8 +68,7 @@ type CampoTexto =
   | "region"
   | "notas"
   | "vendedor"
-  | "fechaInscripcionTexto"
-  | "mensajeBienvenidaTexto";
+  | "fechaInscripcionTexto";
 
 const ALIAS_COLUMNAS: Record<string, CampoTexto> = {
   nombre: "nombre",
@@ -87,11 +85,7 @@ const ALIAS_COLUMNAS: Record<string, CampoTexto> = {
   "fecha de inscripcion": "fechaInscripcionTexto",
   "fecha de inscripción": "fechaInscripcionTexto",
   fecha_inscripción: "fechaInscripcionTexto",
-  mensaje_bienvenida: "mensajeBienvenidaTexto",
-  "mensaje de bienvenida": "mensajeBienvenidaTexto",
 };
-
-const VALORES_VERDADEROS = new Set(["si", "sí", "true", "1", "x", "yes"]);
 
 function parsearFecha(texto: string): Date | null {
   const limpio = texto.trim();
@@ -136,12 +130,9 @@ export function filasAClientes(filas: string[][]): FilaClienteCSV[] {
     const notas = leer(fila, "notas");
     const vendedor = leer(fila, "vendedor");
     const fechaInscripcionTexto = leer(fila, "fechaInscripcionTexto");
-    const mensajeBienvenidaTexto = leer(fila, "mensajeBienvenidaTexto");
 
     const regionCruda = leer(fila, "region").toUpperCase();
     const region = regionCruda === "MX" || regionCruda === "US" ? regionCruda : "";
-
-    const mensajeBienvenida = VALORES_VERDADEROS.has(mensajeBienvenidaTexto.toLowerCase());
 
     const base = {
       nombre,
@@ -151,7 +142,6 @@ export function filasAClientes(filas: string[][]): FilaClienteCSV[] {
       notas,
       vendedor,
       fechaInscripcionTexto,
-      mensajeBienvenida,
     };
 
     if (!nombre) {

@@ -25,16 +25,7 @@ export default function ImportarClientesPage() {
   function plantilla() {
     descargarCSV(
       "plantilla_clientes.csv",
-      [
-        "nombre",
-        "email",
-        "telefono",
-        "region",
-        "fecha_inscripcion",
-        "mensaje_bienvenida",
-        "notas",
-        "vendedor",
-      ],
+      ["nombre", "email", "telefono", "region", "fecha_inscripcion", "notas", "vendedor"],
       [
         [
           "Juan Pérez",
@@ -42,7 +33,6 @@ export default function ImportarClientesPage() {
           "555-1234",
           "MX",
           "2026-06-15",
-          "si",
           "Contactado en evento",
           "María López",
         ],
@@ -83,7 +73,6 @@ export default function ImportarClientesPage() {
           region: fila.region,
           vendedor: fila.vendedor,
           fechaInscripcion: fila.fechaInscripcion ?? undefined,
-          mensajeBienvenida: fila.mensajeBienvenida,
           tags: tagLote ? [tagLote] : [],
           autor: sesion.nombre,
           autorRol: sesion.rol,
@@ -114,7 +103,7 @@ export default function ImportarClientesPage() {
         </h1>
         <p className="text-sm text-muted">
           Sube un archivo con columnas nombre, email, telefono, region (MX o US), fecha_inscripcion
-          (AAAA-MM-DD), mensaje_bienvenida (si/no), notas y vendedor (opcional).
+          (AAAA-MM-DD), notas y vendedor (opcional).
         </p>
       </div>
 
@@ -196,7 +185,6 @@ export default function ImportarClientesPage() {
                     <th className="px-4 py-3 font-medium">Teléfono</th>
                     <th className="px-4 py-3 font-medium">Región</th>
                     <th className="px-4 py-3 font-medium">Inscripción</th>
-                    <th className="px-4 py-3 font-medium">Bienvenida</th>
                     <th className="px-4 py-3 font-medium">Notas</th>
                     <th className="px-4 py-3 font-medium">Vendedor</th>
                     <th className="px-4 py-3 font-medium">Estado</th>
@@ -213,13 +201,6 @@ export default function ImportarClientesPage() {
                       </td>
                       <td className="px-4 py-3 text-muted">
                         {f.fechaInscripcion ? f.fechaInscripcion.toLocaleDateString("es-MX") : "Hoy"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-block h-2.5 w-2.5 rounded-full ${
-                            f.mensajeBienvenida ? "bg-success" : "bg-danger"
-                          }`}
-                        />
                       </td>
                       <td className="px-4 py-3 text-muted">{f.notas || "—"}</td>
                       <td className="px-4 py-3 text-muted">{f.vendedor || "—"}</td>
