@@ -22,11 +22,23 @@ export function estadoActual(cliente: {
   const aceptacion = aFecha(cliente.fechaAceptacion);
   const vencimiento = aFecha(cliente.fechaVencimiento);
 
-  if (vencimiento && !cliente.pausada) {
+  if (vencimiento && aceptacion && !cliente.pausada) {
     if (new Date() > vencimiento) return ESTADOS_CLIENTE.VENCIDO;
-    if (aceptacion) return ESTADOS_CLIENTE.ACTIVO;
+    return ESTADOS_CLIENTE.ACTIVO;
   }
   return cliente.estado as EstadoCliente;
+}
+
+// Para el indicador Activo/Inactivo de la lista: activo desde que se envía
+// la invitación (arranca el temporizador) mientras no venza ni esté pausada,
+// sin esperar a que el cliente acepte.
+export function estaActivo(cliente: {
+  fechaVencimiento: Timestamp | Date | null;
+  pausada?: boolean;
+}): boolean {
+  const vencimiento = aFecha(cliente.fechaVencimiento);
+  if (!vencimiento || cliente.pausada) return false;
+  return new Date() <= vencimiento;
 }
 
 export function diasRestantes(

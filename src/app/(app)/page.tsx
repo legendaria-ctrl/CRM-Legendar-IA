@@ -8,7 +8,7 @@ import {
   enviarInvitacion,
   actualizarMensajeBienvenida,
 } from "@/lib/clientesService";
-import { estadoActual, diasRestantes, aFecha } from "@/lib/membership";
+import { estadoActual, estaActivo, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { InvitacionToggle } from "@/components/InvitacionToggle";
@@ -394,7 +394,7 @@ export default function DashboardPage() {
               </li>
               {ordenados.map((cliente) => {
                 const dias = diasRestantes(cliente.fechaVencimiento);
-                const activo = cliente.estadoCalculado === ESTADOS_CLIENTE.ACTIVO;
+                const activo = estaActivo(cliente);
                 const invitacionEnviada = cliente.estado !== ESTADOS_CLIENTE.NUEVO;
                 return (
                   <li key={cliente.id} className="flex items-center gap-3 px-4">
