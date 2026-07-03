@@ -6,9 +6,11 @@ import { es } from "date-fns/locale";
 import { Download, Search, History, LoaderCircle } from "lucide-react";
 import { obtenerActividad, obtenerAutoresUnicos, ActividadDoc } from "@/lib/activityService";
 import { obtenerContactosPorIds } from "@/lib/clientesService";
-import { EVENTO_LABEL, TipoEvento } from "@/lib/constants";
+import { suscribirVendedores } from "@/lib/vendedoresService";
+import { EVENTO_LABEL, TipoEvento, ESTADOS_SOLICITUD } from "@/lib/constants";
 import { descargarCSV } from "@/lib/csv";
 import { UsuarioSelect } from "@/components/UsuarioSelect";
+import { FilterMultiSelect } from "@/components/FilterMultiSelect";
 
 function aInputDate(d: Date): string {
   return format(d, "yyyy-MM-dd");
@@ -20,12 +22,21 @@ export default function ActividadPage() {
   const [hasta, setHasta] = useState(aInputDate(hoy));
   const [autor, setAutor] = useState("");
   const [usuarios, setUsuarios] = useState<string[]>([]);
+  const [filtroVendedor, setFiltroVendedor] = useState<string[]>([]);
+  const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [resultados, setResultados] = useState<ActividadDoc[] | null>(null);
+  const [vendedorPorCliente, setVendedorPorCliente] = useState<Record<string, string | null>>({});
   const [cargando, setCargando] = useState(false);
   const [exportando, setExportando] = useState(false);
 
   useEffect(() => {
     obtenerAutoresUnicos().then(setUsuarios);
+    const unsub = suscribirVendedores((lista) => {
+      setVendedoresAprobados(
+        lista.filter((v) => v.estado === ESTADOS_SOLICITUD.APROBADO).map((v) => v.nombre)
+      );
+    });
+    return () => unsub();
   }, []);
 
   async function buscar(rangoDesde = desde, rangoHasta = hasta) {
@@ -37,10 +48,20 @@ export default function ActividadPage() {
         autor: autor.trim() || undefined,
       });
       setResultados(datos);
+      const contactos = await obtenerContactosPorIds(datos.map((r) => r.clienteId));
+      setVendedorPorCliente(
+        Object.fromEntries(Object.entries(contactos).map(([id, c]) => [id, c.vendedor]))
+      );
     } finally {
       setCargando(false);
     }
   }
+
+  const resultadosFiltrados = (resultados ?? []).filter((r) => {
+    if (filtroVendedor.length === 0) return true;
+    const vendedor = vendedorPorCliente[r.clienteId];
+    return vendedor ? filtroVendedor.includes(vendedor) : false;
+  });
 
   function preset(tipo: "hoy" | "semana" | "mes") {
     const ahora = new Date();
@@ -67,12 +88,12 @@ export default function ActividadPage() {
   }
 
   async function exportar() {
-    if (!resultados || resultados.length === 0) return;
+    if (resultadosFiltrados.length === 0) return;
     setExportando(true);
     try {
-      const contactos = await obtenerContactosPorIds(resultados.map((r) => r.clienteId));
+      const contactos = await obtenerContactosPorIds(resultadosFiltrados.map((r) => r.clienteId));
 
-      const filas = resultados.map((r) => {
+      const filas = resultadosFiltrados.map((r) => {
         const contacto = contactos[r.clienteId];
         return [
           r.fecha ? format(r.fecha.toDate(), "yyyy-MM-dd HH:mm:ss") : "",
@@ -166,6 +187,19 @@ export default function ActividadPage() {
               <UsuarioSelect usuarios={usuarios} valor={autor} onChange={setAutor} />
             </label>
 
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                Vendedor
+              </span>
+              <FilterMultiSelect
+                label="Todos los vendedores"
+                opciones={vendedoresAprobados.map((v) => ({ value: v, label: v }))}
+                seleccionados={filtroVendedor}
+                onChange={setFiltroVendedor}
+                buscable
+              />
+            </label>
+
             <button
               onClick={() => buscar()}
               disabled={cargando}
@@ -181,7 +215,7 @@ export default function ActividadPage() {
 
             <button
               onClick={exportar}
-              disabled={!resultados || resultados.length === 0 || exportando}
+              disabled={resultadosFiltrados.length === 0 || exportando}
               className="flex items-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 py-2.5 pl-5 pr-5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-40"
             >
               {exportando ? (
@@ -204,9 +238,9 @@ export default function ActividadPage() {
                 Elige un rango de fechas y da clic en Buscar para ver los movimientos.
               </p>
             </div>
-          ) : resultados.length === 0 ? (
+          ) : resultadosFiltrados.length === 0 ? (
             <p className="px-6 py-16 text-center text-sm text-muted">
-              No hay movimientos en ese rango.
+              No hay movimientos en ese rango{filtroVendedor.length > 0 ? " para ese vendedor" : ""}.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -221,7 +255,7 @@ export default function ActividadPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-silver">
-                  {resultados.map((r) => (
+                  {resultadosFiltrados.map((r) => (
                     <tr key={r.id}>
                       <td className="whitespace-nowrap px-4 py-3 text-muted">
                         {r.fecha

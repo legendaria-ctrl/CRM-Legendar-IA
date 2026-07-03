@@ -389,7 +389,12 @@ export async function eliminarCliente(clienteId: string, clienteNombre: string, 
 
 export async function obtenerContactosPorIds(
   ids: string[]
-): Promise<Record<string, { email: string | null; telefono: string | null; notas: string | null }>> {
+): Promise<
+  Record<
+    string,
+    { email: string | null; telefono: string | null; notas: string | null; vendedor: string | null }
+  >
+> {
   const unicos = Array.from(new Set(ids));
   const entradas = await Promise.all(
     unicos.map(async (id) => {
@@ -401,6 +406,7 @@ export async function obtenerContactosPorIds(
           email: data?.email ?? null,
           telefono: data?.telefono ?? null,
           notas: data?.notas ?? null,
+          vendedor: data?.vendedor ?? null,
         },
       ] as const;
     })

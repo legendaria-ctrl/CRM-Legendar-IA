@@ -16,6 +16,7 @@ import { InvitacionToggle } from "@/components/InvitacionToggle";
 import { FilterMultiSelect } from "@/components/FilterMultiSelect";
 import { TagPicker } from "@/components/TagPicker";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
+import { suscribirVendedores } from "@/lib/vendedoresService";
 import { useSesion } from "@/lib/session-context";
 import {
   ESTADOS_CLIENTE,
@@ -24,6 +25,7 @@ import {
   ESTADOS_BIENVENIDA,
   BIENVENIDA_LABEL,
   EstadoBienvenida,
+  ESTADOS_SOLICITUD,
   REGIONES,
   REGION_LABEL,
   Region,
@@ -66,17 +68,25 @@ export default function DashboardPage() {
   const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
   const [filtroBienvenida, setFiltroBienvenida] = useState<string[]>([]);
   const [filtroTags, setFiltroTags] = useState<string[]>([]);
+  const [filtroVendedor, setFiltroVendedor] = useState<string[]>([]);
   const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [procesandoLote, setProcesandoLote] = useState(false);
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
+  const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
     const unsubTags = suscribirTags(setCatalogoTags);
+    const unsubVendedores = suscribirVendedores((lista) => {
+      setVendedoresAprobados(
+        lista.filter((v) => v.estado === ESTADOS_SOLICITUD.APROBADO).map((v) => v.nombre)
+      );
+    });
     return () => {
       unsub();
       unsubTags();
+      unsubVendedores();
     };
   }, []);
 
@@ -104,9 +114,19 @@ export default function DashboardPage() {
         return false;
       if (filtroTags.length > 0 && !(c.tags ?? []).some((t) => filtroTags.includes(t)))
         return false;
+      if (filtroVendedor.length > 0 && !(c.vendedor && filtroVendedor.includes(c.vendedor)))
+        return false;
       return true;
     });
-  }, [conEstado, busqueda, filtroEstado, filtroRegion, filtroBienvenida, filtroTags]);
+  }, [
+    conEstado,
+    busqueda,
+    filtroEstado,
+    filtroRegion,
+    filtroBienvenida,
+    filtroTags,
+    filtroVendedor,
+  ]);
 
   const ordenados = useMemo(() => {
     const copia = [...filtrados];
@@ -123,11 +143,12 @@ export default function DashboardPage() {
     filtroEstado.length > 0 ||
     filtroRegion !== OPCION_TODOS ||
     filtroBienvenida.length > 0 ||
-    filtroTags.length > 0;
+    filtroTags.length > 0 ||
+    filtroVendedor.length > 0;
 
   useEffect(() => {
     setSeleccionados(new Set());
-  }, [busqueda, filtroEstado, filtroRegion, filtroBienvenida, filtroTags]);
+  }, [busqueda, filtroEstado, filtroRegion, filtroBienvenida, filtroTags, filtroVendedor]);
 
   function limpiarFiltros() {
     setBusqueda("");
@@ -135,6 +156,7 @@ export default function DashboardPage() {
     setFiltroRegion(OPCION_TODOS);
     setFiltroBienvenida([]);
     setFiltroTags([]);
+    setFiltroVendedor([]);
   }
 
   function alternarSeleccion(id: string) {
@@ -338,6 +360,14 @@ export default function DashboardPage() {
               opciones={catalogoTags.map((t) => ({ value: t.nombre, label: t.nombre }))}
               seleccionados={filtroTags}
               onChange={setFiltroTags}
+            />
+
+            <FilterMultiSelect
+              label="Todos los vendedores"
+              opciones={vendedoresAprobados.map((v) => ({ value: v, label: v }))}
+              seleccionados={filtroVendedor}
+              onChange={setFiltroVendedor}
+              buscable
             />
 
             {hayFiltrosActivos && (
