@@ -395,6 +395,7 @@ export default function DashboardPage() {
               {ordenados.map((cliente) => {
                 const dias = diasRestantes(cliente.fechaVencimiento);
                 const activo = estaActivo(cliente);
+                const pausado = cliente.pausada;
                 const invitacionEnviada = cliente.estado !== ESTADOS_CLIENTE.NUEVO;
                 return (
                   <li key={cliente.id} className="flex items-center gap-3 px-4">
@@ -416,15 +417,19 @@ export default function DashboardPage() {
                           </p>
                           <span
                             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                              activo ? "bg-success/10 text-success" : "bg-silver text-muted"
+                              pausado
+                                ? "bg-warning/10 text-warning"
+                                : activo
+                                  ? "bg-success/10 text-success"
+                                  : "bg-silver text-muted"
                             }`}
                           >
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${
-                                activo ? "bg-success" : "bg-muted"
+                                pausado ? "bg-warning" : activo ? "bg-success" : "bg-muted"
                               }`}
                             />
-                            {activo ? "Activo" : "Inactivo"}
+                            {pausado ? "Pausado" : activo ? "Activo" : "Inactivo"}
                           </span>
                         </div>
                         <p className="truncate text-xs text-muted">
