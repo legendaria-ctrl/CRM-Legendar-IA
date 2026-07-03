@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSesion } from "@/lib/session-context";
+import { useCertificacion } from "@/lib/certificacion-context";
 import {
   LayoutGrid,
   UserPlus,
@@ -12,6 +12,7 @@ import {
   Users,
   UploadCloud,
   Tag,
+  Layers,
 } from "lucide-react";
 
 const links = [
@@ -26,22 +27,28 @@ const linksAdmin = [{ href: "/vendedores", label: "Vendedores", icon: Users }];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { sesion, cerrarSesion } = useSesion();
+  const { setCertificacionActual } = useCertificacion();
   const itemsNav = sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : links;
+
+  function irAInicio() {
+    setCertificacionActual(null);
+    router.push("/");
+  }
 
   return (
     <aside className="sticky top-6 flex h-fit w-full flex-col gap-4 md:w-64">
-      <div className="brand-plate relative flex h-16 items-center justify-center rounded-[1.75rem] px-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)]">
-        <div className="relative h-28 w-full">
-          <Image
-            src="/legendar-ia-logo.png"
-            alt="Legendar-IA CRM"
-            fill
-            priority
-            className="object-contain"
-          />
-        </div>
-      </div>
+      <button
+        onClick={irAInicio}
+        title="Ir a Certificaciones"
+        className="brand-plate relative flex h-16 items-center justify-center gap-2.5 rounded-[1.75rem] px-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+      >
+        <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-white/15">
+          <Layers className="h-5 w-5 text-white" strokeWidth={1.75} />
+        </span>
+        <span className="text-lg font-semibold tracking-tight text-white">Certificaciones</span>
+      </button>
 
       <div className="shell rounded-[1.75rem] p-2 diffused">
         <nav className="core flex flex-col gap-1 rounded-[calc(1.75rem-0.5rem)] p-2">

@@ -2,21 +2,27 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, ArrowUpRight, LoaderCircle, Ticket, Globe2 } from "lucide-react";
+import { UserPlus, ArrowUpRight, LoaderCircle, Ticket, Globe2, Layers } from "lucide-react";
 import { crearCliente } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
+import { useCertificacion } from "@/lib/certificacion-context";
+import { CERTIFICACIONES } from "@/lib/certificaciones";
 import { VendedorSelect } from "@/components/VendedorSelect";
 import { REGIONES, REGION_LABEL, Region, beneficiosDeRegion } from "@/lib/constants";
 
 export default function NuevoClientePage() {
   const router = useRouter();
   const { sesion, cargando } = useSesion();
+  const { certificacionActual } = useCertificacion();
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [notas, setNotas] = useState("");
   const [vendedor, setVendedor] = useState<string | null>(null);
   const [region, setRegion] = useState<Region>(REGIONES.MX);
+  const [etiqueta, setEtiqueta] = useState<string>(
+    certificacionActual?.etiqueta ?? CERTIFICACIONES[0]?.etiqueta ?? ""
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +47,7 @@ export default function NuevoClientePage() {
         notas,
         vendedor: vendedor ?? undefined,
         region,
+        etiquetas: etiqueta ? [etiqueta] : [],
         autor: sesion.nombre,
         autorRol: sesion.rol,
       });
@@ -116,6 +123,29 @@ export default function NuevoClientePage() {
               Vendedor
             </span>
             <VendedorSelect valor={vendedor} onChange={setVendedor} />
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted">
+              Certificación
+            </span>
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-surface-2 p-1">
+              {CERTIFICACIONES.map((cert) => (
+                <button
+                  key={cert.id}
+                  type="button"
+                  onClick={() => setEtiqueta(cert.etiqueta)}
+                  className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all duration-500 ease-spring ${
+                    etiqueta === cert.etiqueta
+                      ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
+                      : "text-muted"
+                  }`}
+                >
+                  <Layers className="h-4 w-4" strokeWidth={1.5} />
+                  {cert.nombre}
+                </button>
+              ))}
+            </div>
           </label>
 
           <label className="flex flex-col gap-2">

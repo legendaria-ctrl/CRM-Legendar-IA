@@ -11,17 +11,23 @@ import { suscribirVendedores } from "@/lib/vendedoresService";
 import { TagPicker } from "@/components/TagPicker";
 import { VendedorSelect } from "@/components/VendedorSelect";
 import { useSesion } from "@/lib/session-context";
+import { useCertificacion } from "@/lib/certificacion-context";
+import { CERTIFICACIONES } from "@/lib/certificaciones";
 import { REGION_LABEL, Region, ESTADOS_SOLICITUD } from "@/lib/constants";
 
 export default function ImportarClientesPage() {
   const router = useRouter();
   const { sesion } = useSesion();
+  const { certificacionActual } = useCertificacion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [filas, setFilas] = useState<FilaClienteCSV[] | null>(null);
   const [vendedoresPorFila, setVendedoresPorFila] = useState<(string | null)[]>([]);
   const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [nombreArchivo, setNombreArchivo] = useState("");
   const [tagLote, setTagLote] = useState<string | null>(null);
+  const [etiquetaLote, setEtiquetaLote] = useState<string>(
+    certificacionActual?.etiqueta ?? CERTIFICACIONES[0]?.etiqueta ?? ""
+  );
   const [importando, setImportando] = useState(false);
   const [progreso, setProgreso] = useState(0);
   const [resultado, setResultado] = useState<{ ok: number; error: number } | null>(null);
@@ -92,6 +98,7 @@ export default function ImportarClientesPage() {
           vendedor: vendedoresPorFila[indiceOriginal] ?? undefined,
           fechaInscripcion: fila.fechaInscripcion ?? undefined,
           tags: tagLote ? [tagLote] : [],
+          etiquetas: etiquetaLote ? [etiquetaLote] : [],
           autor: sesion.nombre,
           autorRol: sesion.rol,
           origen: "csv",
@@ -155,6 +162,26 @@ export default function ImportarClientesPage() {
               onChange={handleArchivo}
               className="hidden"
             />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted">
+              Certificación de este lote
+            </span>
+            {CERTIFICACIONES.map((cert) => (
+              <button
+                key={cert.id}
+                type="button"
+                onClick={() => setEtiquetaLote(cert.etiqueta)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-500 ease-spring ${
+                  etiquetaLote === cert.etiqueta
+                    ? "border-primary/50 bg-primary-dim text-primary-deep"
+                    : "border-silver-deep/60 bg-surface-2 text-muted"
+                }`}
+              >
+                {cert.nombre}
+              </button>
+            ))}
           </div>
 
           <div className="flex items-center gap-2">

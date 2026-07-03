@@ -37,6 +37,7 @@ export type ClienteDoc = {
   pausada: boolean;
   fechaPausa: Timestamp | null;
   tags: string[];
+  etiquetas: string[];
   vendedor: string | null;
   creadoPor: string;
   creadoPorRol: string;
@@ -112,6 +113,7 @@ export async function crearCliente(input: {
   fechaInscripcion?: Date;
   mensajeBienvenida?: boolean;
   tags?: string[];
+  etiquetas?: string[];
   vendedor?: string;
   autor: string;
   autorRol: string;
@@ -136,6 +138,7 @@ export async function crearCliente(input: {
     pausada: false,
     fechaPausa: null,
     tags: input.tags?.length ? Array.from(new Set(input.tags)) : [],
+    etiquetas: input.etiquetas?.length ? Array.from(new Set(input.etiquetas)) : [],
     vendedor: input.vendedor?.trim() || null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
@@ -392,7 +395,13 @@ export async function obtenerContactosPorIds(
 ): Promise<
   Record<
     string,
-    { email: string | null; telefono: string | null; notas: string | null; vendedor: string | null }
+    {
+      email: string | null;
+      telefono: string | null;
+      notas: string | null;
+      vendedor: string | null;
+      etiquetas: string[];
+    }
   >
 > {
   const unicos = Array.from(new Set(ids));
@@ -407,6 +416,7 @@ export async function obtenerContactosPorIds(
           telefono: data?.telefono ?? null,
           notas: data?.notas ?? null,
           vendedor: data?.vendedor ?? null,
+          etiquetas: data?.etiquetas ?? [],
         },
       ] as const;
     })

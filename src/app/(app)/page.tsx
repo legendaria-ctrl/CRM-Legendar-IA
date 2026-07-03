@@ -18,6 +18,8 @@ import { TagPicker } from "@/components/TagPicker";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { suscribirVendedores } from "@/lib/vendedoresService";
 import { useSesion } from "@/lib/session-context";
+import { useCertificacion } from "@/lib/certificacion-context";
+import { CERTIFICACIONES } from "@/lib/certificaciones";
 import {
   ESTADOS_CLIENTE,
   ESTADO_LABEL,
@@ -62,6 +64,7 @@ const OPCIONES_BIENVENIDA = Object.values(ESTADOS_BIENVENIDA).map((estado) => ({
 
 export default function DashboardPage() {
   const { sesion } = useSesion();
+  const { certificacionActual } = useCertificacion();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<string[]>([]);
@@ -69,6 +72,7 @@ export default function DashboardPage() {
   const [filtroBienvenida, setFiltroBienvenida] = useState<string[]>([]);
   const [filtroTags, setFiltroTags] = useState<string[]>([]);
   const [filtroVendedor, setFiltroVendedor] = useState<string[]>([]);
+  const [filtroEtiquetas, setFiltroEtiquetas] = useState<string[]>([]);
   const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [procesandoLote, setProcesandoLote] = useState(false);
@@ -90,9 +94,15 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const clientesDeCertificacion = useMemo(() => {
+    const base = clientes ?? [];
+    if (!certificacionActual) return base;
+    return base.filter((c) => (c.etiquetas ?? []).includes(certificacionActual.etiqueta));
+  }, [clientes, certificacionActual]);
+
   const conEstado = useMemo(
-    () => (clientes ?? []).map((c) => ({ ...c, estadoCalculado: estadoActual(c) })),
-    [clientes]
+    () => clientesDeCertificacion.map((c) => ({ ...c, estadoCalculado: estadoActual(c) })),
+    [clientesDeCertificacion]
   );
 
   const filtrados = useMemo(() => {
@@ -116,6 +126,11 @@ export default function DashboardPage() {
         return false;
       if (filtroVendedor.length > 0 && !(c.vendedor && filtroVendedor.includes(c.vendedor)))
         return false;
+      if (
+        filtroEtiquetas.length > 0 &&
+        !(c.etiquetas ?? []).some((e) => filtroEtiquetas.includes(e))
+      )
+        return false;
       return true;
     });
   }, [
@@ -126,6 +141,7 @@ export default function DashboardPage() {
     filtroBienvenida,
     filtroTags,
     filtroVendedor,
+    filtroEtiquetas,
   ]);
 
   const ordenados = useMemo(() => {
@@ -144,11 +160,20 @@ export default function DashboardPage() {
     filtroRegion !== OPCION_TODOS ||
     filtroBienvenida.length > 0 ||
     filtroTags.length > 0 ||
-    filtroVendedor.length > 0;
+    filtroVendedor.length > 0 ||
+    filtroEtiquetas.length > 0;
 
   useEffect(() => {
     setSeleccionados(new Set());
-  }, [busqueda, filtroEstado, filtroRegion, filtroBienvenida, filtroTags, filtroVendedor]);
+  }, [
+    busqueda,
+    filtroEstado,
+    filtroRegion,
+    filtroBienvenida,
+    filtroTags,
+    filtroVendedor,
+    filtroEtiquetas,
+  ]);
 
   function limpiarFiltros() {
     setBusqueda("");
@@ -157,6 +182,7 @@ export default function DashboardPage() {
     setFiltroBienvenida([]);
     setFiltroTags([]);
     setFiltroVendedor([]);
+    setFiltroEtiquetas([]);
   }
 
   function alternarSeleccion(id: string) {
@@ -269,10 +295,12 @@ export default function DashboardPage() {
           Panel general · en vivo
         </span>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Clientes de la certificación
+          {certificacionActual ? `Clientes de ${certificacionActual.nombre}` : "Todos los clientes"}
         </h1>
         <p className="text-sm text-muted">
-          Control de invitaciones y membresías anuales de Legendar-IA.
+          {certificacionActual
+            ? `Control de invitaciones y membresías anuales de ${certificacionActual.nombre}.`
+            : "Vista general de clientes de todas las certificaciones."}
         </p>
       </div>
 
@@ -368,6 +396,13 @@ export default function DashboardPage() {
               seleccionados={filtroVendedor}
               onChange={setFiltroVendedor}
               buscable
+            />
+
+            <FilterMultiSelect
+              label="Todas las certificaciones"
+              opciones={CERTIFICACIONES.map((c) => ({ value: c.etiqueta, label: c.nombre }))}
+              seleccionados={filtroEtiquetas}
+              onChange={setFiltroEtiquetas}
             />
 
             {hayFiltrosActivos && (

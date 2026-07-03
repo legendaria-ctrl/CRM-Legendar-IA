@@ -11,6 +11,7 @@ import { EVENTO_LABEL, TipoEvento, ESTADOS_SOLICITUD } from "@/lib/constants";
 import { descargarCSV } from "@/lib/csv";
 import { UsuarioSelect } from "@/components/UsuarioSelect";
 import { FilterMultiSelect } from "@/components/FilterMultiSelect";
+import { CERTIFICACIONES } from "@/lib/certificaciones";
 
 function aInputDate(d: Date): string {
   return format(d, "yyyy-MM-dd");
@@ -23,9 +24,11 @@ export default function ActividadPage() {
   const [autor, setAutor] = useState("");
   const [usuarios, setUsuarios] = useState<string[]>([]);
   const [filtroVendedor, setFiltroVendedor] = useState<string[]>([]);
+  const [filtroEtiquetas, setFiltroEtiquetas] = useState<string[]>([]);
   const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [resultados, setResultados] = useState<ActividadDoc[] | null>(null);
   const [vendedorPorCliente, setVendedorPorCliente] = useState<Record<string, string | null>>({});
+  const [etiquetasPorCliente, setEtiquetasPorCliente] = useState<Record<string, string[]>>({});
   const [cargando, setCargando] = useState(false);
   const [exportando, setExportando] = useState(false);
 
@@ -52,15 +55,24 @@ export default function ActividadPage() {
       setVendedorPorCliente(
         Object.fromEntries(Object.entries(contactos).map(([id, c]) => [id, c.vendedor]))
       );
+      setEtiquetasPorCliente(
+        Object.fromEntries(Object.entries(contactos).map(([id, c]) => [id, c.etiquetas]))
+      );
     } finally {
       setCargando(false);
     }
   }
 
   const resultadosFiltrados = (resultados ?? []).filter((r) => {
-    if (filtroVendedor.length === 0) return true;
-    const vendedor = vendedorPorCliente[r.clienteId];
-    return vendedor ? filtroVendedor.includes(vendedor) : false;
+    if (filtroVendedor.length > 0) {
+      const vendedor = vendedorPorCliente[r.clienteId];
+      if (!vendedor || !filtroVendedor.includes(vendedor)) return false;
+    }
+    if (filtroEtiquetas.length > 0) {
+      const etiquetas = etiquetasPorCliente[r.clienteId] ?? [];
+      if (!etiquetas.some((e) => filtroEtiquetas.includes(e))) return false;
+    }
+    return true;
   });
 
   function preset(tipo: "hoy" | "semana" | "mes") {
@@ -197,6 +209,18 @@ export default function ActividadPage() {
                 seleccionados={filtroVendedor}
                 onChange={setFiltroVendedor}
                 buscable
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                Certificación
+              </span>
+              <FilterMultiSelect
+                label="Todas las certificaciones"
+                opciones={CERTIFICACIONES.map((c) => ({ value: c.etiqueta, label: c.nombre }))}
+                seleccionados={filtroEtiquetas}
+                onChange={setFiltroEtiquetas}
               />
             </label>
 
