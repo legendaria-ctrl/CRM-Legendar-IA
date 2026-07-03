@@ -20,6 +20,7 @@ import { ClientActions } from "@/components/ClientActions";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { TagPicker } from "@/components/TagPicker";
 import { VendedorSelect } from "@/components/VendedorSelect";
+import { CopyButton } from "@/components/CopyButton";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle, Tag as TagIcon, X } from "lucide-react";
 import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
@@ -113,12 +114,14 @@ export default function ClienteDetallePage() {
                 <span className="flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {cliente.email}
+                  <CopyButton valor={cliente.email} />
                 </span>
               )}
               {cliente.telefono && (
                 <span className="flex items-center gap-1.5">
                   <Phone className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {cliente.telefono}
+                  <CopyButton valor={cliente.telefono} />
                 </span>
               )}
               <span className="flex items-center gap-1.5">
