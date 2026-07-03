@@ -433,8 +433,11 @@ export default function DashboardPage() {
                           </span>
                         </div>
                         <p className="truncate text-xs text-muted">
-                          {cliente.email || "Sin correo"} · Agregado por:{" "}
-                          {cliente.creadoPor}
+                          {cliente.email || "Sin correo"}
+                          {" · Ingreso: "}
+                          {aFecha(cliente.fechaLlegada)?.toLocaleDateString("es-MX") ?? "—"}
+                          {" · Vence: "}
+                          {aFecha(cliente.fechaVencimiento)?.toLocaleDateString("es-MX") ?? "—"}
                           {cliente.region &&
                             ` · ${REGION_LABEL[cliente.region as Region] ?? cliente.region}`}
                         </p>
