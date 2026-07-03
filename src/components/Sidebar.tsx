@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
@@ -12,7 +13,6 @@ import {
   Users,
   UploadCloud,
   Tag,
-  Layers,
 } from "lucide-react";
 
 const links = [
@@ -45,8 +45,13 @@ export function Sidebar() {
           title="Ir a Certificaciones"
           className="brand-plate relative flex h-14 flex-1 items-center justify-center gap-2.5 rounded-[1.75rem] px-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)] transition-transform duration-500 ease-spring active:scale-[0.98] md:h-16"
         >
-          <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-white/15 md:h-9 md:w-9">
-            <Layers className="h-4 w-4 text-white md:h-5 md:w-5" strokeWidth={1.75} />
+          <span className="relative h-8 w-8 flex-none overflow-hidden rounded-xl bg-white/15 md:h-9 md:w-9">
+            <Image
+              src="/certificaciones-logo.png"
+              alt=""
+              fill
+              className="object-contain p-1"
+            />
           </span>
           <span className="truncate text-base font-semibold tracking-tight text-white md:text-lg">
             Certificaciones
