@@ -14,6 +14,7 @@ import {
   Play,
   CalendarPlus,
   Tag,
+  UserCheck,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -31,6 +32,7 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   REANUDACION: Play,
   EXTENSION: CalendarPlus,
   TAGS: Tag,
+  VENDEDOR: UserCheck,
 };
 
 export type EventoTimelineItem = {

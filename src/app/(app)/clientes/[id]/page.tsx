@@ -8,6 +8,7 @@ import {
   eliminarCliente,
   agregarTagsCliente,
   quitarTagCliente,
+  actualizarVendedor,
   ClienteDoc,
   EventoDoc,
 } from "@/lib/clientesService";
@@ -18,8 +19,9 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { ClientActions } from "@/components/ClientActions";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { TagPicker } from "@/components/TagPicker";
+import { VendedorSelect } from "@/components/VendedorSelect";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
-import { Mail, Phone, User, UserCheck, Ticket, Globe2, Trash2, LoaderCircle, Tag as TagIcon, X } from "lucide-react";
+import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle, Tag as TagIcon, X } from "lucide-react";
 import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 
@@ -71,6 +73,11 @@ export default function ClienteDetallePage() {
     await quitarTagCliente(cliente.id, cliente.nombre, { nombre: sesion.nombre, rol: sesion.rol }, tag);
   }
 
+  async function handleCambiarVendedor(vendedor: string | null) {
+    if (!sesion || !cliente) return;
+    await actualizarVendedor(cliente.id, cliente.nombre, { nombre: sesion.nombre, rol: sesion.rol }, vendedor);
+  }
+
   async function handleEliminar() {
     if (!sesion || !cliente) return;
     const confirmado = window.confirm(
@@ -118,12 +125,6 @@ export default function ClienteDetallePage() {
                 <User className="h-3.5 w-3.5" strokeWidth={1.5} />
                 Agregado por: {cliente.creadoPor}
               </span>
-              {cliente.vendedor && (
-                <span className="flex items-center gap-1.5">
-                  <UserCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  Vendedor: {cliente.vendedor}
-                </span>
-              )}
               {cliente.region && (
                 <span className="flex items-center gap-1.5">
                   <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -146,6 +147,13 @@ export default function ClienteDetallePage() {
               estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="shell rounded-[2rem] p-2 diffused-lg">
+        <div className="core flex flex-wrap items-center gap-3 rounded-[calc(2rem-0.5rem)] p-6 sm:flex-nowrap sm:justify-between">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted">Vendedor</span>
+          <VendedorSelect valor={cliente.vendedor} onChange={handleCambiarVendedor} />
         </div>
       </div>
 

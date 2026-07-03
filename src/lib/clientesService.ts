@@ -355,6 +355,22 @@ export async function quitarTagCliente(
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.TAGS, autor, `Se quitó la etiqueta: ${tag}`);
 }
 
+export async function actualizarVendedor(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  vendedor: string | null
+) {
+  await updateDoc(doc(db, "clientes", clienteId), { vendedor });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.VENDEDOR,
+    autor,
+    vendedor ? `Vendedor asignado: ${vendedor}` : "Se quitó el vendedor asignado"
+  );
+}
+
 export async function eliminarCliente(clienteId: string, clienteNombre: string, autor: Autor) {
   await registrarActividad({
     clienteId,

@@ -1,26 +1,39 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, Download, CheckCircle2, XCircle, LoaderCircle, ArrowUpRight, X, Tag as TagIcon } from "lucide-react";
 import { parsearCSV, filasAClientes, FilaClienteCSV } from "@/lib/csvParse";
 import { descargarCSV } from "@/lib/csv";
 import { crearCliente } from "@/lib/clientesService";
 import { asegurarTags } from "@/lib/tagsService";
+import { suscribirVendedores } from "@/lib/vendedoresService";
 import { TagPicker } from "@/components/TagPicker";
+import { VendedorSelect } from "@/components/VendedorSelect";
 import { useSesion } from "@/lib/session-context";
-import { REGION_LABEL, Region } from "@/lib/constants";
+import { REGION_LABEL, Region, ESTADOS_SOLICITUD } from "@/lib/constants";
 
 export default function ImportarClientesPage() {
   const router = useRouter();
   const { sesion } = useSesion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [filas, setFilas] = useState<FilaClienteCSV[] | null>(null);
+  const [vendedoresPorFila, setVendedoresPorFila] = useState<(string | null)[]>([]);
+  const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [nombreArchivo, setNombreArchivo] = useState("");
   const [tagLote, setTagLote] = useState<string | null>(null);
   const [importando, setImportando] = useState(false);
   const [progreso, setProgreso] = useState(0);
   const [resultado, setResultado] = useState<{ ok: number; error: number } | null>(null);
+
+  useEffect(() => {
+    const unsub = suscribirVendedores((lista) => {
+      setVendedoresAprobados(
+        lista.filter((v) => v.estado === ESTADOS_SOLICITUD.APROBADO).map((v) => v.nombre)
+      );
+    });
+    return () => unsub();
+  }, []);
 
   function plantilla() {
     descargarCSV(
@@ -47,7 +60,11 @@ export default function ImportarClientesPage() {
     setResultado(null);
     const texto = await file.text();
     const filasCrudas = parsearCSV(texto);
-    setFilas(filasAClientes(filasCrudas));
+    const nuevasFilas = filasAClientes(filasCrudas);
+    setFilas(nuevasFilas);
+    setVendedoresPorFila(
+      nuevasFilas.map((f) => (vendedoresAprobados.includes(f.vendedor) ? f.vendedor : null))
+    );
   }
 
   async function importar() {
@@ -64,6 +81,7 @@ export default function ImportarClientesPage() {
     }
 
     for (const fila of validas) {
+      const indiceOriginal = filas.indexOf(fila);
       try {
         await crearCliente({
           nombre: fila.nombre,
@@ -71,7 +89,7 @@ export default function ImportarClientesPage() {
           telefono: fila.telefono,
           notas: fila.notas,
           region: fila.region,
-          vendedor: fila.vendedor,
+          vendedor: vendedoresPorFila[indiceOriginal] ?? undefined,
           fechaInscripcion: fila.fechaInscripcion ?? undefined,
           tags: tagLote ? [tagLote] : [],
           autor: sesion.nombre,
@@ -203,7 +221,24 @@ export default function ImportarClientesPage() {
                         {f.fechaInscripcion ? f.fechaInscripcion.toLocaleDateString("es-MX") : "Hoy"}
                       </td>
                       <td className="px-4 py-3 text-muted">{f.notas || "—"}</td>
-                      <td className="px-4 py-3 text-muted">{f.vendedor || "—"}</td>
+                      <td className="px-4 py-3">
+                        <VendedorSelect
+                          valor={vendedoresPorFila[i] ?? null}
+                          onChange={(nombre) =>
+                            setVendedoresPorFila((prev) => {
+                              const copia = [...prev];
+                              copia[i] = nombre;
+                              return copia;
+                            })
+                          }
+                        />
+                        {f.vendedor && !vendedoresAprobados.includes(f.vendedor) && (
+                          <p className="mt-1 text-[11px] text-warning">
+                            &quot;{f.vendedor}&quot; no coincide con ningún vendedor dado de alta; no se
+                            asignará salvo que elijas uno.
+                          </p>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         {f.valido ? (
                           <span className="text-success">Listo</span>

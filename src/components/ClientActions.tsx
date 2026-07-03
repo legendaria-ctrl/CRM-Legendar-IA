@@ -63,9 +63,14 @@ export function ClientActions({
     try {
       if (action === "enviar_invitacion") await enviarInvitacion(clienteId, clienteNombre, autor);
       if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, clienteNombre, autor);
-      if (action === "renovar" && fechaVencimiento)
+      if (action === "renovar" && fechaVencimiento) {
         await renovarMembresia(clienteId, clienteNombre, autor, fechaVencimiento);
-      if (action === "nota" && notaTexto) await agregarNota(clienteId, clienteNombre, autor, notaTexto);
+        setNota(`Renovó el ${new Date().toLocaleDateString("es-MX")}`);
+      }
+      if (action === "nota" && notaTexto) {
+        await agregarNota(clienteId, clienteNombre, autor, notaTexto);
+        setNota("");
+      }
       if (action === "deshacer_invitacion") await deshacerInvitacion(clienteId, clienteNombre, autor);
       if (action === "deshacer_aceptacion") await deshacerAceptacion(clienteId, clienteNombre, autor);
       if (action === "pausar") await pausarMembresia(clienteId, clienteNombre, autor);
@@ -73,7 +78,6 @@ export function ClientActions({
         await reanudarMembresia(clienteId, clienteNombre, autor, fechaVencimiento, fechaPausa);
       if (action === "agregar_dias" && fechaVencimiento)
         await agregarDiasMembresia(clienteId, clienteNombre, autor, fechaVencimiento, 30);
-      setNota("");
     } catch (err) {
       console.error(err);
       setError(
