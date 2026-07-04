@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
+import { useMobileActions } from "@/lib/mobile-actions-context";
 import {
   LayoutGrid,
   UserPlus,
@@ -35,6 +36,7 @@ export function Sidebar() {
   const router = useRouter();
   const { sesion, cerrarSesion } = useSesion();
   const { setCertificacionActual } = useCertificacion();
+  const { acciones } = useMobileActions();
   const [abierto, setAbierto] = useState(false);
   const itemsNav = sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : links;
 
@@ -63,7 +65,7 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-white p-0.5 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-white p-px shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
@@ -123,6 +125,29 @@ export function Sidebar() {
               })}
             </nav>
 
+            {acciones.length > 0 && (
+              <div className="flex flex-col gap-1 border-t border-silver-deep/40 pt-3">
+                <p className="px-4 pb-1 text-[11px] font-medium uppercase tracking-wider text-muted">
+                  Esta página
+                </p>
+                {acciones.map((accion) => (
+                  <button
+                    key={accion.key}
+                    onClick={() => {
+                      accion.onClick();
+                      setAbierto(false);
+                    }}
+                    disabled={accion.disabled}
+                    className="group flex items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-left text-sm font-medium text-muted transition-all duration-500 ease-spring hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
+                  >
+                    <accion.icon className="h-4 w-4 flex-none text-muted" strokeWidth={1.5} />
+                    {accion.label}
+                    {accion.activo && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <button
               onClick={() => cerrarSesion()}
               className="group flex items-center justify-center gap-2 rounded-xl border border-silver-deep/60 bg-surface-2 py-2.5 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98]"
@@ -139,14 +164,14 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="flex items-center justify-center rounded-[1.5rem] bg-white p-2.5 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="flex h-[84px] items-center justify-center rounded-[1.5rem] bg-white p-1 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
             alt="Certificaciones"
             width={1200}
             height={670}
-            className="h-16 w-auto"
+            className="h-full w-auto"
             priority
           />
         </button>

@@ -20,6 +20,7 @@ import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { suscribirVendedores } from "@/lib/vendedoresService";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
+import { useMobileActions } from "@/lib/mobile-actions-context";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
 import {
   ESTADOS_CLIENTE,
@@ -82,6 +83,7 @@ export default function DashboardPage() {
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const { setAcciones } = useMobileActions();
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
@@ -292,6 +294,27 @@ export default function DashboardPage() {
     );
   }
 
+  useEffect(() => {
+    setAcciones([
+      {
+        key: "filtros",
+        label: "Filtros",
+        icon: SlidersHorizontal,
+        onClick: () => setFiltrosAbiertos(true),
+        activo: hayFiltrosActivos,
+      },
+      {
+        key: "csv",
+        label: "Descargar CSV",
+        icon: Download,
+        onClick: exportarCSV,
+        disabled: ordenados.length === 0,
+      },
+    ]);
+    return () => setAcciones([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hayFiltrosActivos, ordenados]);
+
   if (clientes === null) {
     return <div className="py-16 text-center text-sm text-muted">Cargando clientes…</div>;
   }
@@ -329,23 +352,38 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-4">
         {stats.map(({ label, value, icon: Icon }) => (
-          <div key={label} className="shell rounded-2xl p-1.5 diffused sm:rounded-[1.75rem] sm:p-2">
-            <div className="core flex flex-col gap-1.5 rounded-[calc(1rem-0.375rem)] p-3 sm:gap-3 sm:rounded-[calc(1.75rem-0.5rem)] sm:p-5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 sm:h-9 sm:w-9 sm:rounded-xl">
-                <Icon className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" strokeWidth={1.5} />
+          <div key={label} className="shell rounded-xl p-1 diffused sm:rounded-[1.75rem] sm:p-2">
+            <div className="core flex flex-col gap-1 rounded-[calc(0.75rem-0.25rem)] p-2 sm:gap-3 sm:rounded-[calc(1.75rem-0.5rem)] sm:p-5">
+              <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 sm:h-9 sm:w-9 sm:rounded-xl">
+                <Icon className="h-3 w-3 text-primary sm:h-4 sm:w-4" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-lg font-semibold tabular-nums text-foreground sm:text-2xl">{value}</p>
-                <p className="text-[10px] text-muted sm:text-xs">{label}</p>
+                <p className="text-sm font-semibold tabular-nums text-foreground sm:text-2xl">{value}</p>
+                <p className="text-[9px] leading-tight text-muted sm:text-xs">{label}</p>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="shell rounded-[2rem] p-2 diffused-lg">
+      <div className="sm:hidden">
+        <div className="flex items-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 transition-all duration-500 ease-spring focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
+          <Search className="h-4 w-4 text-muted" strokeWidth={1.5} />
+          <input
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre, correo o teléfono…"
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted/60"
+          />
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          {ordenados.length} de {total} clientes
+        </p>
+      </div>
+
+      <div className="hidden sm:block shell rounded-[2rem] p-2 diffused-lg">
         <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="flex flex-1 items-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 transition-all duration-500 ease-spring focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
@@ -359,27 +397,16 @@ export default function DashboardPage() {
             </div>
 
             <button
-              onClick={() => setFiltrosAbiertos(true)}
-              className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary sm:hidden"
-            >
-              <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
-              Filtros
-              {hayFiltrosActivos && (
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              )}
-            </button>
-
-            <button
               onClick={exportarCSV}
               disabled={ordenados.length === 0}
               className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-40"
             >
               <Download className="h-4 w-4" strokeWidth={1.75} />
-              <span className="hidden sm:inline">Descargar CSV</span>
+              <span>Descargar CSV</span>
             </button>
           </div>
 
-          <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setOrden(orden === "recientes" ? "antiguos" : "recientes")}
               className="flex items-center justify-center gap-1.5 truncate rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary sm:justify-start"
@@ -457,10 +484,6 @@ export default function DashboardPage() {
               {ordenados.length} de {total} clientes
             </span>
           </div>
-
-          <p className="text-xs text-muted sm:hidden">
-            {ordenados.length} de {total} clientes
-          </p>
         </div>
       </div>
 
