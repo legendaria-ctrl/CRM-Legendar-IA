@@ -19,7 +19,20 @@ export const CERTIFICACIONES: Certificacion[] = [
   },
 ];
 
+export const SIN_ASIGNAR_ID = "__sin_asignar__";
+
+// Pseudo-certificación: agrupa a los clientes que no tienen ninguna etiqueta
+// de certificación asignada todavía.
+export const SIN_ASIGNAR: Certificacion = {
+  id: SIN_ASIGNAR_ID,
+  nombre: "No asignados",
+  etiqueta: "",
+  logo: null,
+  color: "bg-silver text-muted",
+};
+
 export function certificacionPorId(id: string | null): Certificacion | null {
   if (!id) return null;
+  if (id === SIN_ASIGNAR_ID) return SIN_ASIGNAR;
   return CERTIFICACIONES.find((c) => c.id === id) ?? null;
 }

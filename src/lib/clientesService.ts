@@ -373,6 +373,22 @@ export async function quitarTagCliente(
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.TAGS, autor, `Se quitó la etiqueta: ${tag}`);
 }
 
+export async function quitarEtiquetaCliente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  etiqueta: string
+) {
+  await updateDoc(doc(db, "clientes", clienteId), { etiquetas: arrayRemove(etiqueta) });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.ETIQUETAS,
+    autor,
+    `Se quitó de la certificación: ${etiqueta}`
+  );
+}
+
 export async function actualizarVendedor(
   clienteId: string,
   clienteNombre: string,

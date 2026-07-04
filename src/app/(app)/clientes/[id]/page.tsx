@@ -8,6 +8,8 @@ import {
   eliminarCliente,
   agregarTagsCliente,
   quitarTagCliente,
+  agregarEtiquetasCliente,
+  quitarEtiquetaCliente,
   actualizarVendedor,
   ClienteDoc,
   EventoDoc,
@@ -31,6 +33,7 @@ import {
   Trash2,
   LoaderCircle,
   Tag as TagIcon,
+  Layers,
   X,
 } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
@@ -83,6 +86,26 @@ export default function ClienteDetallePage() {
   async function handleQuitarTag(tag: string) {
     if (!sesion || !cliente) return;
     await quitarTagCliente(cliente.id, cliente.nombre, { nombre: sesion.nombre, rol: sesion.rol }, tag);
+  }
+
+  async function handleAgregarEtiqueta(etiqueta: string) {
+    if (!sesion || !cliente) return;
+    await agregarEtiquetasCliente(
+      cliente.id,
+      cliente.nombre,
+      { nombre: sesion.nombre, rol: sesion.rol },
+      [etiqueta]
+    );
+  }
+
+  async function handleQuitarEtiqueta(etiqueta: string) {
+    if (!sesion || !cliente) return;
+    await quitarEtiquetaCliente(
+      cliente.id,
+      cliente.nombre,
+      { nombre: sesion.nombre, rol: sesion.rol },
+      etiqueta
+    );
   }
 
   async function handleCambiarVendedor(vendedor: string | null) {
@@ -207,6 +230,53 @@ export default function ClienteDetallePage() {
             );
           })}
           <TagPicker seleccionados={cliente.tags ?? []} onAgregar={handleAgregarTags} />
+        </div>
+      </div>
+
+      <div className="shell rounded-[2rem] p-2 diffused-lg">
+        <div className="core flex flex-wrap items-center gap-2 rounded-[calc(2rem-0.5rem)] p-6">
+          <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted">
+            Certificaciones
+          </span>
+          {(cliente.etiquetas ?? []).length === 0 ? (
+            <span className="rounded-full bg-silver px-3 py-1 text-xs font-medium text-muted">
+              No asignados
+            </span>
+          ) : (
+            (cliente.etiquetas ?? []).map((etiqueta) => {
+              const cert = CERTIFICACIONES.find((c) => c.etiqueta === etiqueta);
+              return (
+                <span
+                  key={etiqueta}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                    cert?.color ?? "bg-silver text-muted"
+                  }`}
+                >
+                  <Layers className="h-3 w-3" strokeWidth={2} />
+                  {cert?.nombre ?? etiqueta}
+                  <button
+                    onClick={() => handleQuitarEtiqueta(etiqueta)}
+                    className="ml-0.5 rounded-full p-0.5 transition-colors duration-200 hover:bg-black/10"
+                    title="Quitar de esta certificación"
+                  >
+                    <X className="h-3 w-3" strokeWidth={2.5} />
+                  </button>
+                </span>
+              );
+            })
+          )}
+          {CERTIFICACIONES.filter((c) => !(cliente.etiquetas ?? []).includes(c.etiqueta)).map(
+            (cert) => (
+              <button
+                key={cert.id}
+                onClick={() => handleAgregarEtiqueta(cert.etiqueta)}
+                className="flex items-center gap-1.5 rounded-full border border-dashed border-silver-deep/60 px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 hover:border-primary/50 hover:text-primary"
+              >
+                <Layers className="h-3 w-3" strokeWidth={2} />
+                Agregar a {cert.nombre}
+              </button>
+            )
+          )}
         </div>
       </div>
 

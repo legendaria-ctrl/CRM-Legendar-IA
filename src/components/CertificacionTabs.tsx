@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
-import { CERTIFICACIONES } from "@/lib/certificaciones";
+import { Plus, FolderX } from "lucide-react";
+import { CERTIFICACIONES, SIN_ASIGNAR_ID } from "@/lib/certificaciones";
 import { useCertificacion } from "@/lib/certificacion-context";
 import { NotificacionesBell } from "@/components/NotificacionesBell";
 
 export function CertificacionTabs() {
   const router = useRouter();
-  const { setCertificacionActual, hidratado } = useCertificacion();
+  const { certificacionActual, setCertificacionActual, hidratado } = useCertificacion();
 
   if (!hidratado) return null;
 
@@ -18,8 +18,10 @@ export function CertificacionTabs() {
     router.push("/");
   }
 
+  const sinAsignarActivo = certificacionActual?.id === SIN_ASIGNAR_ID;
+
   return (
-    <div className="shell mb-6 rounded-[1.75rem] p-2 diffused">
+    <div className="shell rounded-[1.75rem] p-2 diffused">
       <div className="core flex flex-wrap items-center gap-2 rounded-[calc(1.75rem-0.5rem)] p-2">
         {CERTIFICACIONES.map((cert) => {
           return (
@@ -39,6 +41,19 @@ export function CertificacionTabs() {
             </button>
           );
         })}
+
+        <button
+          onClick={() => irACertificacion(SIN_ASIGNAR_ID)}
+          title="No asignados"
+          className={`flex h-11 flex-none items-center gap-1.5 rounded-2xl px-3.5 text-xs font-medium transition-all duration-500 ease-spring ${
+            sinAsignarActivo
+              ? "bg-foreground text-white shadow-[0_10px_24px_-8px_rgba(11,18,32,0.4)]"
+              : "border border-silver-deep/60 text-muted hover:text-foreground"
+          }`}
+        >
+          <FolderX className="h-3.5 w-3.5" strokeWidth={2} />
+          No asignados
+        </button>
 
         <button
           disabled

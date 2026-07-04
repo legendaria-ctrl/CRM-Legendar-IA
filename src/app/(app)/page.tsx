@@ -6,22 +6,27 @@ import {
   suscribirClientes,
   ClienteDoc,
   enviarInvitacion,
+  deshacerInvitacion,
+  aceptarInvitacion,
+  deshacerAceptacion,
   actualizarMensajeBienvenida,
   agregarTagsCliente,
+  quitarTagCliente,
   agregarEtiquetasCliente,
+  quitarEtiquetaCliente,
 } from "@/lib/clientesService";
 import { estadoActual, estaActivo, estadoBienvenidaDe, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { InvitacionToggle } from "@/components/InvitacionToggle";
 import { FilterMultiSelect } from "@/components/FilterMultiSelect";
-import { TagPicker } from "@/components/TagPicker";
+import { BulkActionMenu } from "@/components/BulkActionMenu";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { suscribirVendedores } from "@/lib/vendedoresService";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
 import { useMobileActions } from "@/lib/mobile-actions-context";
-import { CERTIFICACIONES } from "@/lib/certificaciones";
+import { CERTIFICACIONES, SIN_ASIGNAR_ID } from "@/lib/certificaciones";
 import {
   ESTADOS_CLIENTE,
   ESTADO_LABEL,
@@ -47,11 +52,11 @@ import {
   X,
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
-  Send,
-  CheckCheck,
-  LoaderCircle,
   Layers,
   SlidersHorizontal,
+  RefreshCw,
+  MessageCircle,
+  Tag as TagIcon,
 } from "lucide-react";
 
 const OPCION_TODOS = "TODOS";
@@ -103,6 +108,9 @@ export default function DashboardPage() {
   const clientesDeCertificacion = useMemo(() => {
     const base = clientes ?? [];
     if (!certificacionActual) return base;
+    if (certificacionActual.id === SIN_ASIGNAR_ID) {
+      return base.filter((c) => (c.etiquetas ?? []).length === 0);
+    }
     return base.filter((c) => (c.etiquetas ?? []).includes(certificacionActual.etiqueta));
   }, [clientes, certificacionActual]);
 
@@ -212,49 +220,75 @@ export default function DashboardPage() {
     );
   }
 
-  async function aplicarAccionEnLote(accion: "invitacion" | "bienvenida") {
+  async function ejecutarEnLote(accion: (c: (typeof ordenados)[number]) => Promise<void>) {
     if (!sesion || seleccionados.size === 0 || procesandoLote) return;
     setProcesandoLote(true);
-    const autor = { nombre: sesion.nombre, rol: sesion.rol };
     try {
       const objetivos = ordenados.filter((c) => seleccionados.has(c.id));
-      await Promise.all(
-        objetivos.map((c) => {
-          if (accion === "invitacion") {
-            if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
-            return enviarInvitacion(c.id, c.nombre, autor);
-          }
-          if (estadoBienvenidaDe(c.mensajeBienvenida) === ESTADOS_BIENVENIDA.ENVIADA)
-            return Promise.resolve();
-          return actualizarMensajeBienvenida(c.id, c.nombre, autor, ESTADOS_BIENVENIDA.ENVIADA);
-        })
-      );
+      await Promise.all(objetivos.map(accion));
       setSeleccionados(new Set());
     } finally {
       setProcesandoLote(false);
     }
   }
 
-  async function aplicarTagsEnLote(tags: string[]) {
-    if (!sesion || seleccionados.size === 0) return;
+  function aplicarEstadoEnLote(
+    accion: "enviar" | "deshacer_invitacion" | "aceptar" | "deshacer_aceptacion"
+  ) {
+    if (!sesion) return;
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
-    const objetivos = ordenados.filter((c) => seleccionados.has(c.id));
-    await Promise.all(objetivos.map((c) => agregarTagsCliente(c.id, c.nombre, autor, tags)));
+    return ejecutarEnLote((c) => {
+      if (accion === "enviar") {
+        if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
+        return enviarInvitacion(c.id, c.nombre, autor);
+      }
+      if (accion === "deshacer_invitacion") {
+        if (c.estado !== ESTADOS_CLIENTE.INVITACION_ENVIADA) return Promise.resolve();
+        return deshacerInvitacion(c.id, c.nombre, autor);
+      }
+      if (accion === "aceptar") {
+        if (c.estado !== ESTADOS_CLIENTE.INVITACION_ENVIADA) return Promise.resolve();
+        return aceptarInvitacion(c.id, c.nombre, autor);
+      }
+      if (c.estado !== ESTADOS_CLIENTE.ACTIVO) return Promise.resolve();
+      return deshacerAceptacion(c.id, c.nombre, autor);
+    });
   }
 
-  async function aplicarEtiquetaEnLote(etiqueta: string) {
-    if (!sesion || seleccionados.size === 0 || procesandoLote) return;
-    setProcesandoLote(true);
-    try {
-      const autor = { nombre: sesion.nombre, rol: sesion.rol };
-      const objetivos = ordenados.filter((c) => seleccionados.has(c.id));
-      await Promise.all(
-        objetivos.map((c) => agregarEtiquetasCliente(c.id, c.nombre, autor, [etiqueta]))
-      );
-      setSeleccionados(new Set());
-    } finally {
-      setProcesandoLote(false);
-    }
+  function aplicarBienvenidaEnLote(estado: EstadoBienvenida) {
+    if (!sesion) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    return ejecutarEnLote((c) => actualizarMensajeBienvenida(c.id, c.nombre, autor, estado));
+  }
+
+  function aplicarAgregarTagEnLote(tag: string) {
+    if (!sesion) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    return ejecutarEnLote((c) => agregarTagsCliente(c.id, c.nombre, autor, [tag]));
+  }
+
+  function aplicarQuitarTagEnLote(tag: string) {
+    if (!sesion) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    return ejecutarEnLote((c) => {
+      if (!(c.tags ?? []).includes(tag)) return Promise.resolve();
+      return quitarTagCliente(c.id, c.nombre, autor, tag);
+    });
+  }
+
+  function aplicarAgregarEtiquetaEnLote(etiqueta: string) {
+    if (!sesion) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    return ejecutarEnLote((c) => agregarEtiquetasCliente(c.id, c.nombre, autor, [etiqueta]));
+  }
+
+  function aplicarQuitarEtiquetaEnLote(etiqueta: string) {
+    if (!sesion) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    return ejecutarEnLote((c) => {
+      if (!(c.etiquetas ?? []).includes(etiqueta)) return Promise.resolve();
+      return quitarEtiquetaCliente(c.id, c.nombre, autor, etiqueta);
+    });
   }
 
   function exportarCSV() {
@@ -589,46 +623,85 @@ export default function DashboardPage() {
             <span className="text-xs font-medium text-muted">
               {seleccionados.size} seleccionado{seleccionados.size === 1 ? "" : "s"}
             </span>
-            <button
-              onClick={() => aplicarAccionEnLote("invitacion")}
+            <BulkActionMenu
+              label="Estado"
+              icon={RefreshCw}
               disabled={procesandoLote}
-              className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-medium text-primary transition-all duration-500 ease-spring hover:bg-primary/20 disabled:opacity-50"
-            >
-              {procesandoLote ? (
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
-              ) : (
-                <Send className="h-3.5 w-3.5" strokeWidth={2} />
-              )}
-              Marcar invitación enviada
-            </button>
-            <button
-              onClick={() => aplicarAccionEnLote("bienvenida")}
+              options={[
+                {
+                  key: "enviar",
+                  label: "Marcar invitación enviada",
+                  onSelect: () => aplicarEstadoEnLote("enviar"),
+                },
+                {
+                  key: "deshacer_invitacion",
+                  label: "Deshacer invitación (vuelve a Nuevo)",
+                  onSelect: () => aplicarEstadoEnLote("deshacer_invitacion"),
+                  quitar: true,
+                },
+                {
+                  key: "aceptar",
+                  label: "Marcar invitación aceptada",
+                  onSelect: () => aplicarEstadoEnLote("aceptar"),
+                },
+                {
+                  key: "deshacer_aceptacion",
+                  label: "Deshacer aceptación",
+                  onSelect: () => aplicarEstadoEnLote("deshacer_aceptacion"),
+                  quitar: true,
+                },
+              ]}
+            />
+
+            <BulkActionMenu
+              label="Bienvenida WA"
+              icon={MessageCircle}
               disabled={procesandoLote}
-              className="flex items-center gap-2 rounded-full bg-success/10 px-4 py-2 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/20 disabled:opacity-50"
-            >
-              {procesandoLote ? (
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
-              ) : (
-                <CheckCheck className="h-3.5 w-3.5" strokeWidth={2} />
-              )}
-              Marcar MB enviado
-            </button>
-            <TagPicker seleccionados={[]} onAgregar={aplicarTagsEnLote} />
-            {CERTIFICACIONES.map((cert) => (
-              <button
-                key={cert.id}
-                onClick={() => aplicarEtiquetaEnLote(cert.etiqueta)}
-                disabled={procesandoLote}
-                className="flex items-center gap-2 rounded-full bg-warning/10 px-4 py-2 text-xs font-medium text-warning transition-all duration-500 ease-spring hover:bg-warning/20 disabled:opacity-50"
-              >
-                {procesandoLote ? (
-                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
-                ) : (
-                  <Layers className="h-3.5 w-3.5" strokeWidth={2} />
-                )}
-                Agregar a {cert.nombre}
-              </button>
-            ))}
+              options={Object.values(ESTADOS_BIENVENIDA).map((estado) => ({
+                key: estado,
+                label: BIENVENIDA_LABEL[estado as EstadoBienvenida],
+                onSelect: () => aplicarBienvenidaEnLote(estado as EstadoBienvenida),
+              }))}
+            />
+
+            <BulkActionMenu
+              label="Tags"
+              icon={TagIcon}
+              disabled={procesandoLote}
+              options={catalogoTags.flatMap((t) => [
+                {
+                  key: `add-${t.nombre}`,
+                  label: `Agregar: ${t.nombre}`,
+                  onSelect: () => aplicarAgregarTagEnLote(t.nombre),
+                },
+                {
+                  key: `quitar-${t.nombre}`,
+                  label: `Quitar: ${t.nombre}`,
+                  onSelect: () => aplicarQuitarTagEnLote(t.nombre),
+                  quitar: true,
+                },
+              ])}
+            />
+
+            <BulkActionMenu
+              label="Certificación"
+              icon={Layers}
+              disabled={procesandoLote}
+              options={CERTIFICACIONES.flatMap((cert) => [
+                {
+                  key: `add-${cert.id}`,
+                  label: `Agregar a ${cert.nombre}`,
+                  onSelect: () => aplicarAgregarEtiquetaEnLote(cert.etiqueta),
+                },
+                {
+                  key: `quitar-${cert.id}`,
+                  label: `Quitar de ${cert.nombre}`,
+                  onSelect: () => aplicarQuitarEtiquetaEnLote(cert.etiqueta),
+                  quitar: true,
+                },
+              ])}
+            />
+
             <button
               onClick={() => setSeleccionados(new Set())}
               className="ml-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger"
@@ -759,7 +832,19 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div className="flex flex-none items-center gap-2 sm:gap-3">
-                        <StatusBadge estado={cliente.estadoCalculado} />
+                        <span
+                          className={`inline-flex flex-none items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium sm:hidden ${
+                            activo ? "bg-success/10 text-success" : "bg-silver text-muted"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${activo ? "bg-success" : "bg-muted"}`}
+                          />
+                          {activo ? "Activo" : "Inactivo"}
+                        </span>
+                        <div className="hidden flex-none items-center sm:flex">
+                          <StatusBadge estado={cliente.estadoCalculado} />
+                        </div>
                         <div className="hidden flex-none items-center gap-3 sm:flex">
                           {activo && dias !== null && (
                             <span className="hidden text-xs text-muted sm:inline">
