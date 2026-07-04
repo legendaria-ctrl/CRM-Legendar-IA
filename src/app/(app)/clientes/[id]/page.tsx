@@ -68,7 +68,7 @@ export default function ClienteDetallePage() {
   }
 
   const estado = estadoActual(cliente);
-  const fechaInvitacion = aFecha(cliente.fechaInvitacion);
+  const fechaLlegada = aFecha(cliente.fechaLlegada);
   const fechaVencimiento = aFecha(cliente.fechaVencimiento);
   const fechaPausa = aFecha(cliente.fechaPausa);
   const beneficios = beneficiosDeRegion(cliente.region);
@@ -244,9 +244,9 @@ export default function ClienteDetallePage() {
         fechaPausa={fechaPausa}
       />
 
-      {fechaInvitacion && fechaVencimiento && (
+      {fechaLlegada && fechaVencimiento && (
         <CountdownTimer
-          fechaInicio={fechaInvitacion.toISOString()}
+          fechaInicio={fechaLlegada.toISOString()}
           fechaVencimiento={fechaVencimiento.toISOString()}
           pausada={cliente.pausada}
           fechaPausa={fechaPausa?.toISOString() ?? null}

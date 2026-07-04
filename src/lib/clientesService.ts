@@ -119,6 +119,9 @@ export async function crearCliente(input: {
   autorRol: string;
   origen?: "manual" | "csv";
 }) {
+  const fechaLlegada = input.fechaInscripcion ?? new Date();
+  const vencimiento = fechaVencimientoDesde(fechaLlegada);
+
   const nuevo = await addDoc(clientesRef, {
     nombre: input.nombre,
     email: input.email || null,
@@ -126,12 +129,10 @@ export async function crearCliente(input: {
     notas: input.notas || null,
     region: input.region || null,
     estado: ESTADOS_CLIENTE.NUEVO,
-    fechaLlegada: input.fechaInscripcion
-      ? Timestamp.fromDate(input.fechaInscripcion)
-      : serverTimestamp(),
+    fechaLlegada: Timestamp.fromDate(fechaLlegada),
     fechaInvitacion: null,
     fechaAceptacion: null,
-    fechaVencimiento: null,
+    fechaVencimiento: Timestamp.fromDate(vencimiento),
     mensajeBienvenida: input.mensajeBienvenida
       ? ESTADOS_BIENVENIDA.ENVIADA
       : ESTADOS_BIENVENIDA.PENDIENTE,
@@ -158,19 +159,16 @@ export async function crearCliente(input: {
 }
 
 export async function enviarInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
-  const ahora = new Date();
-  const vencimiento = fechaVencimientoDesde(ahora);
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
-    fechaInvitacion: Timestamp.fromDate(ahora),
-    fechaVencimiento: Timestamp.fromDate(vencimiento),
+    fechaInvitacion: Timestamp.fromDate(new Date()),
   });
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.INVITACION_ENVIADA,
     autor,
-    "Invitación enviada al cliente. El temporizador de membresía de 1 año comenzó a correr."
+    "Invitación enviada al cliente."
   );
 }
 
@@ -178,7 +176,6 @@ export async function deshacerInvitacion(clienteId: string, clienteNombre: strin
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.NUEVO,
     fechaInvitacion: null,
-    fechaVencimiento: null,
   });
   await agregarEvento(
     clienteId,
