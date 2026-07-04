@@ -9,6 +9,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { crearNotificacionActividad } from "./notificacionesService";
+import { EVENTO_LABEL, TipoEvento } from "./constants";
 
 export type ActividadDoc = {
   id: string;
@@ -40,6 +42,16 @@ export async function registrarActividad(input: {
     nota: input.nota || null,
     fecha: serverTimestamp(),
   });
+
+  if (input.autorRol === "VENDEDOR") {
+    const accionLabel = EVENTO_LABEL[input.accion as TipoEvento] ?? input.accion;
+    await crearNotificacionActividad(
+      { nombre: input.autor, rol: input.autorRol },
+      `${input.autor} · ${accionLabel}: ${input.clienteNombre}`,
+      input.clienteId,
+      input.clienteNombre
+    );
+  }
 }
 
 export async function obtenerActividad(rango: {

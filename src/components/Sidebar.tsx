@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
 import { useMobileActions } from "@/lib/mobile-actions-context";
+import { NotificacionesBell } from "@/components/NotificacionesBell";
 import {
   LayoutGrid,
   UserPlus,
@@ -17,6 +18,7 @@ import {
   Tag,
   Menu,
   X,
+  Megaphone,
 } from "lucide-react";
 
 const links = [
@@ -29,6 +31,7 @@ const linksAdmin = [
   { href: "/clientes/importar", label: "Importar CSV", icon: UploadCloud },
   { href: "/actividad", label: "Actividad", icon: History },
   { href: "/vendedores", label: "Vendedores", icon: Users },
+  { href: "/avisos", label: "Dar avisos", icon: Megaphone },
 ];
 
 export function Sidebar() {
@@ -65,7 +68,7 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="relative h-[52px] flex-1 overflow-hidden rounded-2xl bg-white shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="relative h-[52px] flex-1 overflow-hidden rounded-2xl bg-white p-1.5 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
@@ -75,6 +78,8 @@ export function Sidebar() {
             priority
           />
         </button>
+
+        <NotificacionesBell />
       </div>
 
       {/* Menú lateral móvil (drawer) */}
@@ -160,19 +165,22 @@ export function Sidebar() {
 
       {/* Sidebar de escritorio */}
       <aside className="hidden h-fit w-full flex-col gap-4 md:sticky md:top-6 md:flex md:w-64">
-        <button
-          onClick={irAInicio}
-          title="Ir a Certificaciones"
-          className="relative h-[84px] overflow-hidden rounded-[1.5rem] bg-white shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
-        >
-          <Image
-            src="/certificaciones-logo-full.png"
-            alt="Certificaciones"
-            fill
-            className="object-contain"
-            priority
-          />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={irAInicio}
+            title="Ir a Certificaciones"
+            className="relative h-[84px] flex-1 overflow-hidden rounded-[1.5rem] bg-white p-2.5 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          >
+            <Image
+              src="/certificaciones-logo-full.png"
+              alt="Certificaciones"
+              fill
+              className="object-contain"
+              priority
+            />
+          </button>
+          <NotificacionesBell />
+        </div>
 
         <div className="shell rounded-[1.75rem] p-2 diffused">
           <nav className="core flex flex-col gap-1 rounded-[calc(1.75rem-0.5rem)] p-2">

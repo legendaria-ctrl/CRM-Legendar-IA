@@ -1,0 +1,109 @@
+import {
+  addDoc,
+  collection,
+  doc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "./firebase";
+
+export type Audiencia = "VENDEDORES" | "ADMINS" | "PRIVADO";
+
+export type NotificacionDoc = {
+  id: string;
+  tipo: "AVISO" | "ACTIVIDAD";
+  audiencia: Audiencia;
+  destinatarios: string[];
+  mensaje: string;
+  autor: string;
+  autorRol: string;
+  clienteId: string | null;
+  clienteNombre: string | null;
+  fecha: Timestamp | null;
+  leidoPor: string[];
+};
+
+const notificacionesRef = collection(db, "notificaciones");
+
+function esRelevante(n: NotificacionDoc, sesion: { nombre: string; rol: string }): boolean {
+  if (n.audiencia === "PRIVADO") return n.destinatarios.includes(sesion.nombre);
+  if (n.audiencia === "VENDEDORES") return sesion.rol === "VENDEDOR";
+  if (n.audiencia === "ADMINS") return sesion.rol === "ADMIN";
+  return false;
+}
+
+export function suscribirNotificaciones(
+  sesion: { nombre: string; rol: string },
+  callback: (notificaciones: NotificacionDoc[]) => void
+) {
+  const q = query(notificacionesRef, orderBy("fecha", "desc"), limit(100));
+  return onSnapshot(q, (snap) => {
+    const todas = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as NotificacionDoc);
+    callback(todas.filter((n) => esRelevante(n, sesion)));
+  });
+}
+
+export async function crearAviso(
+  autor: { nombre: string; rol: string },
+  audiencia: "VENDEDORES" | "PRIVADO",
+  destinatarios: string[],
+  mensaje: string
+) {
+  const limpio = mensaje.trim();
+  if (!limpio) return;
+
+  await addDoc(notificacionesRef, {
+    tipo: "AVISO",
+    audiencia,
+    destinatarios: audiencia === "PRIVADO" ? destinatarios : [],
+    mensaje: limpio,
+    autor: autor.nombre,
+    autorRol: autor.rol,
+    clienteId: null,
+    clienteNombre: null,
+    fecha: serverTimestamp(),
+    leidoPor: [],
+  });
+}
+
+export async function crearNotificacionActividad(
+  autor: { nombre: string; rol: string },
+  mensaje: string,
+  clienteId?: string | null,
+  clienteNombre?: string | null
+) {
+  if (autor.rol !== "VENDEDOR") return;
+
+  await addDoc(notificacionesRef, {
+    tipo: "ACTIVIDAD",
+    audiencia: "ADMINS",
+    destinatarios: [],
+    mensaje,
+    autor: autor.nombre,
+    autorRol: autor.rol,
+    clienteId: clienteId ?? null,
+    clienteNombre: clienteNombre ?? null,
+    fecha: serverTimestamp(),
+    leidoPor: [],
+  });
+}
+
+export function suscribirAvisosEnviados(callback: (avisos: NotificacionDoc[]) => void) {
+  const q = query(notificacionesRef, orderBy("fecha", "desc"), limit(100));
+  return onSnapshot(q, (snap) => {
+    const todas = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as NotificacionDoc);
+    callback(todas.filter((n) => n.tipo === "AVISO"));
+  });
+}
+
+export async function marcarNotificacionLeida(id: string, leidoPor: string[], nombre: string) {
+  if (leidoPor.includes(nombre)) return;
+  await updateDoc(doc(db, "notificaciones", id), {
+    leidoPor: [...leidoPor, nombre],
+  });
+}
