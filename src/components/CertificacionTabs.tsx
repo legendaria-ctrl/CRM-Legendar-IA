@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
 import { useCertificacion } from "@/lib/certificacion-context";
+import { NotificacionesBell } from "@/components/NotificacionesBell";
 
 export function CertificacionTabs() {
   const router = useRouter();
@@ -47,6 +48,10 @@ export function CertificacionTabs() {
           <Plus className="h-3.5 w-3.5" strokeWidth={2} />
           Agregar
         </button>
+
+        <div className="ml-auto hidden md:flex">
+          <NotificacionesBell />
+        </div>
       </div>
     </div>
   );
