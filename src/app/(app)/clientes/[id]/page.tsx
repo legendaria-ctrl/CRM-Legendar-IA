@@ -32,7 +32,6 @@ import {
   LoaderCircle,
   Tag as TagIcon,
   X,
-  Layers,
 } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
 import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
@@ -118,8 +117,21 @@ export default function ClienteDetallePage() {
             <div className="mb-2 flex items-center gap-2">
               <StatusBadge estado={estado} />
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
               {cliente.nombre}
+              {(cliente.etiquetas ?? []).map((etiqueta) => {
+                const cert = CERTIFICACIONES.find((c) => c.etiqueta === etiqueta);
+                return (
+                  <span
+                    key={etiqueta}
+                    className={`hidden rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${
+                      cert?.color ?? "bg-silver text-muted"
+                    }`}
+                  >
+                    {cert?.nombre ?? etiqueta}
+                  </span>
+                );
+              })}
             </h1>
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
               {cliente.email && (
@@ -144,14 +156,6 @@ export default function ClienteDetallePage() {
                 <span className="flex items-center gap-1.5">
                   <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {REGION_LABEL[cliente.region as Region] ?? cliente.region}
-                </span>
-              )}
-              {(cliente.etiquetas ?? []).length > 0 && (
-                <span className="hidden items-center gap-1.5 md:flex">
-                  <Layers className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {(cliente.etiquetas ?? [])
-                    .map((e) => CERTIFICACIONES.find((c) => c.etiqueta === e)?.nombre ?? e)
-                    .join(", ")}
                 </span>
               )}
             </div>

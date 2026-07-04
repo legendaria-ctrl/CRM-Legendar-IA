@@ -579,6 +579,19 @@ export default function DashboardPage() {
                             />
                             {pausado ? "Pausado" : activo ? "Activo" : "Inactivo"}
                           </span>
+                          {(cliente.etiquetas ?? []).map((etiqueta) => {
+                            const cert = CERTIFICACIONES.find((c) => c.etiqueta === etiqueta);
+                            return (
+                              <span
+                                key={etiqueta}
+                                className={`hidden flex-none rounded-full px-2 py-0.5 text-[10px] font-medium sm:inline-flex ${
+                                  cert?.color ?? "bg-silver text-muted"
+                                }`}
+                              >
+                                {cert?.nombre ?? etiqueta}
+                              </span>
+                            );
+                          })}
                         </div>
                         <p className="truncate text-xs text-muted">
                           {cliente.email || "Sin correo"}
@@ -590,10 +603,6 @@ export default function DashboardPage() {
                           {aFecha(cliente.fechaVencimiento)?.toLocaleDateString("es-MX") ?? "—"}
                           {cliente.region &&
                             ` · ${REGION_LABEL[cliente.region as Region] ?? cliente.region}`}
-                          {(cliente.etiquetas ?? []).length > 0 &&
-                            ` · ${(cliente.etiquetas ?? [])
-                              .map((e) => CERTIFICACIONES.find((c) => c.etiqueta === e)?.nombre ?? e)
-                              .join(", ")}`}
                         </p>
                         {(cliente.tags ?? []).length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
