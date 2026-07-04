@@ -590,6 +590,10 @@ export default function DashboardPage() {
                           {aFecha(cliente.fechaVencimiento)?.toLocaleDateString("es-MX") ?? "—"}
                           {cliente.region &&
                             ` · ${REGION_LABEL[cliente.region as Region] ?? cliente.region}`}
+                          {(cliente.etiquetas ?? []).length > 0 &&
+                            ` · ${(cliente.etiquetas ?? [])
+                              .map((e) => CERTIFICACIONES.find((c) => c.etiqueta === e)?.nombre ?? e)
+                              .join(", ")}`}
                         </p>
                         {(cliente.tags ?? []).length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">

@@ -22,7 +22,19 @@ import { TagPicker } from "@/components/TagPicker";
 import { VendedorSelect } from "@/components/VendedorSelect";
 import { CopyButton } from "@/components/CopyButton";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
-import { Mail, Phone, User, Ticket, Globe2, Trash2, LoaderCircle, Tag as TagIcon, X } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  User,
+  Ticket,
+  Globe2,
+  Trash2,
+  LoaderCircle,
+  Tag as TagIcon,
+  X,
+  Layers,
+} from "lucide-react";
+import { CERTIFICACIONES } from "@/lib/certificaciones";
 import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 
@@ -132,6 +144,14 @@ export default function ClienteDetallePage() {
                 <span className="flex items-center gap-1.5">
                   <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {REGION_LABEL[cliente.region as Region] ?? cliente.region}
+                </span>
+              )}
+              {(cliente.etiquetas ?? []).length > 0 && (
+                <span className="hidden items-center gap-1.5 md:flex">
+                  <Layers className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {(cliente.etiquetas ?? [])
+                    .map((e) => CERTIFICACIONES.find((c) => c.etiqueta === e)?.nombre ?? e)
+                    .join(", ")}
                 </span>
               )}
             </div>
