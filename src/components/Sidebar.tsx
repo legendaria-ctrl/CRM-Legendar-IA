@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,6 +14,8 @@ import {
   Users,
   UploadCloud,
   Tag,
+  Menu,
+  X,
 } from "lucide-react";
 
 const links = [
@@ -32,68 +35,149 @@ export function Sidebar() {
   const router = useRouter();
   const { sesion, cerrarSesion } = useSesion();
   const { setCertificacionActual } = useCertificacion();
+  const [abierto, setAbierto] = useState(false);
   const itemsNav = sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : links;
 
   function irAInicio() {
     setCertificacionActual(null);
+    setAbierto(false);
     router.push("/");
   }
 
+  function irA(href: string) {
+    setAbierto(false);
+    router.push(href);
+  }
+
   return (
-    <aside className="flex h-fit w-full flex-col gap-4 md:sticky md:top-6 md:w-64">
-      <div className="flex items-center gap-3">
+    <>
+      {/* Barra superior móvil */}
+      <div className="flex items-center gap-3 md:hidden">
+        <button
+          onClick={() => setAbierto(true)}
+          title="Abrir menú"
+          className="flex h-[52px] w-[52px] flex-none items-center justify-center rounded-2xl border border-silver-deep/60 bg-surface-2 text-muted transition-all duration-500 ease-spring active:scale-[0.98]"
+        >
+          <Menu className="h-5 w-5" strokeWidth={1.75} />
+        </button>
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="flex flex-1 items-center justify-center rounded-[1.5rem] bg-white p-2.5 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="flex flex-1 items-center justify-center rounded-2xl bg-white p-2 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
             alt="Certificaciones"
             width={1200}
             height={670}
-            className="h-14 w-auto md:h-16"
+            className="h-10 w-auto"
+            priority
+          />
+        </button>
+      </div>
+
+      {/* Menú lateral móvil (drawer) */}
+      {abierto && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setAbierto(false)}
+          />
+          <div className="absolute left-0 top-0 flex h-full w-72 max-w-[80vw] flex-col gap-4 bg-surface p-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground">
+                {sesion?.nombre ?? "…"}
+                <span className="ml-2 text-[11px] uppercase tracking-wider text-muted">
+                  {sesion?.rol ?? ""}
+                </span>
+              </p>
+              <button
+                onClick={() => setAbierto(false)}
+                title="Cerrar menú"
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-xl border border-silver-deep/60 bg-surface-2 text-muted"
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
+              {itemsNav.map(({ href, label, icon: Icon }) => {
+                const active = pathname === href;
+                return (
+                  <button
+                    key={href}
+                    onClick={() => irA(href)}
+                    className={`group flex items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-left text-sm font-medium transition-all duration-500 ease-spring ${
+                      active
+                        ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
+                        : "text-muted hover:bg-surface-2 hover:text-foreground"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-4 w-4 flex-none ${active ? "text-white" : "text-muted"}`}
+                      strokeWidth={1.5}
+                    />
+                    {label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <button
+              onClick={() => cerrarSesion()}
+              className="group flex items-center justify-center gap-2 rounded-xl border border-silver-deep/60 bg-surface-2 py-2.5 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98]"
+            >
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar de escritorio */}
+      <aside className="hidden h-fit w-full flex-col gap-4 md:sticky md:top-6 md:flex md:w-64">
+        <button
+          onClick={irAInicio}
+          title="Ir a Certificaciones"
+          className="flex items-center justify-center rounded-[1.5rem] bg-white p-2.5 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+        >
+          <Image
+            src="/certificaciones-logo-full.png"
+            alt="Certificaciones"
+            width={1200}
+            height={670}
+            className="h-16 w-auto"
             priority
           />
         </button>
 
-        <button
-          onClick={() => cerrarSesion()}
-          title="Cerrar sesión"
-          className="flex h-[76px] w-[76px] flex-none items-center justify-center rounded-[1.5rem] border border-silver-deep/60 bg-surface-2 text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98] md:hidden"
-        >
-          <LogOut className="h-4 w-4" strokeWidth={1.5} />
-        </button>
-      </div>
-
-      <div className="shell rounded-[1.75rem] p-2 diffused">
-        <nav className="core flex gap-1 overflow-x-auto rounded-[calc(1.75rem-0.5rem)] p-2 md:flex-col md:overflow-visible">
-          {itemsNav.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`group flex flex-none items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-500 ease-spring ${
-                  active
-                    ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
-                    : "text-muted hover:bg-surface-2 hover:text-foreground"
-                }`}
-              >
-                <Icon
-                  className={`h-4 w-4 flex-none transition-transform duration-500 ease-spring group-hover:translate-x-0.5 ${
-                    active ? "text-white" : "text-muted"
+        <div className="shell rounded-[1.75rem] p-2 diffused">
+          <nav className="core flex flex-col gap-1 rounded-[calc(1.75rem-0.5rem)] p-2">
+            {itemsNav.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`group flex flex-none items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-500 ease-spring ${
+                    active
+                      ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
+                      : "text-muted hover:bg-surface-2 hover:text-foreground"
                   }`}
-                  strokeWidth={1.5}
-                />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+                >
+                  <Icon
+                    className={`h-4 w-4 flex-none transition-transform duration-500 ease-spring group-hover:translate-x-0.5 ${
+                      active ? "text-white" : "text-muted"
+                    }`}
+                    strokeWidth={1.5}
+                  />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-      <div className="hidden md:block">
         <div className="shell rounded-[1.75rem] p-2 diffused">
           <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
             <div className="min-w-0">
@@ -113,7 +197,7 @@ export function Sidebar() {
             </button>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

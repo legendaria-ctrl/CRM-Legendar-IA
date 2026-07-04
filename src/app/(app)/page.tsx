@@ -50,6 +50,7 @@ import {
   CheckCheck,
   LoaderCircle,
   Layers,
+  SlidersHorizontal,
 } from "lucide-react";
 
 const OPCION_TODOS = "TODOS";
@@ -80,6 +81,7 @@ export default function DashboardPage() {
   const [procesandoLote, setProcesandoLote] = useState(false);
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
@@ -327,16 +329,16 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
         {stats.map(({ label, value, icon: Icon }) => (
-          <div key={label} className="shell rounded-[1.75rem] p-2 diffused">
-            <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                <Icon className="h-4 w-4 text-primary" strokeWidth={1.5} />
+          <div key={label} className="shell rounded-2xl p-1.5 diffused sm:rounded-[1.75rem] sm:p-2">
+            <div className="core flex flex-col gap-1.5 rounded-[calc(1rem-0.375rem)] p-3 sm:gap-3 sm:rounded-[calc(1.75rem-0.5rem)] sm:p-5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 sm:h-9 sm:w-9 sm:rounded-xl">
+                <Icon className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-2xl font-semibold tabular-nums text-foreground">{value}</p>
-                <p className="text-xs text-muted">{label}</p>
+                <p className="text-lg font-semibold tabular-nums text-foreground sm:text-2xl">{value}</p>
+                <p className="text-[10px] text-muted sm:text-xs">{label}</p>
               </div>
             </div>
           </div>
@@ -357,16 +359,27 @@ export default function DashboardPage() {
             </div>
 
             <button
+              onClick={() => setFiltrosAbiertos(true)}
+              className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary sm:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
+              Filtros
+              {hayFiltrosActivos && (
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
+            </button>
+
+            <button
               onClick={exportarCSV}
               disabled={ordenados.length === 0}
               className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-40"
             >
               <Download className="h-4 w-4" strokeWidth={1.75} />
-              Descargar CSV
+              <span className="hidden sm:inline">Descargar CSV</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2">
             <button
               onClick={() => setOrden(orden === "recientes" ? "antiguos" : "recientes")}
               className="flex items-center justify-center gap-1.5 truncate rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary sm:justify-start"
@@ -433,19 +446,117 @@ export default function DashboardPage() {
             {hayFiltrosActivos && (
               <button
                 onClick={limpiarFiltros}
-                className="col-span-2 flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger sm:col-span-1 sm:justify-start"
+                className="flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger sm:justify-start"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2} />
                 Limpiar filtros
               </button>
             )}
 
-            <span className="col-span-2 text-center text-xs text-muted sm:col-span-1 sm:ml-auto sm:text-right">
+            <span className="text-xs text-muted sm:ml-auto sm:text-right">
               {ordenados.length} de {total} clientes
             </span>
           </div>
+
+          <p className="text-xs text-muted sm:hidden">
+            {ordenados.length} de {total} clientes
+          </p>
         </div>
       </div>
+
+      {filtrosAbiertos && (
+        <div className="fixed inset-0 z-50 sm:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setFiltrosAbiertos(false)}
+          />
+          <div className="absolute right-0 top-0 flex h-full w-80 max-w-[85vw] flex-col gap-3 overflow-y-auto bg-surface p-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground">Filtros</p>
+              <button
+                onClick={() => setFiltrosAbiertos(false)}
+                title="Cerrar filtros"
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-xl border border-silver-deep/60 bg-surface-2 text-muted"
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setOrden(orden === "recientes" ? "antiguos" : "recientes")}
+              className="flex w-full items-center justify-start gap-1.5 truncate rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-primary"
+            >
+              {orden === "recientes" ? (
+                <ArrowDownWideNarrow className="h-3.5 w-3.5 flex-none" strokeWidth={2} />
+              ) : (
+                <ArrowUpWideNarrow className="h-3.5 w-3.5 flex-none" strokeWidth={2} />
+              )}
+              <span className="truncate">
+                {orden === "recientes" ? "Más nuevos primero" : "Más antiguos primero"}
+              </span>
+            </button>
+
+            <FilterMultiSelect
+              label="Todos los estados"
+              opciones={OPCIONES_ESTADO}
+              seleccionados={filtroEstado}
+              onChange={setFiltroEstado}
+            />
+
+            <select
+              value={filtroRegion}
+              onChange={(e) => setFiltroRegion(e.target.value)}
+              className="w-full rounded-full border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-xs font-medium text-muted outline-none transition-all duration-500 ease-spring focus:border-primary/50"
+            >
+              <option value={OPCION_TODOS}>Todas las regiones</option>
+              {Object.values(REGIONES).map((region) => (
+                <option key={region} value={region}>
+                  {REGION_LABEL[region as Region]}
+                </option>
+              ))}
+            </select>
+
+            <FilterMultiSelect
+              label="Bienvenida WA: todos"
+              opciones={OPCIONES_BIENVENIDA}
+              seleccionados={filtroBienvenida}
+              onChange={setFiltroBienvenida}
+            />
+
+            <FilterMultiSelect
+              label="Todos los tags"
+              opciones={catalogoTags.map((t) => ({ value: t.nombre, label: t.nombre }))}
+              seleccionados={filtroTags}
+              onChange={setFiltroTags}
+            />
+
+            <FilterMultiSelect
+              label="Todos los vendedores"
+              opciones={vendedoresAprobados.map((v) => ({ value: v, label: v }))}
+              seleccionados={filtroVendedor}
+              onChange={setFiltroVendedor}
+              buscable
+            />
+
+            <FilterMultiSelect
+              label="Todas las certificaciones"
+              opciones={CERTIFICACIONES.map((c) => ({ value: c.etiqueta, label: c.nombre }))}
+              seleccionados={filtroEtiquetas}
+              onChange={setFiltroEtiquetas}
+            />
+
+            {hayFiltrosActivos && (
+              <button
+                onClick={limpiarFiltros}
+                className="flex w-full items-center justify-start gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium text-muted transition-all duration-500 ease-spring hover:text-danger"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {seleccionados.size > 0 && (
         <div className="shell rounded-[1.75rem] p-2 diffused-lg">
