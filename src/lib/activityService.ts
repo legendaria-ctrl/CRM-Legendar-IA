@@ -45,10 +45,11 @@ export async function registrarActividad(input: {
 
   if (input.autorRol === "VENDEDOR") {
     const accionLabel = EVENTO_LABEL[input.accion as TipoEvento] ?? input.accion;
+    const esEliminacion = input.accion === "ELIMINACION";
     await crearNotificacionActividad(
       { nombre: input.autor, rol: input.autorRol },
       `${input.autor} · ${accionLabel}: ${input.clienteNombre}`,
-      input.clienteId,
+      esEliminacion ? null : input.clienteId,
       input.clienteNombre
     );
   }

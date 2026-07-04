@@ -1,5 +1,6 @@
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   limit,
@@ -104,6 +105,6 @@ export function suscribirAvisosEnviados(callback: (avisos: NotificacionDoc[]) =>
 export async function marcarNotificacionLeida(id: string, leidoPor: string[], nombre: string) {
   if (leidoPor.includes(nombre)) return;
   await updateDoc(doc(db, "notificaciones", id), {
-    leidoPor: [...leidoPor, nombre],
+    leidoPor: arrayUnion(nombre),
   });
 }
