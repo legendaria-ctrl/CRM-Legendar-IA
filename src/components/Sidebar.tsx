@@ -45,14 +45,14 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="relative flex h-14 flex-1 items-center justify-center rounded-[1.75rem] bg-white px-4 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98] md:h-16"
+          className="relative flex h-20 flex-1 items-center justify-center rounded-[1.75rem] bg-white px-4 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98] md:h-24"
         >
-          <span className="relative h-full w-full max-w-[220px]">
+          <span className="relative h-full w-full max-w-[280px]">
             <Image
               src="/certificaciones-logo-full.png"
               alt="Certificaciones"
               fill
-              className="object-contain"
+              className="object-contain p-1"
               priority
             />
           </span>
@@ -61,7 +61,7 @@ export function Sidebar() {
         <button
           onClick={() => cerrarSesion()}
           title="Cerrar sesión"
-          className="flex h-14 w-14 flex-none items-center justify-center rounded-[1.75rem] border border-silver-deep/60 bg-surface-2 text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98] md:hidden"
+          className="flex h-20 w-20 flex-none items-center justify-center rounded-[1.75rem] border border-silver-deep/60 bg-surface-2 text-muted transition-all duration-500 ease-spring hover:border-danger/30 hover:text-danger active:scale-[0.98] md:hidden"
         >
           <LogOut className="h-4 w-4" strokeWidth={1.5} />
         </button>
