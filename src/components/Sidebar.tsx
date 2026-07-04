@@ -45,18 +45,16 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="brand-plate relative flex h-14 flex-1 items-center justify-center gap-2.5 rounded-[1.75rem] px-4 shadow-[0_16px_36px_-14px_rgba(10,92,255,0.6)] transition-transform duration-500 ease-spring active:scale-[0.98] md:h-16"
+          className="relative flex h-14 flex-1 items-center justify-center rounded-[1.75rem] bg-white px-4 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98] md:h-16"
         >
-          <span className="relative h-8 w-8 flex-none overflow-hidden rounded-xl bg-white/15 md:h-9 md:w-9">
+          <span className="relative h-full w-full max-w-[220px]">
             <Image
-              src="/certificaciones-logo.png"
-              alt=""
+              src="/certificaciones-logo-full.png"
+              alt="Certificaciones"
               fill
-              className="object-contain p-1"
+              className="object-contain"
+              priority
             />
-          </span>
-          <span className="truncate text-base font-semibold tracking-tight text-white md:text-lg">
-            Certificaciones
           </span>
         </button>
 

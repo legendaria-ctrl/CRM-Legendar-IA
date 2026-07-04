@@ -75,13 +75,13 @@ export default function LoginPage() {
     >
       <div className="relative w-full max-w-md">
         <div className="mb-10 flex flex-col items-center gap-4 text-center">
-          <div className="relative h-24 w-24">
+          <div className="relative flex h-20 w-full max-w-[280px] items-center justify-center rounded-[1.75rem] bg-white px-6 py-4 shadow-[0_10px_35px_-8px_rgba(10,92,255,0.5)]">
             <Image
-              src="/certificaciones-logo.png"
+              src="/certificaciones-logo-full.png"
               alt="Certificaciones"
               fill
               priority
-              className="object-contain drop-shadow-[0_10px_35px_rgba(10,92,255,0.5)]"
+              className="object-contain p-3"
             />
           </div>
           <div>
