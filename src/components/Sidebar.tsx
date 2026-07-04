@@ -63,14 +63,14 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="flex flex-1 items-center justify-center rounded-2xl bg-white p-2 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-white p-0.5 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
             alt="Certificaciones"
             width={1200}
             height={670}
-            className="h-10 w-auto"
+            className="h-full w-auto"
             priority
           />
         </button>
