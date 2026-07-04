@@ -86,6 +86,34 @@ body {
     transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  @keyframes fade-in-fast {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in-fast {
+    animation: fade-in-fast 0.22s ease-out;
+  }
+
   /* Fondo de marca: azul tecno profundo con destellos diagonales,
      inspirado en el logo de Legendar-IA. */
   .bg-brand {

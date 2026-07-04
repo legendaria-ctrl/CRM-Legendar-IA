@@ -303,17 +303,10 @@ export default function DashboardPage() {
         onClick: () => setFiltrosAbiertos(true),
         activo: hayFiltrosActivos,
       },
-      {
-        key: "csv",
-        label: "Descargar CSV",
-        icon: Download,
-        onClick: exportarCSV,
-        disabled: ordenados.length === 0,
-      },
     ]);
     return () => setAcciones([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hayFiltrosActivos, ordenados]);
+  }, [hayFiltrosActivos]);
 
   if (clientes === null) {
     return <div className="py-16 text-center text-sm text-muted">Cargando clientes…</div>;
@@ -355,13 +348,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-4">
         {stats.map(({ label, value, icon: Icon }) => (
           <div key={label} className="shell rounded-xl p-1 diffused sm:rounded-[1.75rem] sm:p-2">
-            <div className="core flex flex-col gap-1 rounded-[calc(0.75rem-0.25rem)] p-2 sm:gap-3 sm:rounded-[calc(1.75rem-0.5rem)] sm:p-5">
-              <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 sm:h-9 sm:w-9 sm:rounded-xl">
-                <Icon className="h-3 w-3 text-primary sm:h-4 sm:w-4" strokeWidth={1.5} />
+            <div className="core flex flex-row items-center gap-2 rounded-[calc(0.75rem-0.25rem)] p-2 sm:flex-col sm:items-stretch sm:gap-3 sm:rounded-[calc(1.75rem-0.5rem)] sm:p-5">
+              <div className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-primary/10 sm:h-9 sm:w-9 sm:rounded-xl">
+                <Icon className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" strokeWidth={1.5} />
               </div>
-              <div>
-                <p className="text-sm font-semibold tabular-nums text-foreground sm:text-2xl">{value}</p>
-                <p className="text-[9px] leading-tight text-muted sm:text-xs">{label}</p>
+              <div className="min-w-0">
+                <p className="text-base font-semibold tabular-nums text-foreground sm:text-2xl">{value}</p>
+                <p className="truncate text-[9px] leading-tight text-muted sm:text-xs">{label}</p>
               </div>
             </div>
           </div>
@@ -369,6 +362,15 @@ export default function DashboardPage() {
       </div>
 
       <div className="sm:hidden">
+        <button
+          onClick={exportarCSV}
+          disabled={ordenados.length === 0}
+          className="mb-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-40"
+        >
+          <Download className="h-4 w-4" strokeWidth={1.75} />
+          Descargar CSV
+        </button>
+
         <div className="flex items-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 transition-all duration-500 ease-spring focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
           <Search className="h-4 w-4 text-muted" strokeWidth={1.5} />
           <input
@@ -490,10 +492,10 @@ export default function DashboardPage() {
       {filtrosAbiertos && (
         <div className="fixed inset-0 z-50 sm:hidden">
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/40 animate-fade-in-fast"
             onClick={() => setFiltrosAbiertos(false)}
           />
-          <div className="absolute right-0 top-0 flex h-full w-80 max-w-[85vw] flex-col gap-3 overflow-y-auto bg-surface p-4 shadow-2xl">
+          <div className="absolute right-0 top-0 flex h-full w-80 max-w-[85vw] flex-col gap-3 overflow-y-auto bg-surface p-4 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-foreground">Filtros</p>
               <button
@@ -582,7 +584,7 @@ export default function DashboardPage() {
       )}
 
       {seleccionados.size > 0 && (
-        <div className="shell rounded-[1.75rem] p-2 diffused-lg">
+        <div className="shell animate-fade-in rounded-[1.75rem] p-2 diffused-lg">
           <div className="core flex flex-wrap items-center gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
             <span className="text-xs font-medium text-muted">
               {seleccionados.size} seleccionado{seleccionados.size === 1 ? "" : "s"}
@@ -756,30 +758,32 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                      <div className="hidden flex-none items-center gap-3 sm:flex">
-                        {activo && dias !== null && (
-                          <span className="hidden text-xs text-muted sm:inline">
-                            {dias > 0 ? `${dias} días restantes` : "Vence hoy"}
-                          </span>
-                        )}
+                      <div className="flex flex-none items-center gap-2 sm:gap-3">
                         <StatusBadge estado={cliente.estadoCalculado} />
-                        <InvitacionToggle
-                          clienteId={cliente.id}
-                          clienteNombre={cliente.nombre}
-                          enviada={invitacionEnviada}
-                          puedeDeshacer={cliente.estado === ESTADOS_CLIENTE.INVITACION_ENVIADA}
-                          compacto
-                        />
-                        <MensajeBienvenidaToggle
-                          clienteId={cliente.id}
-                          clienteNombre={cliente.nombre}
-                          estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
-                          compacto
-                        />
-                        <ArrowUpRight
-                          className="h-4 w-4 text-muted transition-transform duration-500 ease-spring group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                          strokeWidth={1.5}
-                        />
+                        <div className="hidden flex-none items-center gap-3 sm:flex">
+                          {activo && dias !== null && (
+                            <span className="hidden text-xs text-muted sm:inline">
+                              {dias > 0 ? `${dias} días restantes` : "Vence hoy"}
+                            </span>
+                          )}
+                          <InvitacionToggle
+                            clienteId={cliente.id}
+                            clienteNombre={cliente.nombre}
+                            enviada={invitacionEnviada}
+                            puedeDeshacer={cliente.estado === ESTADOS_CLIENTE.INVITACION_ENVIADA}
+                            compacto
+                          />
+                          <MensajeBienvenidaToggle
+                            clienteId={cliente.id}
+                            clienteNombre={cliente.nombre}
+                            estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
+                            compacto
+                          />
+                          <ArrowUpRight
+                            className="h-4 w-4 text-muted transition-transform duration-500 ease-spring group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                            strokeWidth={1.5}
+                          />
+                        </div>
                       </div>
                     </Link>
                   </li>

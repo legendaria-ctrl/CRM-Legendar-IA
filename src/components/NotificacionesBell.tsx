@@ -52,8 +52,8 @@ export function NotificacionesBell() {
 
       {abierto && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
-          <div className="absolute right-0 top-[60px] z-50 flex max-h-[70vh] w-80 max-w-[85vw] flex-col gap-2 overflow-y-auto rounded-[1.5rem] border border-silver-deep/60 bg-surface p-3 shadow-2xl">
+          <div className="fixed inset-0 z-40 animate-fade-in-fast" onClick={() => setAbierto(false)} />
+          <div className="absolute right-0 top-[60px] z-50 flex max-h-[70vh] w-80 max-w-[85vw] flex-col gap-2 overflow-y-auto rounded-[1.5rem] border border-silver-deep/60 bg-surface p-3 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between px-1">
               <p className="text-sm font-medium text-foreground">Notificaciones</p>
               <button

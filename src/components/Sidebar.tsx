@@ -86,10 +86,10 @@ export function Sidebar() {
       {abierto && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/40 animate-fade-in-fast"
             onClick={() => setAbierto(false)}
           />
-          <div className="absolute left-0 top-0 flex h-full w-72 max-w-[80vw] flex-col gap-4 bg-surface p-4 shadow-2xl">
+          <div className="absolute left-0 top-0 flex h-full w-72 max-w-[80vw] flex-col gap-4 bg-surface p-4 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-foreground">
                 {sesion?.nombre ?? "…"}
