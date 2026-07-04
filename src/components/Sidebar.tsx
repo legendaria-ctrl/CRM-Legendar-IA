@@ -18,12 +18,14 @@ import {
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
   { href: "/clientes/nuevo", label: "Nuevo cliente", icon: UserPlus },
-  { href: "/clientes/importar", label: "Importar CSV", icon: UploadCloud },
   { href: "/tags", label: "Tags", icon: Tag },
-  { href: "/actividad", label: "Actividad", icon: History },
 ];
 
-const linksAdmin = [{ href: "/vendedores", label: "Vendedores", icon: Users }];
+const linksAdmin = [
+  { href: "/clientes/importar", label: "Importar CSV", icon: UploadCloud },
+  { href: "/actividad", label: "Actividad", icon: History },
+  { href: "/vendedores", label: "Vendedores", icon: Users },
+];
 
 export function Sidebar() {
   const pathname = usePathname();
