@@ -65,14 +65,13 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-white p-px shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="relative h-[52px] flex-1 overflow-hidden rounded-2xl bg-white shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
             alt="Certificaciones"
-            width={1200}
-            height={670}
-            className="h-full w-auto"
+            fill
+            className="object-contain"
             priority
           />
         </button>
@@ -164,14 +163,13 @@ export function Sidebar() {
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="flex h-[84px] items-center justify-center rounded-[1.5rem] bg-white p-1 shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="relative h-[84px] overflow-hidden rounded-[1.5rem] bg-white shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
             alt="Certificaciones"
-            width={1200}
-            height={670}
-            className="h-full w-auto"
+            fill
+            className="object-contain"
             priority
           />
         </button>

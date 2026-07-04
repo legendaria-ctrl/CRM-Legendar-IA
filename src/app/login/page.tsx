@@ -80,8 +80,8 @@ export default function LoginPage() {
               <Image
                 src="/certificaciones-logo-full.png"
                 alt="Certificaciones"
-                width={1200}
-                height={670}
+                width={1079}
+                height={337}
                 priority
                 className="h-16 w-auto"
               />
@@ -224,8 +224,8 @@ export default function LoginPage() {
           <Image
             src="/certificaciones-logo-full.png"
             alt="Certificaciones"
-            width={1200}
-            height={670}
+            width={1079}
+            height={337}
             priority
             className="h-auto w-full max-w-2xl drop-shadow-[0_20px_50px_rgba(0,0,0,0.35)]"
           />
