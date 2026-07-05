@@ -66,6 +66,8 @@ export function Sidebar() {
     router.push(href);
   }
 
+  const inicial = sesion?.nombre?.trim().charAt(0).toUpperCase() || "?";
+
   return (
     <>
       {/* Menú lateral móvil (drawer) */}
@@ -77,12 +79,19 @@ export function Sidebar() {
           />
           <div className="absolute left-0 top-0 flex h-full w-72 max-w-[80vw] flex-col gap-4 bg-surface p-4 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">
-                {sesion?.nombre ?? "…"}
-                <span className="ml-2 text-[11px] uppercase tracking-wider text-muted">
-                  {sesion?.rol ?? ""}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-deep text-sm font-semibold text-white shadow-[0_6px_16px_-6px_rgba(10,92,255,0.5)]">
+                  {inicial}
                 </span>
-              </p>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {sesion?.nombre ?? "…"}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted">
+                    {sesion?.rol ?? ""}
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setAbierto(false)}
                 title="Cerrar menú"
@@ -223,13 +232,18 @@ export function Sidebar() {
 
         <div className="shell flex-none rounded-[1.75rem] p-2 diffused">
           <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">
-                {sesion?.nombre ?? "…"}
-              </p>
-              <p className="text-[11px] uppercase tracking-wider text-muted">
-                {sesion?.rol ?? ""}
-              </p>
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-deep text-sm font-semibold text-white shadow-[0_6px_16px_-6px_rgba(10,92,255,0.5)]">
+                {inicial}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {sesion?.nombre ?? "…"}
+                </p>
+                <p className="text-[11px] uppercase tracking-wider text-muted">
+                  {sesion?.rol ?? ""}
+                </p>
+              </div>
             </div>
             <button
               onClick={() => cerrarSesion()}

@@ -38,6 +38,7 @@ import {
   X,
   Pencil,
   Check,
+  MessageCircle,
 } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
 import {
@@ -49,6 +50,7 @@ import {
   PAPELERA_DIAS,
 } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
+import { mensajeBienvenida, construirLinkWhatsapp } from "@/lib/whatsapp";
 
 export default function ClienteDetallePage() {
   const params = useParams<{ id: string }>();
@@ -364,6 +366,17 @@ export default function ClienteDetallePage() {
                   clienteNombre={cliente.nombre}
                   estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
                 />
+                {cliente.telefono && (
+                  <a
+                    href={construirLinkWhatsapp(cliente.telefono, mensajeBienvenida(cliente.nombre))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/25 active:scale-[0.98]"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
+                    Enviar bienvenida por WhatsApp
+                  </a>
+                )}
               </div>
             </>
           )}
