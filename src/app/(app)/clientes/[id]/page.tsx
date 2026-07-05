@@ -190,7 +190,10 @@ export default function ClienteDetallePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div ref={encabezadoRef} className="shell scroll-mt-32 rounded-[2rem] p-2 diffused-lg">
+      <div
+        ref={encabezadoRef}
+        className="shell scroll-mt-[210px] rounded-[2rem] p-2 diffused-lg md:scroll-mt-[150px]"
+      >
         <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6 md:flex-row md:items-center md:justify-between">
           {editando ? (
             <div className="flex w-full flex-col gap-3">

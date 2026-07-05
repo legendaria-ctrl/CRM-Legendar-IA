@@ -153,11 +153,11 @@ export function Sidebar() {
       )}
 
       {/* Sidebar de escritorio */}
-      <aside className="hidden h-fit w-full flex-col gap-4 md:sticky md:top-6 md:flex md:w-64">
+      <aside className="hidden w-full flex-col gap-4 md:sticky md:top-6 md:flex md:max-h-[calc(100vh-3rem)] md:w-64">
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
-          className="flex h-[84px] w-full items-center justify-center overflow-hidden rounded-[1.5rem] bg-white shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
+          className="flex h-[84px] w-full flex-none items-center justify-center overflow-hidden rounded-[1.5rem] bg-white shadow-[0_10px_24px_-10px_rgba(11,18,32,0.35)] transition-transform duration-500 ease-spring active:scale-[0.98]"
         >
           <Image
             src="/certificaciones-logo-full.png"
@@ -168,8 +168,8 @@ export function Sidebar() {
           />
         </button>
 
-        <div className="shell rounded-[1.75rem] p-2 diffused">
-          <nav className="core flex flex-col gap-1 rounded-[calc(1.75rem-0.5rem)] p-2">
+        <div className="shell min-h-0 flex-1 overflow-hidden rounded-[1.75rem] p-2 diffused">
+          <nav className="core flex h-full flex-col gap-1 overflow-y-auto rounded-[calc(1.75rem-0.5rem)] p-2">
             {itemsNav.map(({ href, label, icon: Icon }) => {
               const active =
                 href === NO_ASIGNADOS_HREF
@@ -221,7 +221,7 @@ export function Sidebar() {
           </nav>
         </div>
 
-        <div className="shell rounded-[1.75rem] p-2 diffused">
+        <div className="shell flex-none rounded-[1.75rem] p-2 diffused">
           <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-foreground">
