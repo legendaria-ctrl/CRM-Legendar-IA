@@ -55,21 +55,21 @@ export default function TagsPage() {
 
       <div className="shell rounded-[2rem] p-2 diffused-lg">
         <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCrear()}
               placeholder="Nombre de la etiqueta (ej. Certificación 2026)"
-              className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+              className="min-w-0 flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
             />
             <button
               onClick={handleCrear}
               disabled={!nombre.trim() || creando}
-              className="group flex items-center gap-2 rounded-full bg-primary py-1 pl-5 pr-1 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
+              className="group flex items-center justify-center gap-2 rounded-full bg-primary py-1 pl-5 pr-1 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
             >
               <span className="py-2">Crear tag</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform duration-500 ease-spring group-hover:translate-x-1">
+              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-white/15 transition-transform duration-500 ease-spring group-hover:translate-x-1">
                 {creando ? (
                   <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
                 ) : (

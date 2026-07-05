@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, ArrowUpRight } from "lucide-react";
+import { Bell, ArrowUpRight, X } from "lucide-react";
 import { useSesion } from "@/lib/session-context";
 import {
   suscribirNotificaciones,
@@ -14,6 +14,7 @@ import { aFecha } from "@/lib/membership";
 export default function NotificacionesPage() {
   const { sesion, cargando } = useSesion();
   const [notificaciones, setNotificaciones] = useState<NotificacionDoc[] | null>(null);
+  const [abierta, setAbierta] = useState<NotificacionDoc | null>(null);
 
   useEffect(() => {
     if (!sesion) return;
@@ -28,6 +29,11 @@ export default function NotificacionesPage() {
   async function marcarLeida(n: NotificacionDoc) {
     if (!sesion) return;
     await marcarNotificacionLeida(n.id, n.leidoPor, sesion.nombre);
+  }
+
+  function abrirLectura(n: NotificacionDoc) {
+    setAbierta(n);
+    marcarLeida(n);
   }
 
   return (
@@ -70,7 +76,7 @@ export default function NotificacionesPage() {
                         <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-primary" />
                       )}
                     </div>
-                    <p className="text-sm text-muted">{n.mensaje}</p>
+                    <p className="line-clamp-2 text-sm text-muted">{n.mensaje}</p>
                     {fecha && (
                       <p className="text-xs text-muted/70">
                         {fecha.toLocaleDateString("es-MX")}{" "}
@@ -97,7 +103,7 @@ export default function NotificacionesPage() {
                 ) : (
                   <li key={n.id}>
                     <button
-                      onClick={() => marcarLeida(n)}
+                      onClick={() => abrirLectura(n)}
                       className="w-full rounded-2xl text-left transition-colors duration-300 hover:bg-surface-2"
                     >
                       {contenido}
@@ -109,6 +115,38 @@ export default function NotificacionesPage() {
           )}
         </div>
       </div>
+
+      {abierta && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 animate-fade-in-fast"
+            onClick={() => setAbierta(null)}
+          />
+          <div className="animate-fade-in relative flex w-full max-w-md flex-col gap-3 rounded-[2rem] bg-surface p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-foreground">
+                {abierta.tipo === "AVISO" ? `Aviso de ${abierta.autor}` : "Actividad de vendedor"}
+              </p>
+              <button
+                onClick={() => setAbierta(null)}
+                className="flex h-8 w-8 flex-none items-center justify-center rounded-xl text-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-muted">{abierta.mensaje}</p>
+            {aFecha(abierta.fecha) && (
+              <p className="text-xs text-muted/70">
+                {aFecha(abierta.fecha)!.toLocaleDateString("es-MX")}{" "}
+                {aFecha(abierta.fecha)!.toLocaleTimeString("es-MX", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -166,14 +166,19 @@ export default function NuevoClientePage() {
                   key={r}
                   type="button"
                   onClick={() => setRegion(r)}
-                  className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all duration-500 ease-spring ${
+                  className={`flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-sm font-medium leading-tight transition-all duration-500 ease-spring sm:flex-row sm:gap-2 ${
                     region === r
                       ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
                       : "text-muted"
                   }`}
                 >
                   <Globe2 className="h-4 w-4" strokeWidth={1.5} />
-                  {REGION_LABEL[r]}
+                  <span className="text-center sm:hidden">
+                    Legendar-IA
+                    <br />
+                    {r}
+                  </span>
+                  <span className="hidden sm:inline">{REGION_LABEL[r]}</span>
                 </button>
               ))}
             </div>

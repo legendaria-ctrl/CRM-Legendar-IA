@@ -25,11 +25,12 @@ import {
 
 const NO_ASIGNADOS_HREF = "#no-asignados";
 
+const AVISOS_ITEM = { href: "/notificaciones", label: "Avisos", icon: Bell };
+
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
   { href: "/clientes/nuevo", label: "Nuevo cliente", icon: UserPlus },
   { href: "/tags", label: "Tags", icon: Tag },
-  { href: "/notificaciones", label: "Avisos", icon: Bell },
 ];
 
 const linksAdmin = [
@@ -37,6 +38,7 @@ const linksAdmin = [
   { href: "/actividad", label: "Actividad", icon: History },
   { href: "/vendedores", label: "Vendedores", icon: Users },
   { href: "/avisos", label: "Dar avisos", icon: Megaphone },
+  AVISOS_ITEM,
   { href: NO_ASIGNADOS_HREF, label: "No asignados", icon: FolderX },
   { href: "/papelera", label: "Papelera", icon: Trash2 },
 ];
@@ -48,7 +50,8 @@ export function Sidebar() {
   const { certificacionActual, setCertificacionActual } = useCertificacion();
   const { acciones } = useMobileActions();
   const { abierto, setAbierto } = useSidebarDrawer();
-  const itemsNav = sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : links;
+  const itemsNav =
+    sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : [...links, AVISOS_ITEM];
 
   function irAInicio() {
     setCertificacionActual(null);
