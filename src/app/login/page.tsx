@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { KeyRound, UserRound, ArrowUpRight, LoaderCircle, ShieldCheck, Users, Lock } from "lucide-react";
+import {
+  KeyRound,
+  UserRound,
+  ArrowUpRight,
+  LoaderCircle,
+  ShieldCheck,
+  Users,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useSesion } from "@/lib/session-context";
 
 function claveNombreRecordado(rol: "ADMIN" | "VENDEDOR") {
@@ -20,6 +30,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [nombreBloqueado, setNombreBloqueado] = useState(false);
   const [avisoRevocado, setAvisoRevocado] = useState(false);
+  const [mostrarClave, setMostrarClave] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -196,13 +207,25 @@ export default function LoginPage() {
                 <div className="flex items-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3 transition-all duration-500 ease-spring focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
                   <KeyRound className="h-4 w-4 text-muted" strokeWidth={1.5} />
                   <input
-                    type="password"
+                    type={mostrarClave ? "text" : "password"}
                     required
                     value={clave}
                     onChange={(e) => setClave(e.target.value)}
                     placeholder="••••••••"
                     className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted/60"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarClave((v) => !v)}
+                    title={mostrarClave ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="flex h-6 w-6 flex-none items-center justify-center text-muted transition-colors duration-200 hover:text-foreground"
+                  >
+                    {mostrarClave ? (
+                      <EyeOff className="h-4 w-4" strokeWidth={1.5} />
+                    ) : (
+                      <Eye className="h-4 w-4" strokeWidth={1.5} />
+                    )}
+                  </button>
                 </div>
               </label>
 
