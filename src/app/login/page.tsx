@@ -125,7 +125,7 @@ export default function LoginPage() {
           {avisoRevocado && (
             <div className="mb-4 rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger">
               Tu acceso fue revocado por un administrador. Pídele que te vuelva a aprobar en la
-              sección Vendedores.
+              sección Usuarios.
             </div>
           )}
 

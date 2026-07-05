@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "Tu acceso está pendiente de aprobación. Pídele a un administrador que te apruebe en la sección Vendedores.",
+          "Tu acceso está pendiente de aprobación. Pídele a un administrador que te apruebe en la sección Usuarios.",
         pendiente: true,
       },
       { status: 403 }

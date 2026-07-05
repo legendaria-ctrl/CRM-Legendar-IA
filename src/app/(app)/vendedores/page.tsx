@@ -50,7 +50,7 @@ export default function VendedoresPage() {
         <div className="core flex flex-col items-center gap-3 rounded-[calc(2rem-0.5rem)] p-16 text-center">
           <ShieldAlert className="h-6 w-6 text-muted" strokeWidth={1.5} />
           <p className="text-sm text-muted">
-            Solo un administrador puede ver y aprobar vendedores.
+            Solo un administrador puede ver y aprobar usuarios.
           </p>
         </div>
       </div>
@@ -108,9 +108,9 @@ export default function VendedoresPage() {
         <span className="inline-block w-fit rounded-full bg-primary-dim px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-primary-deep">
           Acceso
         </span>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Vendedores</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Usuarios</h1>
         <p className="text-sm text-muted">
-          Aprueba a un vendedor la primera vez que intenta entrar, o agrégalo tú directamente ya
+          Aprueba a un usuario la primera vez que intenta entrar, o agrégalo tú directamente ya
           aprobado. Después de aprobado, debe usar siempre el mismo nombre.
         </p>
       </div>

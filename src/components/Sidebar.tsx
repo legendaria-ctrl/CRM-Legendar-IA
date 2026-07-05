@@ -36,7 +36,7 @@ const links = [
 const linksAdmin = [
   { href: "/clientes/importar", label: "Importar CSV", icon: UploadCloud },
   { href: "/actividad", label: "Actividad", icon: History },
-  { href: "/vendedores", label: "Vendedores", icon: Users },
+  { href: "/vendedores", label: "Usuarios", icon: Users },
   { href: "/avisos", label: "Dar avisos", icon: Megaphone },
   AVISOS_ITEM,
   { href: NO_ASIGNADOS_HREF, label: "No asignados", icon: FolderX },
