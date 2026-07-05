@@ -16,6 +16,9 @@ import {
   Tag,
   UserCheck,
   Layers,
+  Pencil,
+  Recycle,
+  RotateCcw,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -35,6 +38,10 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   TAGS: Tag,
   VENDEDOR: UserCheck,
   ETIQUETAS: Layers,
+  EDICION: Pencil,
+  PAPELERA: Recycle,
+  RESTAURACION_PAPELERA: RotateCcw,
+  ELIMINACION_PERMANENTE: Trash2,
 };
 
 export type EventoTimelineItem = {

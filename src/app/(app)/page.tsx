@@ -106,7 +106,7 @@ export default function DashboardPage() {
   }, []);
 
   const clientesDeCertificacion = useMemo(() => {
-    const base = clientes ?? [];
+    const base = (clientes ?? []).filter((c) => !c.eliminado);
     if (!certificacionActual) return base;
     if (certificacionActual.id === SIN_ASIGNAR_ID) {
       return base.filter((c) => (c.etiquetas ?? []).length === 0);

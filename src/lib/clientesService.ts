@@ -15,7 +15,13 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { ESTADOS_CLIENTE, ESTADOS_BIENVENIDA, EstadoBienvenida, TIPOS_EVENTO } from "./constants";
+import {
+  ESTADOS_CLIENTE,
+  ESTADOS_BIENVENIDA,
+  EstadoBienvenida,
+  TIPOS_EVENTO,
+  PAPELERA_DIAS,
+} from "./constants";
 import { fechaVencimientoDesde } from "./membership";
 import { registrarActividad } from "./activityService";
 
@@ -41,6 +47,8 @@ export type ClienteDoc = {
   vendedor: string | null;
   creadoPor: string;
   creadoPorRol: string;
+  eliminado: boolean;
+  fechaEliminacion: Timestamp | null;
 };
 
 export type EventoDoc = {
@@ -143,6 +151,8 @@ export async function crearCliente(input: {
     vendedor: input.vendedor?.trim() || null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
+    eliminado: false,
+    fechaEliminacion: null,
   });
 
   const esImportacion = input.origen === "csv";
@@ -389,6 +399,34 @@ export async function quitarEtiquetaCliente(
   );
 }
 
+export async function actualizarDatosCliente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  cambios: {
+    nombre: string;
+    email?: string;
+    telefono?: string;
+    region?: string;
+    notas?: string;
+  }
+) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    nombre: cambios.nombre,
+    email: cambios.email || null,
+    telefono: cambios.telefono || null,
+    region: cambios.region || null,
+    notas: cambios.notas || null,
+  });
+  await agregarEvento(
+    clienteId,
+    cambios.nombre,
+    TIPOS_EVENTO.EDICION,
+    autor,
+    "Se editaron los datos del cliente."
+  );
+}
+
 export async function actualizarVendedor(
   clienteId: string,
   clienteNombre: string,
@@ -405,20 +443,70 @@ export async function actualizarVendedor(
   );
 }
 
+// Envía al cliente a la papelera (borrado suave). Se conserva toda su
+// información y su línea de tiempo por PAPELERA_DIAS días, durante los
+// cuales se puede restaurar tal como estaba o eliminar definitivamente.
 export async function eliminarCliente(clienteId: string, clienteNombre: string, autor: Autor) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    eliminado: true,
+    fechaEliminacion: Timestamp.fromDate(new Date()),
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.PAPELERA,
+    autor,
+    `Cliente enviado a la papelera. Se eliminará definitivamente en ${PAPELERA_DIAS} días si nadie lo restaura.`
+  );
+}
+
+export async function restaurarClienteDePapelera(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor
+) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    eliminado: false,
+    fechaEliminacion: null,
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.RESTAURACION_PAPELERA,
+    autor,
+    "Cliente restaurado desde la papelera, tal como estaba."
+  );
+}
+
+// Borrado permanente e irreversible: elimina el cliente y toda su línea de
+// tiempo. Solo debe ofrecerse desde la papelera (nunca desde la ficha).
+export async function eliminarClientePermanente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor
+) {
   await registrarActividad({
     clienteId,
     clienteNombre,
-    accion: TIPOS_EVENTO.ELIMINACION,
+    accion: TIPOS_EVENTO.ELIMINACION_PERMANENTE,
     autor: autor.nombre,
     autorRol: autor.rol,
-    nota: `Cliente "${clienteNombre}" eliminado del CRM`,
+    nota: `Cliente "${clienteNombre}" eliminado definitivamente de la papelera`,
   });
 
   const eventosSnap = await getDocs(collection(db, "clientes", clienteId, "eventos"));
   await Promise.all(eventosSnap.docs.map((d) => deleteDoc(d.ref)));
 
   await deleteDoc(doc(db, "clientes", clienteId));
+}
+
+export function suscribirPapelera(callback: (clientes: ClienteDoc[]) => void) {
+  return onSnapshot(clientesRef, (snap) => {
+    const clientes = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }) as ClienteDoc)
+      .filter((c) => c.eliminado);
+    callback(clientes);
+  });
 }
 
 export async function obtenerContactosPorIds(

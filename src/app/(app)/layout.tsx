@@ -22,7 +22,7 @@ export default function AppLayout({
           <Sidebar />
 
           <main className="min-w-0 flex-1 pt-6 md:pt-0">
-            <div className="hidden md:mb-6 md:block">
+            <div className="hidden md:sticky md:top-[calc(env(safe-area-inset-top,0px)+2.5rem)] md:z-30 md:mb-6 md:block md:bg-background md:pb-2">
               <CertificacionTabs />
             </div>
             {children}

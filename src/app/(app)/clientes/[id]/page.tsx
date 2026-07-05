@@ -11,6 +11,7 @@ import {
   agregarEtiquetasCliente,
   quitarEtiquetaCliente,
   actualizarVendedor,
+  actualizarDatosCliente,
   ClienteDoc,
   EventoDoc,
 } from "@/lib/clientesService";
@@ -35,9 +36,18 @@ import {
   Tag as TagIcon,
   Layers,
   X,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
-import { REGION_LABEL, Region, beneficiosDeRegion, TIPOS_EVENTO } from "@/lib/constants";
+import {
+  REGIONES,
+  REGION_LABEL,
+  Region,
+  beneficiosDeRegion,
+  TIPOS_EVENTO,
+  PAPELERA_DIAS,
+} from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 
 export default function ClienteDetallePage() {
@@ -46,6 +56,15 @@ export default function ClienteDetallePage() {
   const { sesion } = useSesion();
   const id = params.id;
   const [eliminando, setEliminando] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [formEdicion, setFormEdicion] = useState({
+    nombre: "",
+    email: "",
+    telefono: "",
+    region: "",
+    notas: "",
+  });
 
   const [cliente, setCliente] = useState<ClienteDoc | null | undefined>(undefined);
   const [eventos, setEventos] = useState<EventoDoc[]>([]);
@@ -113,10 +132,38 @@ export default function ClienteDetallePage() {
     await actualizarVendedor(cliente.id, cliente.nombre, { nombre: sesion.nombre, rol: sesion.rol }, vendedor);
   }
 
+  function abrirEdicion() {
+    if (!cliente) return;
+    setFormEdicion({
+      nombre: cliente.nombre,
+      email: cliente.email ?? "",
+      telefono: cliente.telefono ?? "",
+      region: cliente.region ?? "",
+      notas: cliente.notas ?? "",
+    });
+    setEditando(true);
+  }
+
+  async function handleGuardarEdicion() {
+    if (!sesion || !cliente || !formEdicion.nombre.trim() || guardando) return;
+    setGuardando(true);
+    try {
+      await actualizarDatosCliente(
+        cliente.id,
+        cliente.nombre,
+        { nombre: sesion.nombre, rol: sesion.rol },
+        formEdicion
+      );
+      setEditando(false);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   async function handleEliminar() {
     if (!sesion || !cliente) return;
     const confirmado = window.confirm(
-      `¿Seguro que quieres eliminar a "${cliente.nombre}"? Esta acción no se puede deshacer.`
+      `¿Enviar a "${cliente.nombre}" a la papelera? Podrás restaurarlo desde ahí durante ${PAPELERA_DIAS} días.`
     );
     if (!confirmado) return;
 
@@ -136,67 +183,178 @@ export default function ClienteDetallePage() {
     <div className="flex flex-col gap-6">
       <div className="shell rounded-[2rem] p-2 diffused-lg">
         <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <StatusBadge estado={estado} />
-            </div>
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
-              {cliente.nombre}
-              {(cliente.etiquetas ?? []).map((etiqueta) => {
-                const cert = CERTIFICACIONES.find((c) => c.etiqueta === etiqueta);
-                return (
-                  <span
-                    key={etiqueta}
-                    className={`hidden rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${
-                      cert?.color ?? "bg-silver text-muted"
-                    }`}
-                  >
-                    {cert?.nombre ?? etiqueta}
+          {editando ? (
+            <div className="flex w-full flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <StatusBadge estado={estado} />
+                <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Editando datos
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Nombre
                   </span>
-                );
-              })}
-            </h1>
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
-              {cliente.email && (
-                <span className="flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {cliente.email}
-                  <CopyButton valor={cliente.email} />
-                </span>
-              )}
-              {cliente.telefono && (
-                <span className="flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {cliente.telefono}
-                  <CopyButton valor={cliente.telefono} />
-                </span>
-              )}
-              <span className="flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5" strokeWidth={1.5} />
-                Agregado por: {cliente.creadoPor}
-              </span>
-              {cliente.region && (
-                <span className="flex items-center gap-1.5">
-                  <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {REGION_LABEL[cliente.region as Region] ?? cliente.region}
-                </span>
-              )}
+                  <input
+                    value={formEdicion.nombre}
+                    onChange={(e) =>
+                      setFormEdicion((f) => ({ ...f, nombre: e.target.value }))
+                    }
+                    className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Correo
+                  </span>
+                  <input
+                    value={formEdicion.email}
+                    onChange={(e) =>
+                      setFormEdicion((f) => ({ ...f, email: e.target.value }))
+                    }
+                    className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Teléfono
+                  </span>
+                  <input
+                    value={formEdicion.telefono}
+                    onChange={(e) =>
+                      setFormEdicion((f) => ({ ...f, telefono: e.target.value }))
+                    }
+                    className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Región
+                  </span>
+                  <select
+                    value={formEdicion.region}
+                    onChange={(e) =>
+                      setFormEdicion((f) => ({ ...f, region: e.target.value }))
+                    }
+                    className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50"
+                  >
+                    <option value="">Sin región</option>
+                    {(Object.keys(REGIONES) as Region[]).map((r) => (
+                      <option key={r} value={r}>
+                        {REGION_LABEL[r]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 sm:col-span-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Notas
+                  </span>
+                  <textarea
+                    value={formEdicion.notas}
+                    onChange={(e) =>
+                      setFormEdicion((f) => ({ ...f, notas: e.target.value }))
+                    }
+                    rows={2}
+                    className="resize-none rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                  />
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleGuardarEdicion}
+                  disabled={guardando || !formEdicion.nombre.trim()}
+                  className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-50"
+                >
+                  {guardando ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <Check className="h-4 w-4" strokeWidth={1.75} />
+                  )}
+                  Guardar
+                </button>
+                <button
+                  onClick={() => setEditando(false)}
+                  disabled={guardando}
+                  className="rounded-full px-4 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-danger disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
-            {cliente.notas && (
-              <p className="mt-3 max-w-xl text-sm text-muted">{cliente.notas}</p>
-            )}
-          </div>
+          ) : (
+            <>
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <StatusBadge estado={estado} />
+                  <button
+                    onClick={abrirEdicion}
+                    className="flex items-center gap-1.5 rounded-full border border-silver-deep/60 px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 hover:border-primary/50 hover:text-primary"
+                  >
+                    <Pencil className="h-3 w-3" strokeWidth={2} />
+                    Editar
+                  </button>
+                </div>
+                <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
+                  {cliente.nombre}
+                  {(cliente.etiquetas ?? []).map((etiqueta) => {
+                    const cert = CERTIFICACIONES.find((c) => c.etiqueta === etiqueta);
+                    return (
+                      <span
+                        key={etiqueta}
+                        className={`hidden rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${
+                          cert?.color ?? "bg-silver text-muted"
+                        }`}
+                      >
+                        {cert?.nombre ?? etiqueta}
+                      </span>
+                    );
+                  })}
+                </h1>
+                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
+                  {cliente.email && (
+                    <span className="flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      {cliente.email}
+                      <CopyButton valor={cliente.email} />
+                    </span>
+                  )}
+                  {cliente.telefono && (
+                    <span className="flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      {cliente.telefono}
+                      <CopyButton valor={cliente.telefono} />
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    Agregado por: {cliente.creadoPor}
+                  </span>
+                  {cliente.region && (
+                    <span className="flex items-center gap-1.5">
+                      <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      {REGION_LABEL[cliente.region as Region] ?? cliente.region}
+                    </span>
+                  )}
+                </div>
+                {cliente.notas && (
+                  <p className="mt-3 max-w-xl text-sm text-muted">{cliente.notas}</p>
+                )}
+              </div>
 
-          <div className="flex flex-none flex-col items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted">
-              Bienvenida WA
-            </span>
-            <MensajeBienvenidaToggle
-              clienteId={cliente.id}
-              clienteNombre={cliente.nombre}
-              estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
-            />
-          </div>
+              <div className="flex flex-none flex-col items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Bienvenida WA
+                </span>
+                <MensajeBienvenidaToggle
+                  clienteId={cliente.id}
+                  clienteNombre={cliente.nombre}
+                  estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -339,7 +497,8 @@ export default function ClienteDetallePage() {
             <div>
               <h3 className="text-sm font-medium text-foreground">Eliminar cliente</h3>
               <p className="text-sm text-muted">
-                Borra permanentemente a este cliente y su línea de tiempo. No se puede deshacer.
+                Se envía a la papelera por {PAPELERA_DIAS} días. Desde ahí se puede restaurar tal
+                como estaba o eliminar definitivamente.
               </p>
             </div>
             <button

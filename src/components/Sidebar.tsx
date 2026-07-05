@@ -17,6 +17,7 @@ import {
   Tag,
   X,
   Megaphone,
+  Trash2,
 } from "lucide-react";
 
 const links = [
@@ -30,6 +31,7 @@ const linksAdmin = [
   { href: "/actividad", label: "Actividad", icon: History },
   { href: "/vendedores", label: "Vendedores", icon: Users },
   { href: "/avisos", label: "Dar avisos", icon: Megaphone },
+  { href: "/papelera", label: "Papelera", icon: Trash2 },
 ];
 
 export function Sidebar() {

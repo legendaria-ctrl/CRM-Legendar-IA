@@ -49,6 +49,10 @@ export const TIPOS_EVENTO = {
   TAGS: "TAGS",
   VENDEDOR: "VENDEDOR",
   ETIQUETAS: "ETIQUETAS",
+  EDICION: "EDICION",
+  PAPELERA: "PAPELERA",
+  RESTAURACION_PAPELERA: "RESTAURACION_PAPELERA",
+  ELIMINACION_PERMANENTE: "ELIMINACION_PERMANENTE",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -69,6 +73,10 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   TAGS: "Tags actualizados",
   VENDEDOR: "Vendedor actualizado",
   ETIQUETAS: "Certificación asignada",
+  EDICION: "Datos del cliente editados",
+  PAPELERA: "Enviado a la papelera",
+  RESTAURACION_PAPELERA: "Restaurado de la papelera",
+  ELIMINACION_PERMANENTE: "Eliminado definitivamente",
 };
 
 export const COLORES_TAG = [
@@ -83,6 +91,7 @@ export const COLORES_TAG = [
 ] as const;
 
 export const MEMBRESIA_DIAS = 365;
+export const PAPELERA_DIAS = 30;
 
 export const REGIONES = {
   MX: "MX",

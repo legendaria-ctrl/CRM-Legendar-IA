@@ -22,7 +22,7 @@ export function CertificacionTabs() {
 
   return (
     <div className="shell rounded-[1.75rem] p-2 diffused">
-      <div className="core flex flex-wrap items-center gap-2 rounded-[calc(1.75rem-0.5rem)] p-2">
+      <div className="core flex flex-nowrap items-center gap-2 overflow-x-auto rounded-[calc(1.75rem-0.5rem)] p-2 md:flex-wrap md:overflow-visible">
         {CERTIFICACIONES.map((cert) => {
           return (
             <button
