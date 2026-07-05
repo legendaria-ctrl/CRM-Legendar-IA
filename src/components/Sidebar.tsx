@@ -101,35 +101,28 @@ export function Sidebar() {
               </button>
             </div>
 
-            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
-              {itemsNav.map(({ href, label, icon: Icon }, i) => {
+            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
+              {itemsNav.map(({ href, label, icon: Icon }) => {
                 const active =
                   href === NO_ASIGNADOS_HREF
                     ? pathname === "/" && certificacionActual?.id === SIN_ASIGNAR_ID
                     : pathname === href;
-                const esInicioAdmin = i === links.length;
                 return (
-                  <div key={href} className="contents">
-                    {esInicioAdmin && (
-                      <p className="mb-1 mt-3 px-4 text-[10px] font-semibold uppercase tracking-wider text-muted/70">
-                        Administración
-                      </p>
-                    )}
-                    <button
-                      onClick={() => irA(href)}
-                      className={`group flex items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-left text-sm font-medium transition-all duration-500 ease-spring ${
-                        active
-                          ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
-                          : "text-muted hover:bg-surface-2 hover:text-foreground"
-                      }`}
-                    >
-                      <Icon
-                        className={`h-4 w-4 flex-none ${active ? "text-white" : "text-muted"}`}
-                        strokeWidth={1.5}
-                      />
-                      {label}
-                    </button>
-                  </div>
+                  <button
+                    key={href}
+                    onClick={() => irA(href)}
+                    className={`group flex items-center gap-3 whitespace-nowrap rounded-xl px-4 py-2 text-left text-sm font-medium transition-all duration-500 ease-spring ${
+                      active
+                        ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
+                        : "text-muted hover:bg-surface-2 hover:text-foreground"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-4 w-4 flex-none ${active ? "text-white" : "text-muted"}`}
+                      strokeWidth={1.5}
+                    />
+                    {label}
+                  </button>
                 );
               })}
             </nav>
@@ -185,14 +178,13 @@ export function Sidebar() {
         </button>
 
         <div className="shell min-h-0 flex-1 overflow-hidden rounded-[1.75rem] p-2 diffused">
-          <nav className="core flex h-full flex-col gap-1 overflow-y-auto rounded-[calc(1.75rem-0.5rem)] p-2">
-            {itemsNav.map(({ href, label, icon: Icon }, i) => {
+          <nav className="core flex h-full flex-col gap-0.5 overflow-y-auto rounded-[calc(1.75rem-0.5rem)] p-2">
+            {itemsNav.map(({ href, label, icon: Icon }) => {
               const active =
                 href === NO_ASIGNADOS_HREF
                   ? pathname === "/" && certificacionActual?.id === SIN_ASIGNAR_ID
                   : pathname === href;
-              const esInicioAdmin = i === links.length;
-              const itemClassName = `group flex flex-none items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-500 ease-spring ${
+              const itemClassName = `group flex flex-none items-center gap-3 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all duration-500 ease-spring ${
                 active
                   ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
                   : "text-muted hover:bg-surface-2 hover:text-foreground"
@@ -201,25 +193,16 @@ export function Sidebar() {
                 active ? "text-white" : "text-muted"
               }`;
 
-              return (
-                <div key={href} className="contents">
-                  {esInicioAdmin && (
-                    <p className="mb-1 mt-3 px-4 text-[10px] font-semibold uppercase tracking-wider text-muted/70">
-                      Administración
-                    </p>
-                  )}
-                  {href === NO_ASIGNADOS_HREF ? (
-                    <button onClick={() => irA(href)} className={`text-left ${itemClassName}`}>
-                      <Icon className={iconClassName} strokeWidth={1.5} />
-                      {label}
-                    </button>
-                  ) : (
-                    <Link href={href} className={itemClassName}>
-                      <Icon className={iconClassName} strokeWidth={1.5} />
-                      {label}
-                    </Link>
-                  )}
-                </div>
+              return href === NO_ASIGNADOS_HREF ? (
+                <button key={href} onClick={() => irA(href)} className={`text-left ${itemClassName}`}>
+                  <Icon className={iconClassName} strokeWidth={1.5} />
+                  {label}
+                </button>
+              ) : (
+                <Link key={href} href={href} className={itemClassName}>
+                  <Icon className={iconClassName} strokeWidth={1.5} />
+                  {label}
+                </Link>
               );
             })}
           </nav>
