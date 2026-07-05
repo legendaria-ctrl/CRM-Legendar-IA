@@ -358,8 +358,8 @@ export default function ClienteDetallePage() {
               </div>
 
               <div className="flex flex-none flex-col items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Bienvenida WA
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                  Bienvenida WA Soporte
                 </span>
                 <MensajeBienvenidaToggle
                   clienteId={cliente.id}
