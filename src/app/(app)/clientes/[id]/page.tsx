@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   suscribirCliente,
@@ -69,6 +69,7 @@ export default function ClienteDetallePage() {
   const [cliente, setCliente] = useState<ClienteDoc | null | undefined>(undefined);
   const [eventos, setEventos] = useState<EventoDoc[]>([]);
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
+  const encabezadoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubCliente = suscribirCliente(id, setCliente);
@@ -80,6 +81,14 @@ export default function ClienteDetallePage() {
       unsubTags();
     };
   }, [id]);
+
+  // Al entrar a la ficha, baja el scroll lo justo para que los datos del
+  // cliente queden visibles debajo del encabezado fijo (logo/certificaciones).
+  useEffect(() => {
+    if (cliente) {
+      encabezadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [cliente?.id]);
 
   if (cliente === undefined) {
     return <div className="py-16 text-center text-sm text-muted">Cargando cliente…</div>;
@@ -181,7 +190,7 @@ export default function ClienteDetallePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="shell rounded-[2rem] p-2 diffused-lg">
+      <div ref={encabezadoRef} className="shell scroll-mt-32 rounded-[2rem] p-2 diffused-lg">
         <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6 md:flex-row md:items-center md:justify-between">
           {editando ? (
             <div className="flex w-full flex-col gap-3">

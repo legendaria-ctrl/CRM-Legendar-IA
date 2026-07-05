@@ -15,6 +15,7 @@ import {
   agregarEtiquetasCliente,
   quitarEtiquetaCliente,
 } from "@/lib/clientesService";
+import { obtenerNotasHistorialPorCliente } from "@/lib/activityService";
 import { estadoActual, estaActivo, estadoBienvenidaDe, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
@@ -61,6 +62,15 @@ import {
 
 const OPCION_TODOS = "TODOS";
 
+const OPCIONES_CRITERIOS_BUSQUEDA = [
+  { value: "nombre", label: "Nombre" },
+  { value: "correo", label: "Correo" },
+  { value: "telefono", label: "Teléfono" },
+  { value: "notas", label: "Notas" },
+  { value: "historial", label: "Historial" },
+];
+const CRITERIOS_BUSQUEDA_DEFAULT = OPCIONES_CRITERIOS_BUSQUEDA.map((o) => o.value);
+
 const OPCIONES_ESTADO = Object.values(ESTADOS_CLIENTE).map((estado) => ({
   value: estado,
   label: ESTADO_LABEL[estado as EstadoCliente],
@@ -88,6 +98,8 @@ export default function DashboardPage() {
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const [criteriosBusqueda, setCriteriosBusqueda] = useState<string[]>(CRITERIOS_BUSQUEDA_DEFAULT);
+  const [notasHistorial, setNotasHistorial] = useState<Record<string, string>>({});
   const { setAcciones } = useMobileActions();
 
   useEffect(() => {
@@ -98,6 +110,7 @@ export default function DashboardPage() {
         lista.filter((v) => v.estado === ESTADOS_SOLICITUD.APROBADO).map((v) => v.nombre)
       );
     });
+    obtenerNotasHistorialPorCliente().then(setNotasHistorial);
     return () => {
       unsub();
       unsubTags();
@@ -124,9 +137,15 @@ export default function DashboardPage() {
     return conEstado.filter((c) => {
       if (texto) {
         const coincide =
-          c.nombre.toLowerCase().includes(texto) ||
-          (c.email ?? "").toLowerCase().includes(texto) ||
-          (c.telefono ?? "").toLowerCase().includes(texto);
+          (criteriosBusqueda.includes("nombre") && c.nombre.toLowerCase().includes(texto)) ||
+          (criteriosBusqueda.includes("correo") &&
+            (c.email ?? "").toLowerCase().includes(texto)) ||
+          (criteriosBusqueda.includes("telefono") &&
+            (c.telefono ?? "").toLowerCase().includes(texto)) ||
+          (criteriosBusqueda.includes("notas") &&
+            (c.notas ?? "").toLowerCase().includes(texto)) ||
+          (criteriosBusqueda.includes("historial") &&
+            (notasHistorial[c.id] ?? "").toLowerCase().includes(texto));
         if (!coincide) return false;
       }
       if (filtroEstado.length > 0 && !filtroEstado.includes(c.estadoCalculado)) return false;
@@ -150,6 +169,8 @@ export default function DashboardPage() {
   }, [
     conEstado,
     busqueda,
+    criteriosBusqueda,
+    notasHistorial,
     filtroEstado,
     filtroRegion,
     filtroBienvenida,
@@ -197,6 +218,7 @@ export default function DashboardPage() {
 
   function limpiarFiltros() {
     setBusqueda("");
+    setCriteriosBusqueda(CRITERIOS_BUSQUEDA_DEFAULT);
     setFiltroEstado([]);
     setFiltroRegion(OPCION_TODOS);
     setFiltroBienvenida([]);
@@ -410,8 +432,16 @@ export default function DashboardPage() {
           <input
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre, correo o teléfono…"
+            placeholder="Buscar…"
             className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted/60"
+          />
+        </div>
+        <div className="mt-2">
+          <FilterMultiSelect
+            label="Buscar en: todo"
+            opciones={OPCIONES_CRITERIOS_BUSQUEDA}
+            seleccionados={criteriosBusqueda}
+            onChange={setCriteriosBusqueda}
           />
         </div>
         <p className="mt-2 text-xs text-muted">
@@ -427,10 +457,17 @@ export default function DashboardPage() {
               <input
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar por nombre, correo o teléfono…"
+                placeholder="Buscar…"
                 className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted/60"
               />
             </div>
+
+            <FilterMultiSelect
+              label="Buscar en: todo"
+              opciones={OPCIONES_CRITERIOS_BUSQUEDA}
+              seleccionados={criteriosBusqueda}
+              onChange={setCriteriosBusqueda}
+            />
 
             <button
               onClick={exportarCSV}

@@ -77,6 +77,22 @@ export async function obtenerActividad(rango: {
   return resultados;
 }
 
+// Junta las notas del historial (línea de tiempo) de cada cliente en un solo
+// texto, para poder incluirlas como criterio de búsqueda en el listado.
+export async function obtenerNotasHistorialPorCliente(): Promise<Record<string, string>> {
+  const snap = await getDocs(actividadRef);
+  const notasPorCliente: Record<string, string[]> = {};
+  snap.docs.forEach((d) => {
+    const data = d.data() as ActividadDoc;
+    if (!data.nota) return;
+    if (!notasPorCliente[data.clienteId]) notasPorCliente[data.clienteId] = [];
+    notasPorCliente[data.clienteId].push(data.nota);
+  });
+  return Object.fromEntries(
+    Object.entries(notasPorCliente).map(([id, notas]) => [id, notas.join(" ")])
+  );
+}
+
 export async function obtenerAutoresUnicos(): Promise<string[]> {
   const snap = await getDocs(query(actividadRef, orderBy("autor")));
   const autores = new Set<string>();
