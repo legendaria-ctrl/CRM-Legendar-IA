@@ -42,7 +42,22 @@ Nos vemos dentro de *LEGENDAR-IA*. 🔥🤖`;
 
 // wa.me solo acepta el número en formato internacional, sin espacios,
 // paréntesis ni guiones (el "+" es opcional y se puede omitir).
-export function construirLinkWhatsapp(telefono: string, mensaje: string): string {
-  const numero = telefono.replace(/[^0-9]/g, "");
+//
+// Los clientes de región US necesitan el "1" de EEUU antes del número. Y
+// algunos clientes de región MX en realidad viven en EEUU (pagan el plan MX)
+// y ya tienen guardado su número completo con el 1 — a esos no hay que
+// tocarles la región, solo respetar el 1 que ya traen para este botón.
+export function construirLinkWhatsapp(
+  telefono: string,
+  mensaje: string,
+  region?: string | null
+): string {
+  let numero = telefono.replace(/[^0-9]/g, "");
+  const yaEsNumeroUsCompleto = numero.length === 11 && numero.startsWith("1");
+
+  if (region === "US" && !yaEsNumeroUsCompleto && numero.length === 10) {
+    numero = `1${numero}`;
+  }
+
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }

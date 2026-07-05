@@ -368,7 +368,11 @@ export default function ClienteDetallePage() {
                 />
                 {cliente.telefono && (
                   <a
-                    href={construirLinkWhatsapp(cliente.telefono, mensajeBienvenida(cliente.nombre))}
+                    href={construirLinkWhatsapp(
+                      cliente.telefono,
+                      mensajeBienvenida(cliente.nombre),
+                      cliente.region
+                    )}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/25 active:scale-[0.98]"
