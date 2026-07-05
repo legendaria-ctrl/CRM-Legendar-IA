@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type Audiencia = "VENDEDORES" | "ADMINS" | "PRIVADO";
+export type Audiencia = "TODOS" | "VENDEDORES" | "ADMINS" | "PRIVADO";
 
 export type NotificacionDoc = {
   id: string;
@@ -32,6 +32,9 @@ export type NotificacionDoc = {
 const notificacionesRef = collection(db, "notificaciones");
 
 function esRelevante(n: NotificacionDoc, sesion: { nombre: string; rol: string }): boolean {
+  // Un aviso nunca debe aparecer en la bandeja de quien lo envió.
+  if (n.autor === sesion.nombre) return false;
+  if (n.audiencia === "TODOS") return true;
   if (n.audiencia === "PRIVADO") return n.destinatarios.includes(sesion.nombre);
   if (n.audiencia === "VENDEDORES") return sesion.rol === "VENDEDOR";
   if (n.audiencia === "ADMINS") return sesion.rol === "ADMIN";
@@ -51,7 +54,7 @@ export function suscribirNotificaciones(
 
 export async function crearAviso(
   autor: { nombre: string; rol: string },
-  audiencia: "VENDEDORES" | "PRIVADO",
+  audiencia: "TODOS" | "PRIVADO",
   destinatarios: string[],
   mensaje: string
 ) {

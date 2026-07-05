@@ -17,7 +17,7 @@ export default function AvisosPage() {
   const { sesion, cargando } = useSesion();
   const [vendedores, setVendedores] = useState<VendedorDoc[] | null>(null);
   const [avisos, setAvisos] = useState<NotificacionDoc[]>([]);
-  const [audiencia, setAudiencia] = useState<"VENDEDORES" | "PRIVADO">("VENDEDORES");
+  const [audiencia, setAudiencia] = useState<"TODOS" | "PRIVADO">("TODOS");
   const [destinatarios, setDestinatarios] = useState<string[]>([]);
   const [mensaje, setMensaje] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -87,8 +87,8 @@ export default function AvisosPage() {
         </span>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dar avisos</h1>
         <p className="text-sm text-muted">
-          Envía un aviso general a todos los vendedores o uno privado a personas específicas
-          (vendedores o admins).
+          Envía un aviso general a todos (vendedores y demás admins) o uno privado a personas
+          específicas.
         </p>
       </div>
 
@@ -97,9 +97,9 @@ export default function AvisosPage() {
           <div className="grid grid-cols-2 gap-2 rounded-2xl bg-surface-2 p-1 sm:w-72">
             <button
               type="button"
-              onClick={() => setAudiencia("VENDEDORES")}
+              onClick={() => setAudiencia("TODOS")}
               className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all duration-500 ease-spring ${
-                audiencia === "VENDEDORES"
+                audiencia === "TODOS"
                   ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
                   : "text-muted"
               }`}
@@ -121,9 +121,9 @@ export default function AvisosPage() {
             </button>
           </div>
 
-          {audiencia === "VENDEDORES" ? (
+          {audiencia === "TODOS" ? (
             <p className="text-xs text-muted">
-              Este aviso lo verán todos los vendedores registrados.
+              Este aviso lo verán todos los vendedores y demás admins registrados (menos tú).
             </p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -206,9 +206,9 @@ export default function AvisosPage() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-foreground">{a.autor}</p>
                     <span className="rounded-full bg-silver px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted">
-                      {a.audiencia === "VENDEDORES"
-                        ? "General"
-                        : `Privado: ${a.destinatarios.join(", ")}`}
+                      {a.audiencia === "PRIVADO"
+                        ? `Privado: ${a.destinatarios.join(", ")}`
+                        : "General"}
                     </span>
                   </div>
                   <p className="text-sm text-muted">{a.mensaje}</p>
