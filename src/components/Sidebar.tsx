@@ -7,6 +7,8 @@ import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
 import { useMobileActions } from "@/lib/mobile-actions-context";
 import { useSidebarDrawer } from "@/lib/sidebar-drawer-context";
+import { SIN_ASIGNAR_ID } from "@/lib/certificaciones";
+import { NotificacionesBell } from "@/components/NotificacionesBell";
 import {
   LayoutGrid,
   UserPlus,
@@ -18,12 +20,17 @@ import {
   X,
   Megaphone,
   Trash2,
+  Bell,
+  FolderX,
 } from "lucide-react";
+
+const NO_ASIGNADOS_HREF = "#no-asignados";
 
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
   { href: "/clientes/nuevo", label: "Nuevo cliente", icon: UserPlus },
   { href: "/tags", label: "Tags", icon: Tag },
+  { href: "/notificaciones", label: "Avisos", icon: Bell },
 ];
 
 const linksAdmin = [
@@ -31,6 +38,7 @@ const linksAdmin = [
   { href: "/actividad", label: "Actividad", icon: History },
   { href: "/vendedores", label: "Vendedores", icon: Users },
   { href: "/avisos", label: "Dar avisos", icon: Megaphone },
+  { href: NO_ASIGNADOS_HREF, label: "No asignados", icon: FolderX },
   { href: "/papelera", label: "Papelera", icon: Trash2 },
 ];
 
@@ -38,7 +46,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { sesion, cerrarSesion } = useSesion();
-  const { setCertificacionActual } = useCertificacion();
+  const { certificacionActual, setCertificacionActual } = useCertificacion();
   const { acciones } = useMobileActions();
   const { abierto, setAbierto } = useSidebarDrawer();
   const itemsNav = sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : links;
@@ -51,6 +59,11 @@ export function Sidebar() {
 
   function irA(href: string) {
     setAbierto(false);
+    if (href === NO_ASIGNADOS_HREF) {
+      setCertificacionActual(SIN_ASIGNAR_ID);
+      router.push("/");
+      return;
+    }
     router.push(href);
   }
 
@@ -82,7 +95,10 @@ export function Sidebar() {
 
             <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
               {itemsNav.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href;
+                const active =
+                  href === NO_ASIGNADOS_HREF
+                    ? pathname === "/" && certificacionActual?.id === SIN_ASIGNAR_ID
+                    : pathname === href;
                 return (
                   <button
                     key={href}
@@ -156,7 +172,33 @@ export function Sidebar() {
         <div className="shell rounded-[1.75rem] p-2 diffused">
           <nav className="core flex flex-col gap-1 rounded-[calc(1.75rem-0.5rem)] p-2">
             {itemsNav.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href;
+              const active =
+                href === NO_ASIGNADOS_HREF
+                  ? pathname === "/" && certificacionActual?.id === SIN_ASIGNAR_ID
+                  : pathname === href;
+
+              if (href === NO_ASIGNADOS_HREF) {
+                return (
+                  <button
+                    key={href}
+                    onClick={() => irA(href)}
+                    className={`group flex flex-none items-center gap-3 whitespace-nowrap rounded-2xl px-4 py-3 text-left text-sm font-medium transition-all duration-500 ease-spring ${
+                      active
+                        ? "bg-primary text-white shadow-[0_10px_24px_-8px_rgba(10,92,255,0.5)]"
+                        : "text-muted hover:bg-surface-2 hover:text-foreground"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-4 w-4 flex-none transition-transform duration-500 ease-spring group-hover:translate-x-0.5 ${
+                        active ? "text-white" : "text-muted"
+                      }`}
+                      strokeWidth={1.5}
+                    />
+                    {label}
+                  </button>
+                );
+              }
+
               return (
                 <Link
                   key={href}
@@ -182,13 +224,16 @@ export function Sidebar() {
 
         <div className="shell rounded-[1.75rem] p-2 diffused">
           <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">
-                {sesion?.nombre ?? "…"}
-              </p>
-              <p className="text-[11px] uppercase tracking-wider text-muted">
-                {sesion?.rol ?? ""}
-              </p>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {sesion?.nombre ?? "…"}
+                </p>
+                <p className="text-[11px] uppercase tracking-wider text-muted">
+                  {sesion?.rol ?? ""}
+                </p>
+              </div>
+              <NotificacionesBell />
             </div>
             <button
               onClick={() => cerrarSesion()}

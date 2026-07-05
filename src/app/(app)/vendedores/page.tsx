@@ -149,21 +149,21 @@ export default function VendedoresPage() {
               Admin
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               value={nombreNuevo}
               onChange={(e) => setNombreNuevo(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCrear()}
               placeholder={rolNuevo === ROLES.ADMIN ? "Nombre del admin" : "Nombre del vendedor"}
-              className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+              className="min-w-0 flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
             />
             <button
               onClick={handleCrear}
               disabled={!nombreNuevo.trim() || creando}
-              className="group flex items-center gap-2 rounded-full bg-primary py-1 pl-5 pr-1 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
+              className="group flex items-center justify-center gap-2 rounded-full bg-primary py-1 pl-5 pr-1 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
             >
               <span className="py-2">Agregar</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform duration-500 ease-spring group-hover:translate-x-1">
+              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-white/15 transition-transform duration-500 ease-spring group-hover:translate-x-1">
                 {creando ? (
                   <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
                 ) : (

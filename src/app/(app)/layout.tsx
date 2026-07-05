@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/Sidebar";
 import { MobileTopBar } from "@/components/MobileTopBar";
 import { CertificacionTabs } from "@/components/CertificacionTabs";
+import { PageTransition } from "@/components/PageTransition";
 import { MobileActionsProvider } from "@/lib/mobile-actions-context";
 import { SidebarDrawerProvider } from "@/lib/sidebar-drawer-context";
 
@@ -29,7 +30,7 @@ export default function AppLayout({
             <div className="hidden md:sticky md:top-0 md:z-30 md:mb-6 md:block md:bg-background md:pb-2 md:pt-[calc(env(safe-area-inset-top,0px)+2.5rem)]">
               <CertificacionTabs />
             </div>
-            {children}
+            <PageTransition>{children}</PageTransition>
           </main>
         </div>
       </SidebarDrawerProvider>

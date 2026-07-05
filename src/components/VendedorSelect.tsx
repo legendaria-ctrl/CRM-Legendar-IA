@@ -71,7 +71,7 @@ export function VendedorSelect({
       {abierto && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setAbierto(false)} />
-          <div className="absolute z-20 mt-2 w-64 rounded-2xl border border-silver-deep/60 bg-surface-2 p-2 shadow-lg">
+          <div className="animate-fade-in absolute z-20 mt-2 w-64 rounded-2xl border border-silver-deep/60 bg-surface-2 p-2 shadow-lg">
             <div className="mb-2 flex items-center gap-2 rounded-xl border border-silver-deep/60 bg-surface px-3 py-2">
               <Search className="h-3.5 w-3.5 flex-none text-muted" strokeWidth={1.75} />
               <input
