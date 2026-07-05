@@ -124,8 +124,11 @@ export function filasAClientes(filas: string[][]): FilaClienteCSV[] {
     (indices[campo] !== undefined ? fila[indices[campo] as number] : "")?.trim() ?? "";
 
   return filas.slice(1).map((fila) => {
-    const nombre = leer(fila, "nombre");
     const email = leer(fila, "email");
+    // Si la fila solo trae correo (sin nombre), se acepta igual: se usa el
+    // correo como nombre provisional y el resto del perfil queda vacío para
+    // completarse después a mano.
+    const nombre = leer(fila, "nombre") || email;
     const telefono = leer(fila, "telefono");
     const notas = leer(fila, "notas");
     const vendedor = leer(fila, "vendedor");
@@ -145,7 +148,7 @@ export function filasAClientes(filas: string[][]): FilaClienteCSV[] {
     };
 
     if (!nombre) {
-      return { ...base, fechaInscripcion: null, valido: false, error: "Falta el nombre" };
+      return { ...base, fechaInscripcion: null, valido: false, error: "Falta el nombre o el correo" };
     }
 
     if (fechaInscripcionTexto) {
