@@ -12,6 +12,7 @@ type SessionContextValue = {
   sesion: Sesion;
   cargando: boolean;
   refrescar: () => Promise<void>;
+  establecerSesion: (sesion: Sesion) => void;
   cerrarSesion: (motivo?: string) => Promise<void>;
 };
 
@@ -25,6 +26,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const res = await fetch("/api/session");
     const data = await res.json();
     setSesion(data.session);
+    setCargando(false);
+  }, []);
+
+  // Para usar justo después de un login exitoso: el POST de /api/session ya
+  // devuelve la sesión, así que la aplicamos directo sin esperar otro
+  // round-trip (antes el contexto se quedaba con sesion=null hasta que algo
+  // más disparara refrescar(), lo que hacía que el nombre y la campana
+  // tardaran en aparecer tras iniciar sesión).
+  const establecerSesion = useCallback((nueva: Sesion) => {
+    setSesion(nueva);
     setCargando(false);
   }, []);
 
@@ -57,7 +68,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [sesion, cerrarSesion]);
 
   return (
-    <SessionContext.Provider value={{ sesion, cargando, refrescar, cerrarSesion }}>
+    <SessionContext.Provider value={{ sesion, cargando, refrescar, establecerSesion, cerrarSesion }}>
       {children}
     </SessionContext.Provider>
   );

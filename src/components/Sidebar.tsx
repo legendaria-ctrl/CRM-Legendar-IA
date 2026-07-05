@@ -8,7 +8,6 @@ import { useCertificacion } from "@/lib/certificacion-context";
 import { useMobileActions } from "@/lib/mobile-actions-context";
 import { useSidebarDrawer } from "@/lib/sidebar-drawer-context";
 import { SIN_ASIGNAR_ID } from "@/lib/certificaciones";
-import { NotificacionesBell } from "@/components/NotificacionesBell";
 import {
   LayoutGrid,
   UserPlus,
@@ -224,16 +223,13 @@ export function Sidebar() {
 
         <div className="shell rounded-[1.75rem] p-2 diffused">
           <div className="core flex flex-col gap-3 rounded-[calc(1.75rem-0.5rem)] p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {sesion?.nombre ?? "…"}
-                </p>
-                <p className="text-[11px] uppercase tracking-wider text-muted">
-                  {sesion?.rol ?? ""}
-                </p>
-              </div>
-              <NotificacionesBell />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">
+                {sesion?.nombre ?? "…"}
+              </p>
+              <p className="text-[11px] uppercase tracking-wider text-muted">
+                {sesion?.rol ?? ""}
+              </p>
             </div>
             <button
               onClick={() => cerrarSesion()}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { KeyRound, UserRound, ArrowUpRight, LoaderCircle, ShieldCheck, Users, Lock } from "lucide-react";
+import { useSesion } from "@/lib/session-context";
 
 function claveNombreRecordado(rol: "ADMIN" | "VENDEDOR") {
   return `legendaria_nombre_${rol}`;
@@ -11,6 +12,7 @@ function claveNombreRecordado(rol: "ADMIN" | "VENDEDOR") {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { establecerSesion } = useSesion();
   const [rol, setRol] = useState<"ADMIN" | "VENDEDOR">("VENDEDOR");
   const [nombre, setNombre] = useState("");
   const [clave, setClave] = useState("");
@@ -56,16 +58,20 @@ export default function LoginPage() {
 
     setLoading(false);
 
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
       setError(data.error || "No se pudo iniciar sesión.");
       return;
     }
 
     window.localStorage.setItem(claveNombreRecordado(rol), nombre.trim());
 
+    // Aplica la sesión ya mismo en el contexto (el POST ya la devuelve) en
+    // vez de esperar a que algo más la refresque más tarde.
+    establecerSesion(data.session);
+
     router.push("/");
-    router.refresh();
   }
 
   return (
