@@ -199,7 +199,7 @@ export default function ActividadPage() {
               <UsuarioSelect usuarios={usuarios} valor={autor} onChange={setAutor} />
             </label>
 
-            <label className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium uppercase tracking-wider text-muted">
                 Vendedor
               </span>
@@ -210,9 +210,9 @@ export default function ActividadPage() {
                 onChange={setFiltroVendedor}
                 buscable
               />
-            </label>
+            </div>
 
-            <label className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium uppercase tracking-wider text-muted">
                 Certificación
               </span>
@@ -222,7 +222,7 @@ export default function ActividadPage() {
                 seleccionados={filtroEtiquetas}
                 onChange={setFiltroEtiquetas}
               />
-            </label>
+            </div>
 
             <button
               onClick={() => buscar()}
