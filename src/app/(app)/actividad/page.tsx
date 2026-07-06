@@ -192,7 +192,7 @@ export default function ActividadPage() {
               />
             </label>
 
-            <label className="flex flex-1 min-w-[180px] flex-col gap-1.5">
+            <label className="flex w-56 flex-none flex-col gap-1.5">
               <span className="text-xs font-medium uppercase tracking-wider text-muted">
                 Usuario (opcional)
               </span>
