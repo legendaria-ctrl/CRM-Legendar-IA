@@ -13,6 +13,7 @@ import {
   serverTimestamp,
   Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import {
@@ -501,10 +502,11 @@ export async function eliminarClientePermanente(
 }
 
 export function suscribirPapelera(callback: (clientes: ClienteDoc[]) => void) {
-  return onSnapshot(clientesRef, (snap) => {
-    const clientes = snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }) as ClienteDoc)
-      .filter((c) => c.eliminado);
+  // Filtra en el servidor (en vez de traer toda la colección y filtrar aquí)
+  // para no leer de más cada vez que cambia cualquier cliente.
+  const q = query(clientesRef, where("eliminado", "==", true));
+  return onSnapshot(q, (snap) => {
+    const clientes = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ClienteDoc);
     callback(clientes);
   });
 }

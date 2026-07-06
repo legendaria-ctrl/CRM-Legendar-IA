@@ -79,7 +79,18 @@ export async function obtenerActividad(rango: {
 
 // Junta las notas del historial (línea de tiempo) de cada cliente en un solo
 // texto, para poder incluirlas como criterio de búsqueda en el listado.
+//
+// Esto lee toda la colección "actividad", así que se cachea en memoria un
+// rato corto: si el usuario navega entre el dashboard y otras pantallas
+// varias veces seguidas, no vuelve a leer la colección completa cada vez.
+const CACHE_NOTAS_MS = 2 * 60 * 1000; // 2 minutos
+let cacheNotas: { datos: Record<string, string>; expira: number } | null = null;
+
 export async function obtenerNotasHistorialPorCliente(): Promise<Record<string, string>> {
+  if (cacheNotas && cacheNotas.expira > Date.now()) {
+    return cacheNotas.datos;
+  }
+
   const snap = await getDocs(actividadRef);
   const notasPorCliente: Record<string, string[]> = {};
   snap.docs.forEach((d) => {
@@ -88,9 +99,12 @@ export async function obtenerNotasHistorialPorCliente(): Promise<Record<string, 
     if (!notasPorCliente[data.clienteId]) notasPorCliente[data.clienteId] = [];
     notasPorCliente[data.clienteId].push(data.nota);
   });
-  return Object.fromEntries(
+  const resultado = Object.fromEntries(
     Object.entries(notasPorCliente).map(([id, notas]) => [id, notas.join(" ")])
   );
+
+  cacheNotas = { datos: resultado, expira: Date.now() + CACHE_NOTAS_MS };
+  return resultado;
 }
 
 export async function obtenerAutoresUnicos(): Promise<string[]> {

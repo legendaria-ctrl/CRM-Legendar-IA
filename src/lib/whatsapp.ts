@@ -47,16 +47,23 @@ Nos vemos dentro de *LEGENDAR-IA*. 🔥🤖`;
 // algunos clientes de región MX en realidad viven en EEUU (pagan el plan MX)
 // y ya tienen guardado su número completo con el 1 — a esos no hay que
 // tocarles la región, solo respetar el 1 que ya traen para este botón.
+//
+// Si el número ya trae algún código de país (más de 10 dígitos) se deja tal
+// cual; solo se antepone el código cuando el número son 10 dígitos "pelones"
+// (el formato típico al capturar un teléfono local sin código de país).
 export function construirLinkWhatsapp(
   telefono: string,
   mensaje: string,
   region?: string | null
 ): string {
   let numero = telefono.replace(/[^0-9]/g, "");
-  const yaEsNumeroUsCompleto = numero.length === 11 && numero.startsWith("1");
 
-  if (region === "US" && !yaEsNumeroUsCompleto && numero.length === 10) {
-    numero = `1${numero}`;
+  if (numero.length === 10) {
+    if (region === "US") {
+      numero = `1${numero}`;
+    } else if (region === "MX") {
+      numero = `52${numero}`;
+    }
   }
 
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;

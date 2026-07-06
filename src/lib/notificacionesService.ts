@@ -32,8 +32,10 @@ export type NotificacionDoc = {
 const notificacionesRef = collection(db, "notificaciones");
 
 function esRelevante(n: NotificacionDoc, sesion: { nombre: string; rol: string }): boolean {
-  // Un aviso nunca debe aparecer en la bandeja de quien lo envió.
-  if (n.autor === sesion.nombre) return false;
+  // Un aviso nunca debe aparecer en la bandeja de quien lo envió (se compara
+  // también el rol para no ocultarle notificaciones legítimas a alguien que
+  // por coincidencia comparta nombre con una persona de otro rol).
+  if (n.autor === sesion.nombre && n.autorRol === sesion.rol) return false;
   if (n.audiencia === "TODOS") return true;
   if (n.audiencia === "PRIVADO") return n.destinatarios.includes(sesion.nombre);
   if (n.audiencia === "VENDEDORES") return sesion.rol === "VENDEDOR";

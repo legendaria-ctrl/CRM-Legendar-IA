@@ -37,14 +37,20 @@ export default function PapeleraPage() {
   useEffect(() => {
     if (!sesion || sesion.rol !== "ADMIN" || !clientes) return;
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
-    clientes.forEach((c) => {
-      if (purgados.has(c.id)) return;
-      const dias = diasTranscurridos(aFecha(c.fechaEliminacion));
-      if (dias >= PAPELERA_DIAS) {
-        setPurgados((prev) => new Set(prev).add(c.id));
-        eliminarClientePermanente(c.id, c.nombre, autor);
-      }
+    const vencidos = clientes.filter(
+      (c) => !purgados.has(c.id) && diasTranscurridos(aFecha(c.fechaEliminacion)) >= PAPELERA_DIAS
+    );
+    if (vencidos.length === 0) return;
+
+    setPurgados((prev) => {
+      const copia = new Set(prev);
+      vencidos.forEach((c) => copia.add(c.id));
+      return copia;
     });
+
+    Promise.all(vencidos.map((c) => eliminarClientePermanente(c.id, c.nombre, autor))).catch(
+      (err) => console.error("Error purgando clientes de la papelera:", err)
+    );
   }, [clientes, sesion, purgados]);
 
   if (cargando) {
