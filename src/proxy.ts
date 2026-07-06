@@ -4,8 +4,11 @@ import { verificarSesion, COOKIE_NAME } from "@/lib/session";
 export default async function proxy(req: NextRequest) {
   const isLoginPage = req.nextUrl.pathname.startsWith("/login");
   const isSessionApi = req.nextUrl.pathname.startsWith("/api/session");
+  // El cron de sincronización llama a esta ruta sin cookie de sesión; se
+  // protege con su propio token (ver /api/sync-sheet), no con el login.
+  const isSyncSheetApi = req.nextUrl.pathname.startsWith("/api/sync-sheet");
 
-  if (isSessionApi) return NextResponse.next();
+  if (isSessionApi || isSyncSheetApi) return NextResponse.next();
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
   const sesion = token ? await verificarSesion(token) : null;

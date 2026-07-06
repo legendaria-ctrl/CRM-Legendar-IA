@@ -39,6 +39,7 @@ import {
   Pencil,
   Check,
   MessageCircle,
+  DollarSign,
 } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
 import {
@@ -66,6 +67,7 @@ export default function ClienteDetallePage() {
     telefono: "",
     region: "",
     notas: "",
+    monto: "",
   });
 
   const [cliente, setCliente] = useState<ClienteDoc | null | undefined>(undefined);
@@ -151,6 +153,7 @@ export default function ClienteDetallePage() {
       telefono: cliente.telefono ?? "",
       region: cliente.region ?? "",
       notas: cliente.notas ?? "",
+      monto: cliente.monto ?? "",
     });
     setEditando(true);
   }
@@ -261,6 +264,19 @@ export default function ClienteDetallePage() {
                     ))}
                   </select>
                 </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Monto pagado
+                  </span>
+                  <input
+                    value={formEdicion.monto}
+                    onChange={(e) =>
+                      setFormEdicion((f) => ({ ...f, monto: e.target.value }))
+                    }
+                    placeholder="$3,997 MXN"
+                    className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                  />
+                </label>
                 <label className="flex flex-col gap-1 sm:col-span-2">
                   <span className="text-xs font-medium uppercase tracking-wider text-muted">
                     Notas
@@ -349,6 +365,12 @@ export default function ClienteDetallePage() {
                     <span className="flex items-center gap-1.5">
                       <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                       {REGION_LABEL[cliente.region as Region] ?? cliente.region}
+                    </span>
+                  )}
+                  {cliente.monto && (
+                    <span className="flex items-center gap-1.5 font-medium text-success">
+                      <DollarSign className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      {cliente.monto}
                     </span>
                   )}
                 </div>

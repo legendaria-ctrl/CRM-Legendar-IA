@@ -46,6 +46,7 @@ export type ClienteDoc = {
   tags: string[];
   etiquetas: string[];
   vendedor: string | null;
+  monto: string | null;
   creadoPor: string;
   creadoPorRol: string;
   eliminado: boolean;
@@ -124,9 +125,10 @@ export async function crearCliente(input: {
   tags?: string[];
   etiquetas?: string[];
   vendedor?: string;
+  monto?: string;
   autor: string;
   autorRol: string;
-  origen?: "manual" | "csv";
+  origen?: "manual" | "csv" | "sheet";
 }) {
   const fechaLlegada = input.fechaInscripcion ?? new Date();
   const vencimiento = fechaVencimientoDesde(fechaLlegada);
@@ -150,20 +152,28 @@ export async function crearCliente(input: {
     tags: input.tags?.length ? Array.from(new Set(input.tags)) : [],
     etiquetas: input.etiquetas?.length ? Array.from(new Set(input.etiquetas)) : [],
     vendedor: input.vendedor?.trim() || null,
+    monto: input.monto?.trim() || null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
     eliminado: false,
     fechaEliminacion: null,
   });
 
-  const esImportacion = input.origen === "csv";
+  const notaOrigen =
+    input.origen === "csv"
+      ? "Cliente importado desde un archivo CSV"
+      : input.origen === "sheet"
+        ? "Cliente importado automáticamente desde la hoja de seguimiento de ventas"
+        : "Cliente registrado en el CRM";
 
   await agregarEvento(
     nuevo.id,
     input.nombre,
-    esImportacion ? TIPOS_EVENTO.IMPORTACION : TIPOS_EVENTO.LLEGADA,
+    input.origen === "csv" || input.origen === "sheet"
+      ? TIPOS_EVENTO.IMPORTACION
+      : TIPOS_EVENTO.LLEGADA,
     { nombre: input.autor, rol: input.autorRol },
-    esImportacion ? "Cliente importado desde un archivo CSV" : "Cliente registrado en el CRM"
+    notaOrigen
   );
 
   return nuevo.id;
@@ -410,6 +420,7 @@ export async function actualizarDatosCliente(
     telefono?: string;
     region?: string;
     notas?: string;
+    monto?: string;
   }
 ) {
   await updateDoc(doc(db, "clientes", clienteId), {
@@ -418,6 +429,7 @@ export async function actualizarDatosCliente(
     telefono: cambios.telefono || null,
     region: cambios.region || null,
     notas: cambios.notas || null,
+    monto: cambios.monto || null,
   });
   await agregarEvento(
     clienteId,
@@ -509,6 +521,40 @@ export function suscribirPapelera(callback: (clientes: ClienteDoc[]) => void) {
     const clientes = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ClienteDoc);
     callback(clientes);
   });
+}
+
+// Usado por la sincronización con la hoja de ventas: busca un cliente ya
+// existente por correo (para no duplicarlo) y, si lo encuentra, le completa
+// el monto pagado y el vendedor asignado sin tocar el resto de sus datos.
+export async function buscarClientePorCorreo(correo: string): Promise<ClienteDoc | null> {
+  const q = query(clientesRef, where("email", "==", correo));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() } as ClienteDoc;
+}
+
+// Devuelve true solo si de verdad se escribió algo (para no repetir el
+// evento en la línea de tiempo cada 5 minutos si ya no cambió nada).
+export async function actualizarMontoYVendedor(
+  cliente: ClienteDoc,
+  monto: string | null,
+  vendedor: string | null
+): Promise<boolean> {
+  const cambios: Record<string, string | null> = {};
+  if (monto && monto !== cliente.monto) cambios.monto = monto;
+  if (vendedor && vendedor !== cliente.vendedor) cambios.vendedor = vendedor;
+  if (Object.keys(cambios).length === 0) return false;
+
+  await updateDoc(doc(db, "clientes", cliente.id), cambios);
+  await agregarEvento(
+    cliente.id,
+    cliente.nombre,
+    TIPOS_EVENTO.EDICION,
+    { nombre: "Sincronización automática", rol: "ADMIN" },
+    `Datos completados desde la hoja de ventas${cambios.monto ? ` · Monto: ${cambios.monto}` : ""}${cambios.vendedor ? ` · Vendedor: ${cambios.vendedor}` : ""}`
+  );
+  return true;
 }
 
 export async function obtenerContactosPorIds(
