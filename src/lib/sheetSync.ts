@@ -74,6 +74,7 @@ type FilaHoja = {
   amount: string;
   estado: string;
   assigned: string;
+  abejaSeguimiento: string;
 };
 
 // Los encabezados de esta hoja no sirven para ubicar columnas por nombre:
@@ -91,6 +92,7 @@ const COL = {
   corregido: 6,
   amount: 9,
   estado: 12,
+  abejaSeguimiento: 13,
   assigned: 14,
 };
 
@@ -107,7 +109,18 @@ function filasAObjetos(filas: string[][]): FilaHoja[] {
     amount: leer(fila, COL.amount),
     estado: leer(fila, COL.estado),
     assigned: leer(fila, COL.assigned),
+    abejaSeguimiento: leer(fila, COL.abejaSeguimiento),
   }));
+}
+
+// Cuando el vendedor asignado (columna O) es "Empresa", a veces la columna N
+// (Abeja Seguimiento) trae el nombre de la persona que en realidad le dio
+// seguimiento. Si N tiene algo, se usa ese nombre; si no, se deja "Empresa".
+function resolverVendedor(fila: FilaHoja): string | null {
+  if (fila.assigned.trim().toLowerCase() === "empresa" && fila.abejaSeguimiento) {
+    return fila.abejaSeguimiento;
+  }
+  return fila.assigned || null;
 }
 
 export type ResultadoSincronizacion = {
@@ -151,7 +164,7 @@ export async function sincronizarHojaVentas(): Promise<ResultadoSincronizacion> 
     try {
       const existente = await buscarClientePorCorreo(fila.correo);
       const monto = fila.amount || null;
-      const vendedor = fila.assigned || null;
+      const vendedor = resolverVendedor(fila);
 
       if (existente) {
         const seActualizo = await actualizarMontoYVendedor(existente, monto, vendedor);

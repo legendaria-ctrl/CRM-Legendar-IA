@@ -100,6 +100,8 @@ export default function DashboardPage() {
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [criteriosBusqueda, setCriteriosBusqueda] = useState<string[]>(CRITERIOS_BUSQUEDA_DEFAULT);
   const [notasHistorial, setNotasHistorial] = useState<Record<string, string>>({});
+  const [sincronizando, setSincronizando] = useState(false);
+  const [resultadoSync, setResultadoSync] = useState<string | null>(null);
   const { setAcciones } = useMobileActions();
 
   useEffect(() => {
@@ -313,6 +315,28 @@ export default function DashboardPage() {
     });
   }
 
+  async function actualizarDesdeHoja() {
+    if (sincronizando) return;
+    setSincronizando(true);
+    setResultadoSync(null);
+    try {
+      const res = await fetch("/api/sync-sheet", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setResultadoSync(data.error || "No se pudo actualizar.");
+        return;
+      }
+      const partes = [];
+      if (data.creados > 0) partes.push(`${data.creados} nuevo${data.creados === 1 ? "" : "s"}`);
+      if (data.actualizados > 0) partes.push(`${data.actualizados} actualizado${data.actualizados === 1 ? "" : "s"}`);
+      setResultadoSync(partes.length > 0 ? partes.join(", ") : "Sin cambios, ya estaba todo al día");
+    } catch {
+      setResultadoSync("No se pudo conectar con la hoja.");
+    } finally {
+      setSincronizando(false);
+    }
+  }
+
   function exportarCSV() {
     if (ordenados.length === 0) return;
     const filas = ordenados.map((c) => {
@@ -418,6 +442,19 @@ export default function DashboardPage() {
       </div>
 
       <div className="sm:hidden">
+        {sesion?.rol === "ADMIN" && (
+          <button
+            onClick={actualizarDesdeHoja}
+            disabled={sincronizando}
+            className="mb-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${sincronizando ? "animate-spin" : ""}`} strokeWidth={1.75} />
+            {sincronizando ? "Actualizando…" : "Actualizar desde hoja de ventas"}
+          </button>
+        )}
+        {resultadoSync && (
+          <p className="mb-2 text-center text-xs text-muted">{resultadoSync}</p>
+        )}
         <button
           onClick={exportarCSV}
           disabled={ordenados.length === 0}
@@ -468,6 +505,18 @@ export default function DashboardPage() {
               seleccionados={criteriosBusqueda}
               onChange={setCriteriosBusqueda}
             />
+
+            {sesion?.rol === "ADMIN" && (
+              <button
+                onClick={actualizarDesdeHoja}
+                disabled={sincronizando}
+                title={resultadoSync ?? undefined}
+                className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-60"
+              >
+                <RefreshCw className={`h-4 w-4 ${sincronizando ? "animate-spin" : ""}`} strokeWidth={1.75} />
+                <span>{sincronizando ? "Actualizando…" : resultadoSync ?? "Actualizar"}</span>
+              </button>
+            )}
 
             <button
               onClick={exportarCSV}

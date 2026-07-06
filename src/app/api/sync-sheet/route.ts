@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { verificarSesion, COOKIE_NAME } from "@/lib/session";
 import { sincronizarHojaVentas } from "@/lib/sheetSync";
 
 export const dynamic = "force-dynamic";
 
-// Se llama cada 5 minutos (Vercel Cron o un cron externo) para revisar la
-// hoja de ventas y traer al CRM los leads que ya quedaron "ganados".
-export async function GET(req: NextRequest) {
-  const tokenEsperado = process.env.SYNC_SECRET || "Legendaria-Sync-2026";
-  const token = req.nextUrl.searchParams.get("token");
+// Se llama desde el botón "Actualizar" del dashboard (solo Admin). Revisa la
+// hoja de ventas y trae al CRM los leads que ya quedaron "ganados", o
+// completa monto/vendedor de los que ya existían.
+export async function POST() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const sesion = token ? await verificarSesion(token) : null;
 
-  if (token !== tokenEsperado) {
+  if (!sesion || sesion.rol !== "ADMIN") {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

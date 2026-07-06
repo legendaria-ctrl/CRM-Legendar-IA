@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/sync-sheet?token=Legendaria-Sync-2026",
-      "schedule": "*/5 * * * *"
-    }
-  ]
-}
