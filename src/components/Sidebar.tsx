@@ -165,7 +165,7 @@ export function Sidebar() {
       )}
 
       {/* Sidebar de escritorio */}
-      <aside className="hidden w-full flex-col gap-4 md:sticky md:top-6 md:flex md:max-h-[calc(100vh-3rem)] md:w-64">
+      <aside className="hidden w-full flex-col gap-4 md:sticky md:top-[calc(env(safe-area-inset-top,0px)+2.5rem)] md:flex md:max-h-[calc(100vh-2.5rem-env(safe-area-inset-top,0px)-1.5rem)] md:w-64">
         <button
           onClick={irAInicio}
           title="Ir a Certificaciones"
