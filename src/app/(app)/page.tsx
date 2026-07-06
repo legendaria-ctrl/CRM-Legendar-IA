@@ -27,6 +27,7 @@ import { suscribirVendedores } from "@/lib/vendedoresService";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
 import { useMobileActions } from "@/lib/mobile-actions-context";
+import { useFiltrosClientes } from "@/lib/filtros-clientes-context";
 import { CERTIFICACIONES, SIN_ASIGNAR_ID } from "@/lib/certificaciones";
 import {
   ESTADOS_CLIENTE,
@@ -84,21 +85,33 @@ const OPCIONES_BIENVENIDA = Object.values(ESTADOS_BIENVENIDA).map((estado) => ({
 export default function DashboardPage() {
   const { sesion } = useSesion();
   const { certificacionActual } = useCertificacion();
+  const {
+    busqueda,
+    setBusqueda,
+    filtroEstado,
+    setFiltroEstado,
+    filtroRegion,
+    setFiltroRegion,
+    filtroBienvenida,
+    setFiltroBienvenida,
+    filtroTags,
+    setFiltroTags,
+    filtroVendedor,
+    setFiltroVendedor,
+    filtroEtiquetas,
+    setFiltroEtiquetas,
+    orden,
+    setOrden,
+    criteriosBusqueda,
+    setCriteriosBusqueda,
+    limpiarFiltros: limpiarFiltrosContexto,
+  } = useFiltrosClientes();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
-  const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<string[]>([]);
-  const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
-  const [filtroBienvenida, setFiltroBienvenida] = useState<string[]>([]);
-  const [filtroTags, setFiltroTags] = useState<string[]>([]);
-  const [filtroVendedor, setFiltroVendedor] = useState<string[]>([]);
-  const [filtroEtiquetas, setFiltroEtiquetas] = useState<string[]>([]);
-  const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [procesandoLote, setProcesandoLote] = useState(false);
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const [vendedoresAprobados, setVendedoresAprobados] = useState<string[]>([]);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
-  const [criteriosBusqueda, setCriteriosBusqueda] = useState<string[]>(CRITERIOS_BUSQUEDA_DEFAULT);
   const [notasHistorial, setNotasHistorial] = useState<Record<string, string>>({});
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState<string | null>(null);
@@ -219,14 +232,7 @@ export default function DashboardPage() {
   }, [certificacionActual]);
 
   function limpiarFiltros() {
-    setBusqueda("");
-    setCriteriosBusqueda(CRITERIOS_BUSQUEDA_DEFAULT);
-    setFiltroEstado([]);
-    setFiltroRegion(OPCION_TODOS);
-    setFiltroBienvenida([]);
-    setFiltroTags([]);
-    setFiltroVendedor([]);
-    setFiltroEtiquetas([]);
+    limpiarFiltrosContexto(CRITERIOS_BUSQUEDA_DEFAULT);
   }
 
   function alternarSeleccion(id: string) {

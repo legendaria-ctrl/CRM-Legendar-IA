@@ -411,16 +411,19 @@ export default function ClienteDetallePage() {
 
       <div className="shell rounded-[2rem] p-2 diffused-lg">
         <div className="core flex flex-wrap items-center gap-3 rounded-[calc(2rem-0.5rem)] p-6 sm:flex-nowrap sm:justify-between">
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium uppercase tracking-wider text-muted">Vendedor</span>
-            {cliente.monto && (
+            <VendedorSelect valor={cliente.vendedor} onChange={handleCambiarVendedor} />
+          </div>
+          {cliente.monto && (
+            <div className="flex flex-col items-start gap-1.5 sm:items-end">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted">Monto</span>
               <span className="flex items-center gap-1 text-sm font-medium text-success">
                 <DollarSign className="h-3.5 w-3.5" strokeWidth={1.5} />
                 {cliente.monto}
               </span>
-            )}
-          </div>
-          <VendedorSelect valor={cliente.vendedor} onChange={handleCambiarVendedor} />
+            </div>
+          )}
         </div>
       </div>
 
