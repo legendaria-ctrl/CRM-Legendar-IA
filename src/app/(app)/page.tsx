@@ -379,7 +379,7 @@ export default function DashboardPage() {
 
   const stats = [
     { label: "Clientes totales", value: total, icon: Users },
-    { label: "Membresías activas", value: activos, icon: ShieldCheck },
+    { label: "Miembros en VIP", value: activos, icon: ShieldCheck },
     { label: "Por vencer (30 días)", value: porVencer, icon: AlertTriangle },
     { label: "Nuevos sin invitar", value: nuevos, icon: UserPlus },
   ];
@@ -404,7 +404,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-4">
         {stats.map(({ label, value, icon: Icon }) => (
           <div key={label} className="shell rounded-xl p-1 diffused sm:rounded-[1.75rem] sm:p-2">
-            <div className="core flex flex-row items-center gap-2 rounded-[calc(0.75rem-0.25rem)] p-2 sm:flex-col sm:items-stretch sm:gap-3 sm:rounded-[calc(1.75rem-0.5rem)] sm:p-5">
+            <div className="core flex flex-row items-center gap-2 rounded-[calc(0.75rem-0.25rem)] p-2 sm:gap-3 sm:rounded-[calc(1.75rem-0.5rem)] sm:p-5">
               <div className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-primary/10 sm:h-9 sm:w-9 sm:rounded-xl">
                 <Icon className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" strokeWidth={1.5} />
               </div>
