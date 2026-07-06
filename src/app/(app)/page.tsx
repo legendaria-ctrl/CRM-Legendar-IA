@@ -70,7 +70,6 @@ const OPCIONES_CRITERIOS_BUSQUEDA = [
   { value: "notas", label: "Notas" },
   { value: "historial", label: "Historial" },
 ];
-const CRITERIOS_BUSQUEDA_DEFAULT = OPCIONES_CRITERIOS_BUSQUEDA.map((o) => o.value);
 
 const OPCIONES_ESTADO = Object.values(ESTADOS_CLIENTE).map((estado) => ({
   value: estado,
@@ -104,7 +103,7 @@ export default function DashboardPage() {
     setOrden,
     criteriosBusqueda,
     setCriteriosBusqueda,
-    limpiarFiltros: limpiarFiltrosContexto,
+    limpiarFiltros,
   } = useFiltrosClientes();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
@@ -226,14 +225,6 @@ export default function DashboardPage() {
     certificacionActual,
   ]);
 
-  useEffect(() => {
-    limpiarFiltros();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [certificacionActual]);
-
-  function limpiarFiltros() {
-    limpiarFiltrosContexto(CRITERIOS_BUSQUEDA_DEFAULT);
-  }
 
   function alternarSeleccion(id: string) {
     setSeleccionados((prev) => {

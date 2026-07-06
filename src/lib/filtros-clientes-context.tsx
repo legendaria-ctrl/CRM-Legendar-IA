@@ -1,8 +1,10 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { useCertificacion } from "./certificacion-context";
 
 const OPCION_TODOS = "TODOS";
+const CRITERIOS_BUSQUEDA_DEFAULT = ["nombre", "correo", "telefono", "notas", "historial"];
 
 type FiltrosClientesValue = {
   busqueda: string;
@@ -23,7 +25,7 @@ type FiltrosClientesValue = {
   setOrden: (v: "recientes" | "antiguos") => void;
   criteriosBusqueda: string[];
   setCriteriosBusqueda: (v: string[]) => void;
-  limpiarFiltros: (criteriosDefault: string[]) => void;
+  limpiarFiltros: () => void;
 };
 
 const FiltrosClientesContext = createContext<FiltrosClientesValue | null>(null);
@@ -32,6 +34,7 @@ const FiltrosClientesContext = createContext<FiltrosClientesValue | null>(null);
 // ficha de un cliente), para que los filtros del dashboard sigan aplicados
 // al volver de ver un cliente en vez de resetearse.
 export function FiltrosClientesProvider({ children }: { children: ReactNode }) {
+  const { certificacionActual } = useCertificacion();
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<string[]>([]);
   const [filtroRegion, setFiltroRegion] = useState<string>(OPCION_TODOS);
@@ -40,9 +43,9 @@ export function FiltrosClientesProvider({ children }: { children: ReactNode }) {
   const [filtroVendedor, setFiltroVendedor] = useState<string[]>([]);
   const [filtroEtiquetas, setFiltroEtiquetas] = useState<string[]>([]);
   const [orden, setOrden] = useState<"recientes" | "antiguos">("recientes");
-  const [criteriosBusqueda, setCriteriosBusqueda] = useState<string[]>([]);
+  const [criteriosBusqueda, setCriteriosBusqueda] = useState<string[]>(CRITERIOS_BUSQUEDA_DEFAULT);
 
-  function limpiarFiltros(criteriosDefault: string[]) {
+  function limpiarFiltros() {
     setBusqueda("");
     setFiltroEstado([]);
     setFiltroRegion(OPCION_TODOS);
@@ -50,8 +53,25 @@ export function FiltrosClientesProvider({ children }: { children: ReactNode }) {
     setFiltroTags([]);
     setFiltroVendedor([]);
     setFiltroEtiquetas([]);
-    setCriteriosBusqueda(criteriosDefault);
+    setCriteriosBusqueda(CRITERIOS_BUSQUEDA_DEFAULT);
   }
+
+  // Solo limpia los filtros cuando el usuario de verdad cambia de pestaña de
+  // certificación (o de "No asignados" a una certificación, etc.) — nunca al
+  // navegar entre el dashboard y la ficha de un cliente, ya que este
+  // provider vive en el layout y no se desmonta con esas navegaciones.
+  const certificacionAnteriorRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const idActual = certificacionActual?.id ?? null;
+    if (
+      certificacionAnteriorRef.current !== undefined &&
+      certificacionAnteriorRef.current !== idActual
+    ) {
+      limpiarFiltros();
+    }
+    certificacionAnteriorRef.current = idActual;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [certificacionActual]);
 
   return (
     <FiltrosClientesContext.Provider
