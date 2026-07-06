@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buscarClientePorCorreo } from "@/lib/clientesService";
+import { beneficiosDeRegion } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       existe: !!cliente,
       certificacion: cliente?.etiquetas ?? [],
+      region: cliente?.region ?? null,
+      beneficios: beneficiosDeRegion(cliente?.region),
     });
   } catch (err) {
     return NextResponse.json(
