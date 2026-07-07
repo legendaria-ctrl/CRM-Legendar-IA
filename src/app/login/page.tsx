@@ -250,14 +250,16 @@ export default function LoginPage() {
         </div>
 
         <div className="hidden flex-1 items-center justify-center md:flex">
-          <Image
-            src="/certificaciones-logo-full.png"
-            alt="Certificaciones"
-            width={1079}
-            height={337}
-            priority
-            className="h-auto w-full max-w-2xl drop-shadow-[0_20px_50px_rgba(0,0,0,0.35)]"
-          />
+          <div className="flex w-full max-w-2xl items-center justify-center rounded-[2rem] bg-white/90 p-10 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+            <Image
+              src="/certificaciones-logo-full.png"
+              alt="Certificaciones"
+              width={1079}
+              height={337}
+              priority
+              className="h-auto w-full"
+            />
+          </div>
         </div>
       </div>
     </main>
