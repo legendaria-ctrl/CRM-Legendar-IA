@@ -367,12 +367,6 @@ export default function ClienteDetallePage() {
                       {REGION_LABEL[cliente.region as Region] ?? cliente.region}
                     </span>
                   )}
-                  {cliente.monto && (
-                    <span className="flex items-center gap-1.5 font-medium text-success">
-                      <DollarSign className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      {cliente.monto}
-                    </span>
-                  )}
                 </div>
                 {cliente.notas && (
                   <p className="mt-3 max-w-xl text-sm text-muted">{cliente.notas}</p>
