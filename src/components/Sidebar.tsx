@@ -104,7 +104,7 @@ export function Sidebar() {
               </button>
             </div>
 
-            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
+            <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
               {itemsNav.map(({ href, label, icon: Icon }) => {
                 const active =
                   href === NO_ASIGNADOS_HREF
@@ -180,8 +180,8 @@ export function Sidebar() {
           />
         </button>
 
-        <div className="shell min-h-0 flex-1 overflow-hidden rounded-[1.75rem] p-2 diffused">
-          <nav className="core flex h-full flex-col gap-0.5 overflow-y-auto rounded-[calc(1.75rem-0.5rem)] p-2">
+        <div className="shell flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] p-2 diffused">
+          <nav className="core flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto rounded-[calc(1.75rem-0.5rem)] p-2">
             {itemsNav.map(({ href, label, icon: Icon }) => {
               const active =
                 href === NO_ASIGNADOS_HREF
