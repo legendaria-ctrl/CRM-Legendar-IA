@@ -15,12 +15,41 @@ const ICONS: Record<EstadoCliente, typeof Circle> = {
   VENCIDO: XCircle,
 };
 
-export function StatusBadge({ estado }: { estado: EstadoCliente }) {
+export function StatusBadge({
+  estado,
+  onClick,
+  cargando = false,
+  title,
+}: {
+  estado: EstadoCliente;
+  onClick?: (e: React.MouseEvent) => void;
+  cargando?: boolean;
+  title?: string;
+}) {
   const Icon = ICONS[estado];
+  const clases = `inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${STYLES[estado]}`;
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!cargando) onClick(e);
+        }}
+        disabled={cargando}
+        title={title}
+        className={`${clases} transition-transform duration-500 ease-spring active:scale-95 disabled:cursor-not-allowed disabled:opacity-70`}
+      >
+        <Icon className="h-3 w-3" strokeWidth={2} />
+        {ESTADO_LABEL[estado]}
+      </button>
+    );
+  }
+
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${STYLES[estado]}`}
-    >
+    <span className={clases}>
       <Icon className="h-3 w-3" strokeWidth={2} />
       {ESTADO_LABEL[estado]}
     </span>

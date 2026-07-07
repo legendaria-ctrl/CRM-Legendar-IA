@@ -18,6 +18,7 @@ import {
 import { obtenerNotasHistorialPorCliente } from "@/lib/activityService";
 import { estadoActual, estaActivo, estadoBienvenidaDe, diasRestantes, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
+import { CopyButton } from "@/components/CopyButton";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { InvitacionToggle } from "@/components/InvitacionToggle";
 import { FilterMultiSelect } from "@/components/FilterMultiSelect";
@@ -114,6 +115,7 @@ export default function DashboardPage() {
   const [notasHistorial, setNotasHistorial] = useState<Record<string, string>>({});
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState<string | null>(null);
+  const [aceptandoIds, setAceptandoIds] = useState<Set<string>>(new Set());
   const { setAcciones } = useMobileActions();
 
   useEffect(() => {
@@ -310,6 +312,21 @@ export default function DashboardPage() {
       if (!(c.etiquetas ?? []).includes(etiqueta)) return Promise.resolve();
       return quitarEtiquetaCliente(c.id, c.nombre, autor, etiqueta);
     });
+  }
+
+  async function aceptarDesdeLista(cliente: ClienteDoc) {
+    if (!sesion || aceptandoIds.has(cliente.id)) return;
+    setAceptandoIds((prev) => new Set(prev).add(cliente.id));
+    try {
+      const autor = { nombre: sesion.nombre, rol: sesion.rol };
+      await aceptarInvitacion(cliente.id, cliente.nombre, autor);
+    } finally {
+      setAceptandoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(cliente.id);
+        return next;
+      });
+    }
   }
 
   async function actualizarDesdeHoja() {
@@ -885,9 +902,12 @@ export default function DashboardPage() {
                             );
                           })}
                         </div>
-                        <p className="truncate text-xs text-muted">
-                          {cliente.email || "Sin correo"}
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className="truncate text-xs text-muted">
+                            {cliente.email || "Sin correo"}
+                          </p>
+                          {cliente.email && <CopyButton valor={cliente.email} />}
+                        </div>
                         <p className="hidden truncate text-xs text-muted sm:block">
                           {"Ingreso: "}
                           {aFecha(cliente.fechaLlegada)?.toLocaleDateString("es-MX") ?? "—"}
@@ -926,7 +946,20 @@ export default function DashboardPage() {
                           {activo ? "Activo" : "Inactivo"}
                         </span>
                         <div className="hidden flex-none items-center sm:flex">
-                          <StatusBadge estado={cliente.estadoCalculado} />
+                          <StatusBadge
+                            estado={cliente.estadoCalculado}
+                            onClick={
+                              cliente.estadoCalculado === ESTADOS_CLIENTE.INVITACION_ENVIADA
+                                ? () => aceptarDesdeLista(cliente)
+                                : undefined
+                            }
+                            cargando={aceptandoIds.has(cliente.id)}
+                            title={
+                              cliente.estadoCalculado === ESTADOS_CLIENTE.INVITACION_ENVIADA
+                                ? "Marcar invitación como aceptada"
+                                : undefined
+                            }
+                          />
                         </div>
                         <div className="hidden flex-none items-center gap-3 sm:flex">
                           {activo && dias !== null && (
