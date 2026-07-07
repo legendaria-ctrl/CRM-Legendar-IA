@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verificarSesion, COOKIE_NAME } from "@/lib/session";
-import { sincronizarHojaVentas } from "@/lib/sheetSync";
+import { aplicarCambiosPendientes, CambioAAplicar } from "@/lib/sheetSync";
 
 export const dynamic = "force-dynamic";
 
-// Se llama desde el botón "Actualizar" del dashboard (solo Admin). Revisa la
-// hoja de ventas y trae al CRM los leads que ya quedaron "ganados"
-// (creándolos automáticamente); si detecta cambios de monto/vendedor en
-// clientes que YA existían, los devuelve como "cambiosPendientes" para que
-// el admin los apruebe desde /api/sync-sheet/aplicar-cambios en vez de
-// sobrescribirlos directo.
-export async function POST() {
+// El admin ya revisó la lista de cambios propuestos (del POST a
+// /api/sync-sheet) y eligió cuáles aplicar; aquí se escriben solo esos.
+export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   const sesion = token ? await verificarSesion(token) : null;
@@ -20,8 +16,14 @@ export async function POST() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  const body = await req.json().catch(() => null);
+  const cambios: CambioAAplicar[] = Array.isArray(body?.cambios) ? body.cambios : [];
+  if (cambios.length === 0) {
+    return NextResponse.json({ error: "No se recibieron cambios" }, { status: 400 });
+  }
+
   try {
-    const resultado = await sincronizarHojaVentas();
+    const resultado = await aplicarCambiosPendientes(cambios);
     return NextResponse.json({ ok: true, ...resultado });
   } catch (err) {
     return NextResponse.json(

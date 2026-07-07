@@ -2,7 +2,9 @@ import { parsearCSV } from "./csvParse";
 import {
   crearCliente,
   buscarClientePorCorreo,
+  detectarCambioMontoYVendedor,
   actualizarMontoYVendedor,
+  obtenerClientePorId,
 } from "./clientesService";
 import { CERTIFICACIONES } from "./certificaciones";
 
@@ -131,13 +133,24 @@ function resolverVendedor(fila: FilaHoja): string | null {
   return asignado || null;
 }
 
+// Cambio detectado en un cliente que YA existe en el CRM (monto y/o
+// vendedor distintos a lo que trae la hoja). No se escribe solo; el admin
+// lo revisa y decide cuáles aplicar desde el botón "Actualizar".
+export type CambioPendiente = {
+  clienteId: string;
+  nombre: string;
+  correo: string;
+  monto?: { actual: string | null; nuevo: string };
+  vendedor?: { actual: string | null; nuevo: string };
+};
+
 export type ResultadoSincronizacion = {
   filasLeidas: number;
   ganadoras: number;
   creados: number;
-  actualizados: number;
   omitidos: number;
   errores: string[];
+  cambiosPendientes: CambioPendiente[];
 };
 
 const AUTOR_SISTEMA = { nombre: "Sincronización automática", rol: "ADMIN" };
@@ -174,9 +187,20 @@ async function sincronizarHoja(
       const vendedor = resolverVendedor(fila);
 
       if (existente) {
-        const seActualizo = await actualizarMontoYVendedor(existente, monto, vendedor);
-        if (seActualizo) resultado.actualizados++;
-        else resultado.omitidos++;
+        const cambios = detectarCambioMontoYVendedor(existente, monto, vendedor);
+        if (cambios) {
+          resultado.cambiosPendientes.push({
+            clienteId: existente.id,
+            nombre: existente.nombre,
+            correo: existente.email ?? fila.correo,
+            monto: cambios.monto ? { actual: existente.monto, nuevo: cambios.monto } : undefined,
+            vendedor: cambios.vendedor
+              ? { actual: existente.vendedor, nuevo: cambios.vendedor }
+              : undefined,
+          });
+        } else {
+          resultado.omitidos++;
+        }
       } else {
         const fechaInscripcion = parsearFechaHoja(fila.fecha) ?? undefined;
         const telefono = limpiarTelefono(fila.corregido, fila.celular, region);
@@ -208,9 +232,9 @@ export async function sincronizarHojaVentas(): Promise<ResultadoSincronizacion> 
     filasLeidas: 0,
     ganadoras: 0,
     creados: 0,
-    actualizados: 0,
     omitidos: 0,
     errores: [],
+    cambiosPendientes: [],
   };
 
   for (const hoja of HOJAS) {
@@ -218,4 +242,40 @@ export async function sincronizarHojaVentas(): Promise<ResultadoSincronizacion> 
   }
 
   return resultado;
+}
+
+export type CambioAAplicar = {
+  clienteId: string;
+  monto?: string;
+  vendedor?: string;
+};
+
+// El admin ya revisó los cambios propuestos y eligió cuáles aplicar; se
+// vuelve a leer cada cliente antes de escribir por si cambió algo más
+// mientras tanto.
+export async function aplicarCambiosPendientes(
+  cambios: CambioAAplicar[]
+): Promise<{ aplicados: number; errores: string[] }> {
+  let aplicados = 0;
+  const errores: string[] = [];
+
+  for (const cambio of cambios) {
+    try {
+      const cliente = await obtenerClientePorId(cambio.clienteId);
+      if (!cliente) {
+        errores.push(`${cambio.clienteId}: cliente no encontrado`);
+        continue;
+      }
+      const seActualizo = await actualizarMontoYVendedor(
+        cliente,
+        cambio.monto ?? null,
+        cambio.vendedor ?? null
+      );
+      if (seActualizo) aplicados++;
+    } catch (err) {
+      errores.push(`${cambio.clienteId}: ${err instanceof Error ? err.message : "error desconocido"}`);
+    }
+  }
+
+  return { aplicados, errores };
 }

@@ -43,6 +43,7 @@ import {
   Region,
 } from "@/lib/constants";
 import { descargarCSV } from "@/lib/csv";
+import type { CambioPendiente } from "@/lib/sheetSync";
 import {
   Users,
   UserPlus,
@@ -116,6 +117,10 @@ export default function DashboardPage() {
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState<string | null>(null);
   const [aceptandoIds, setAceptandoIds] = useState<Set<string>>(new Set());
+  const [cambiosPendientes, setCambiosPendientes] = useState<CambioPendiente[]>([]);
+  const [seleccionCambios, setSeleccionCambios] = useState<Set<string>>(new Set());
+  const [aplicandoCambios, setAplicandoCambios] = useState(false);
+  const [creadosUltimoSync, setCreadosUltimoSync] = useState(0);
   const { setAcciones } = useMobileActions();
 
   useEffect(() => {
@@ -340,14 +345,78 @@ export default function DashboardPage() {
         setResultadoSync(data.error || "No se pudo actualizar.");
         return;
       }
+      const cambios: CambioPendiente[] = data.cambiosPendientes ?? [];
+      setCreadosUltimoSync(data.creados ?? 0);
+      if (cambios.length > 0) {
+        setCambiosPendientes(cambios);
+        setSeleccionCambios(new Set(cambios.map((c) => c.clienteId)));
+        setResultadoSync(null);
+        return;
+      }
       const partes = [];
       if (data.creados > 0) partes.push(`${data.creados} nuevo${data.creados === 1 ? "" : "s"}`);
-      if (data.actualizados > 0) partes.push(`${data.actualizados} actualizado${data.actualizados === 1 ? "" : "s"}`);
       setResultadoSync(partes.length > 0 ? partes.join(", ") : "Sin cambios, ya estaba todo al día");
     } catch {
       setResultadoSync("No se pudo conectar con la hoja.");
     } finally {
       setSincronizando(false);
+    }
+  }
+
+  function alternarSeleccionCambio(clienteId: string) {
+    setSeleccionCambios((prev) => {
+      const next = new Set(prev);
+      if (next.has(clienteId)) next.delete(clienteId);
+      else next.add(clienteId);
+      return next;
+    });
+  }
+
+  function cerrarRevisionCambios() {
+    setCambiosPendientes([]);
+    setSeleccionCambios(new Set());
+    const partes = [];
+    if (creadosUltimoSync > 0) {
+      partes.push(`${creadosUltimoSync} nuevo${creadosUltimoSync === 1 ? "" : "s"}`);
+    }
+    setResultadoSync(partes.length > 0 ? partes.join(", ") : "Sin cambios aplicados");
+  }
+
+  async function aplicarCambiosSeleccionados() {
+    if (aplicandoCambios || seleccionCambios.size === 0) return;
+    setAplicandoCambios(true);
+    try {
+      const cambios = cambiosPendientes
+        .filter((c) => seleccionCambios.has(c.clienteId))
+        .map((c) => ({
+          clienteId: c.clienteId,
+          monto: c.monto?.nuevo,
+          vendedor: c.vendedor?.nuevo,
+        }));
+      const res = await fetch("/api/sync-sheet/aplicar-cambios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cambios }),
+      });
+      const data = await res.json();
+      setCambiosPendientes([]);
+      setSeleccionCambios(new Set());
+      if (!res.ok) {
+        setResultadoSync(data.error || "No se pudieron aplicar los cambios.");
+        return;
+      }
+      const partes = [];
+      if (creadosUltimoSync > 0) {
+        partes.push(`${creadosUltimoSync} nuevo${creadosUltimoSync === 1 ? "" : "s"}`);
+      }
+      if (data.aplicados > 0) {
+        partes.push(`${data.aplicados} actualizado${data.aplicados === 1 ? "" : "s"}`);
+      }
+      setResultadoSync(partes.length > 0 ? partes.join(", ") : "Sin cambios aplicados");
+    } catch {
+      setResultadoSync("No se pudieron aplicar los cambios.");
+    } finally {
+      setAplicandoCambios(false);
     }
   }
 
@@ -994,6 +1063,91 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {cambiosPendientes.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="shell w-full max-w-lg rounded-[2rem] p-2 diffused-lg">
+            <div className="core flex max-h-[80vh] flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">
+                    Cambios detectados en la hoja de ventas
+                  </h2>
+                  <p className="mt-1 text-xs text-muted">
+                    Revisa y confirma qué actualizar en cada cliente que ya existía.
+                  </p>
+                </div>
+                <button
+                  onClick={cerrarRevisionCambios}
+                  className="flex h-8 w-8 flex-none items-center justify-center rounded-xl border border-silver-deep/60 bg-surface-2 text-muted"
+                >
+                  <X className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2 overflow-y-auto">
+                {cambiosPendientes.map((cambio) => (
+                  <label
+                    key={cambio.clienteId}
+                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={seleccionCambios.has(cambio.clienteId)}
+                      onChange={() => alternarSeleccionCambio(cambio.clienteId)}
+                      className="mt-0.5 h-4 w-4 flex-none rounded border-silver-deep/60 accent-primary"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {cambio.nombre}
+                      </p>
+                      <p className="truncate text-xs text-muted">{cambio.correo}</p>
+                      <div className="mt-1 flex flex-col gap-0.5 text-xs text-foreground">
+                        {cambio.monto && (
+                          <span>
+                            Monto: <span className="text-muted">{cambio.monto.actual ?? "—"}</span>
+                            {" → "}
+                            <span className="font-medium text-success">{cambio.monto.nuevo}</span>
+                          </span>
+                        )}
+                        {cambio.vendedor && (
+                          <span>
+                            Vendedor:{" "}
+                            <span className="text-muted">{cambio.vendedor.actual ?? "—"}</span>
+                            {" → "}
+                            <span className="font-medium text-success">{cambio.vendedor.nuevo}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  onClick={cerrarRevisionCambios}
+                  className="rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-foreground"
+                >
+                  Descartar
+                </button>
+                <button
+                  onClick={aplicarCambiosSeleccionados}
+                  disabled={aplicandoCambios || seleccionCambios.size === 0}
+                  className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
+                >
+                  {aplicandoCambios ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                  ) : null}
+                  {aplicandoCambios
+                    ? "Aplicando…"
+                    : `Aplicar seleccionados (${seleccionCambios.size})`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

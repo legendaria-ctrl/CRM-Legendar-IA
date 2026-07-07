@@ -534,6 +534,30 @@ export async function buscarClientePorCorreo(correo: string): Promise<ClienteDoc
   return { id: d.id, ...d.data() } as ClienteDoc;
 }
 
+export type CambioMontoYVendedor = {
+  monto?: string;
+  vendedor?: string;
+};
+
+// Compara sin escribir nada; se usa para mostrarle al admin qué cambiaría
+// antes de aplicarlo.
+export function detectarCambioMontoYVendedor(
+  cliente: ClienteDoc,
+  monto: string | null,
+  vendedor: string | null
+): CambioMontoYVendedor | null {
+  const cambios: CambioMontoYVendedor = {};
+  if (monto && monto !== cliente.monto) cambios.monto = monto;
+  if (vendedor && vendedor !== cliente.vendedor) cambios.vendedor = vendedor;
+  return Object.keys(cambios).length > 0 ? cambios : null;
+}
+
+export async function obtenerClientePorId(id: string): Promise<ClienteDoc | null> {
+  const snap = await getDoc(doc(db, "clientes", id));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as ClienteDoc;
+}
+
 // Devuelve true solo si de verdad se escribió algo (para no repetir el
 // evento en la línea de tiempo cada 5 minutos si ya no cambió nada).
 export async function actualizarMontoYVendedor(
@@ -541,10 +565,8 @@ export async function actualizarMontoYVendedor(
   monto: string | null,
   vendedor: string | null
 ): Promise<boolean> {
-  const cambios: Record<string, string | null> = {};
-  if (monto && monto !== cliente.monto) cambios.monto = monto;
-  if (vendedor && vendedor !== cliente.vendedor) cambios.vendedor = vendedor;
-  if (Object.keys(cambios).length === 0) return false;
+  const cambios = detectarCambioMontoYVendedor(cliente, monto, vendedor);
+  if (!cambios) return false;
 
   await updateDoc(doc(db, "clientes", cliente.id), cambios);
   await agregarEvento(
