@@ -521,6 +521,7 @@ export default function ClienteDetallePage() {
       <ClientActions
         clienteId={cliente.id}
         clienteNombre={cliente.nombre}
+        clienteCorreo={cliente.email}
         estado={estado}
         puedeDeshacerAceptacion={puedeDeshacerAceptacion}
         pausada={cliente.pausada}

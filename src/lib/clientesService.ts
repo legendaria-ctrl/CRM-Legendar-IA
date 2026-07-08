@@ -179,7 +179,12 @@ export async function crearCliente(input: {
   return nuevo.id;
 }
 
-export async function enviarInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {
+export async function enviarInvitacion(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  clienteCorreo?: string | null
+) {
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
     fechaInvitacion: Timestamp.fromDate(new Date()),
@@ -191,6 +196,20 @@ export async function enviarInvitacion(clienteId: string, clienteNombre: string,
     autor,
     "Invitación enviada al cliente."
   );
+
+  // Dispara la invitación real a la comunidad de Skool. No debe tumbar el
+  // flujo si falla (ej. correo repetido en Skool); ya se registró en el CRM.
+  if (clienteCorreo) {
+    try {
+      await fetch("/api/skool-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo: clienteCorreo }),
+      });
+    } catch {
+      // Ignorar: el CRM ya quedó marcado, solo falló el aviso a Skool.
+    }
+  }
 }
 
 export async function deshacerInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {

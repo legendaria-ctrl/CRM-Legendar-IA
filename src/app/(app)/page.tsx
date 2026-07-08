@@ -269,7 +269,7 @@ export default function DashboardPage() {
     return ejecutarEnLote((c) => {
       if (accion === "enviar") {
         if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
-        return enviarInvitacion(c.id, c.nombre, autor);
+        return enviarInvitacion(c.id, c.nombre, autor, c.email);
       }
       if (accion === "deshacer_invitacion") {
         if (c.estado !== ESTADOS_CLIENTE.INVITACION_ENVIADA) return Promise.resolve();
@@ -1049,6 +1049,7 @@ export default function DashboardPage() {
                           <InvitacionToggle
                             clienteId={cliente.id}
                             clienteNombre={cliente.nombre}
+                            clienteCorreo={cliente.email}
                             enviada={invitacionEnviada}
                             puedeDeshacer={cliente.estado === ESTADOS_CLIENTE.INVITACION_ENVIADA}
                             compacto

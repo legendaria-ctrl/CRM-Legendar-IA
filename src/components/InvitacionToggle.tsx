@@ -8,12 +8,14 @@ import { useSesion } from "@/lib/session-context";
 export function InvitacionToggle({
   clienteId,
   clienteNombre,
+  clienteCorreo,
   enviada,
   puedeDeshacer = true,
   compacto = false,
 }: {
   clienteId: string;
   clienteNombre: string;
+  clienteCorreo?: string | null;
   enviada: boolean;
   puedeDeshacer?: boolean;
   compacto?: boolean;
@@ -32,7 +34,7 @@ export function InvitacionToggle({
       if (enviada) {
         await deshacerInvitacion(clienteId, clienteNombre, autor);
       } else {
-        await enviarInvitacion(clienteId, clienteNombre, autor);
+        await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
       }
     } finally {
       setCargando(false);

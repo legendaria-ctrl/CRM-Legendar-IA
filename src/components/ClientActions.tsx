@@ -29,6 +29,7 @@ import { useSesion } from "@/lib/session-context";
 export function ClientActions({
   clienteId,
   clienteNombre,
+  clienteCorreo,
   estado,
   puedeDeshacerAceptacion = false,
   pausada = false,
@@ -37,6 +38,7 @@ export function ClientActions({
 }: {
   clienteId: string;
   clienteNombre: string;
+  clienteCorreo?: string | null;
   estado: EstadoCliente;
   puedeDeshacerAceptacion?: boolean;
   pausada?: boolean;
@@ -61,7 +63,8 @@ export function ClientActions({
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
     setLoading(action);
     try {
-      if (action === "enviar_invitacion") await enviarInvitacion(clienteId, clienteNombre, autor);
+      if (action === "enviar_invitacion")
+        await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
       if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, clienteNombre, autor);
       if (action === "renovar" && fechaVencimiento) {
         await renovarMembresia(clienteId, clienteNombre, autor, fechaVencimiento);
