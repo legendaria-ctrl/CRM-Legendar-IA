@@ -5,12 +5,12 @@ import { sincronizarHojaVentas } from "@/lib/sheetSync";
 
 export const dynamic = "force-dynamic";
 
-// Se llama desde el botón "Actualizar" del dashboard (solo Admin). Revisa la
-// hoja de ventas y trae al CRM los leads que ya quedaron "ganados"
-// (creándolos automáticamente); si detecta cambios de monto/vendedor en
-// clientes que YA existían, los devuelve como "cambiosPendientes" para que
-// el admin los apruebe desde /api/sync-sheet/aplicar-cambios en vez de
-// sobrescribirlos directo.
+// Se llama desde el botón "Actualizar" del dashboard (solo Admin). Solo
+// revisa la hoja de ventas y devuelve una previsualización: los leads
+// "ganados" que aún no existen ("nuevosPendientes") y los cambios de
+// monto/vendedor/tag detectados en clientes que YA existían
+// ("cambiosPendientes"). No escribe nada; el admin confirma qué aplicar
+// desde /api/sync-sheet/aplicar-cambios.
 export async function POST() {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;

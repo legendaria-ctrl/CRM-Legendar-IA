@@ -43,7 +43,7 @@ import {
   Region,
 } from "@/lib/constants";
 import { descargarCSV } from "@/lib/csv";
-import type { CambioPendiente } from "@/lib/sheetSync";
+import type { CambioPendiente, NuevoClientePendiente } from "@/lib/sheetSync";
 import {
   Users,
   UserPlus,
@@ -119,8 +119,9 @@ export default function DashboardPage() {
   const [aceptandoIds, setAceptandoIds] = useState<Set<string>>(new Set());
   const [cambiosPendientes, setCambiosPendientes] = useState<CambioPendiente[]>([]);
   const [seleccionCambios, setSeleccionCambios] = useState<Set<string>>(new Set());
+  const [nuevosPendientes, setNuevosPendientes] = useState<NuevoClientePendiente[]>([]);
+  const [seleccionNuevos, setSeleccionNuevos] = useState<Set<string>>(new Set());
   const [aplicandoCambios, setAplicandoCambios] = useState(false);
-  const [creadosUltimoSync, setCreadosUltimoSync] = useState(0);
   const { setAcciones } = useMobileActions();
 
   useEffect(() => {
@@ -346,16 +347,15 @@ export default function DashboardPage() {
         return;
       }
       const cambios: CambioPendiente[] = data.cambiosPendientes ?? [];
-      setCreadosUltimoSync(data.creados ?? 0);
-      if (cambios.length > 0) {
+      const nuevos: NuevoClientePendiente[] = data.nuevosPendientes ?? [];
+      if (cambios.length > 0 || nuevos.length > 0) {
         setCambiosPendientes(cambios);
         setSeleccionCambios(new Set(cambios.map((c) => c.clienteId)));
-        setResultadoSync(null);
+        setNuevosPendientes(nuevos);
+        setSeleccionNuevos(new Set(nuevos.map((n) => n.correo)));
         return;
       }
-      const partes = [];
-      if (data.creados > 0) partes.push(`${data.creados} nuevo${data.creados === 1 ? "" : "s"}`);
-      setResultadoSync(partes.length > 0 ? partes.join(", ") : "Sin cambios, ya estaba todo al día");
+      setResultadoSync("Sin cambios, ya estaba todo al día");
     } catch {
       setResultadoSync("No se pudo conectar con la hoja.");
     } finally {
@@ -372,18 +372,26 @@ export default function DashboardPage() {
     });
   }
 
+  function alternarSeleccionNuevo(correo: string) {
+    setSeleccionNuevos((prev) => {
+      const next = new Set(prev);
+      if (next.has(correo)) next.delete(correo);
+      else next.add(correo);
+      return next;
+    });
+  }
+
   function cerrarRevisionCambios() {
     setCambiosPendientes([]);
     setSeleccionCambios(new Set());
-    const partes = [];
-    if (creadosUltimoSync > 0) {
-      partes.push(`${creadosUltimoSync} nuevo${creadosUltimoSync === 1 ? "" : "s"}`);
-    }
-    setResultadoSync(partes.length > 0 ? partes.join(", ") : "Sin cambios aplicados");
+    setNuevosPendientes([]);
+    setSeleccionNuevos(new Set());
+    setResultadoSync("Sin cambios aplicados");
   }
 
   async function aplicarCambiosSeleccionados() {
-    if (aplicandoCambios || seleccionCambios.size === 0) return;
+    const total = seleccionCambios.size + seleccionNuevos.size;
+    if (aplicandoCambios || total === 0) return;
     setAplicandoCambios(true);
     try {
       const cambios = cambiosPendientes
@@ -394,22 +402,23 @@ export default function DashboardPage() {
           vendedor: c.vendedor?.nuevo,
           agregarTagMiembroCS: c.agregarTagMiembroCS,
         }));
+      const nuevos = nuevosPendientes.filter((n) => seleccionNuevos.has(n.correo));
       const res = await fetch("/api/sync-sheet/aplicar-cambios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cambios }),
+        body: JSON.stringify({ cambios, nuevos }),
       });
       const data = await res.json();
       setCambiosPendientes([]);
       setSeleccionCambios(new Set());
+      setNuevosPendientes([]);
+      setSeleccionNuevos(new Set());
       if (!res.ok) {
         setResultadoSync(data.error || "No se pudieron aplicar los cambios.");
         return;
       }
       const partes = [];
-      if (creadosUltimoSync > 0) {
-        partes.push(`${creadosUltimoSync} nuevo${creadosUltimoSync === 1 ? "" : "s"}`);
-      }
+      if (data.creados > 0) partes.push(`${data.creados} nuevo${data.creados === 1 ? "" : "s"}`);
       if (data.aplicados > 0) {
         partes.push(`${data.aplicados} actualizado${data.aplicados === 1 ? "" : "s"}`);
       }
@@ -1065,17 +1074,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {cambiosPendientes.length > 0 && (
+      {(cambiosPendientes.length > 0 || nuevosPendientes.length > 0) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="shell w-full max-w-lg rounded-[2rem] p-2 diffused-lg">
-            <div className="core flex max-h-[80vh] flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
+            <div className="core flex max-h-[85vh] flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-semibold text-foreground">
                     Cambios detectados en la hoja de ventas
                   </h2>
                   <p className="mt-1 text-xs text-muted">
-                    Revisa y confirma qué actualizar en cada cliente que ya existía.
+                    Revisa y confirma qué agregar y qué actualizar.
                   </p>
                 </div>
                 <button
@@ -1086,48 +1095,104 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <div className="flex flex-col gap-2 overflow-y-auto">
-                {cambiosPendientes.map((cambio) => (
-                  <label
-                    key={cambio.clienteId}
-                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={seleccionCambios.has(cambio.clienteId)}
-                      onChange={() => alternarSeleccionCambio(cambio.clienteId)}
-                      className="mt-0.5 h-4 w-4 flex-none rounded border-silver-deep/60 accent-primary"
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {cambio.nombre}
-                      </p>
-                      <p className="truncate text-xs text-muted">{cambio.correo}</p>
-                      <div className="mt-1 flex flex-col gap-0.5 text-xs text-foreground">
-                        {cambio.monto && (
-                          <span>
-                            Monto: <span className="text-muted">{cambio.monto.actual ?? "—"}</span>
-                            {" → "}
-                            <span className="font-medium text-success">{cambio.monto.nuevo}</span>
-                          </span>
-                        )}
-                        {cambio.vendedor && (
-                          <span>
-                            Vendedor:{" "}
-                            <span className="text-muted">{cambio.vendedor.actual ?? "—"}</span>
-                            {" → "}
-                            <span className="font-medium text-success">{cambio.vendedor.nuevo}</span>
-                          </span>
-                        )}
-                        {cambio.agregarTagMiembroCS && (
-                          <span>
-                            Agregar tag: <span className="font-medium text-success">Miembro del CS</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </label>
-                ))}
+              <div className="flex flex-col gap-4 overflow-y-auto">
+                {nuevosPendientes.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+                      Clientes nuevos que se agregarán ({nuevosPendientes.length})
+                    </p>
+                    {nuevosPendientes.map((nuevo) => (
+                      <label
+                        key={nuevo.correo}
+                        className="flex cursor-pointer items-start gap-3 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={seleccionNuevos.has(nuevo.correo)}
+                          onChange={() => alternarSeleccionNuevo(nuevo.correo)}
+                          className="mt-0.5 h-4 w-4 flex-none rounded border-silver-deep/60 accent-primary"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {nuevo.nombre}
+                          </p>
+                          <p className="truncate text-xs text-muted">{nuevo.correo}</p>
+                          <div className="mt-1 flex flex-col gap-0.5 text-xs text-foreground">
+                            <span>
+                              Región: <span className="font-medium">{nuevo.region}</span>
+                              {nuevo.vendedor && (
+                                <>
+                                  {" · Vendedor: "}
+                                  <span className="font-medium">{nuevo.vendedor}</span>
+                                </>
+                              )}
+                              {nuevo.monto && (
+                                <>
+                                  {" · Monto: "}
+                                  <span className="font-medium text-success">{nuevo.monto}</span>
+                                </>
+                              )}
+                            </span>
+                            {nuevo.tags.length > 0 && (
+                              <span>
+                                Tag: <span className="font-medium text-success">{nuevo.tags.join(", ")}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {cambiosPendientes.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+                      Cambios en clientes existentes ({cambiosPendientes.length})
+                    </p>
+                    {cambiosPendientes.map((cambio) => (
+                      <label
+                        key={cambio.clienteId}
+                        className="flex cursor-pointer items-start gap-3 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={seleccionCambios.has(cambio.clienteId)}
+                          onChange={() => alternarSeleccionCambio(cambio.clienteId)}
+                          className="mt-0.5 h-4 w-4 flex-none rounded border-silver-deep/60 accent-primary"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {cambio.nombre}
+                          </p>
+                          <p className="truncate text-xs text-muted">{cambio.correo}</p>
+                          <div className="mt-1 flex flex-col gap-0.5 text-xs text-foreground">
+                            {cambio.monto && (
+                              <span>
+                                Monto: <span className="text-muted">{cambio.monto.actual ?? "—"}</span>
+                                {" → "}
+                                <span className="font-medium text-success">{cambio.monto.nuevo}</span>
+                              </span>
+                            )}
+                            {cambio.vendedor && (
+                              <span>
+                                Vendedor:{" "}
+                                <span className="text-muted">{cambio.vendedor.actual ?? "—"}</span>
+                                {" → "}
+                                <span className="font-medium text-success">{cambio.vendedor.nuevo}</span>
+                              </span>
+                            )}
+                            {cambio.agregarTagMiembroCS && (
+                              <span>
+                                Agregar tag: <span className="font-medium text-success">Miembro del CS</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between gap-3">
@@ -1139,7 +1204,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={aplicarCambiosSeleccionados}
-                  disabled={aplicandoCambios || seleccionCambios.size === 0}
+                  disabled={aplicandoCambios || seleccionCambios.size + seleccionNuevos.size === 0}
                   className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-60"
                 >
                   {aplicandoCambios ? (
@@ -1147,7 +1212,7 @@ export default function DashboardPage() {
                   ) : null}
                   {aplicandoCambios
                     ? "Aplicando…"
-                    : `Aplicar seleccionados (${seleccionCambios.size})`}
+                    : `Aplicar seleccionados (${seleccionCambios.size + seleccionNuevos.size})`}
                 </button>
               </div>
             </div>

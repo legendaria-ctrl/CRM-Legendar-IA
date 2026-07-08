@@ -151,13 +151,26 @@ export type CambioPendiente = {
   agregarTagMiembroCS?: boolean;
 };
 
+// Cliente que la hoja trae y todavía no existe en el CRM. Tampoco se crea
+// solo: se le muestra al admin junto con los cambios para que confirme.
+export type NuevoClientePendiente = {
+  correo: string;
+  nombre: string;
+  telefono: string | null;
+  region: "MX" | "US";
+  vendedor: string | null;
+  monto: string | null;
+  fechaInscripcion: string | null;
+  tags: string[];
+};
+
 export type ResultadoSincronizacion = {
   filasLeidas: number;
   ganadoras: number;
-  creados: number;
   omitidos: number;
   errores: string[];
   cambiosPendientes: CambioPendiente[];
+  nuevosPendientes: NuevoClientePendiente[];
 };
 
 const AUTOR_SISTEMA = { nombre: "Sincronización automática", rol: "ADMIN" };
@@ -212,23 +225,18 @@ async function sincronizarHoja(
           resultado.omitidos++;
         }
       } else {
-        const fechaInscripcion = parsearFechaHoja(fila.fecha) ?? undefined;
+        const fechaInscripcion = parsearFechaHoja(fila.fecha);
         const telefono = limpiarTelefono(fila.corregido, fila.celular, region);
-        await crearCliente({
+        resultado.nuevosPendientes.push({
+          correo: fila.correo,
           nombre: fila.nombre || fila.correo,
-          email: fila.correo,
-          telefono: telefono ?? undefined,
+          telefono,
           region,
-          etiquetas: [ETIQUETA_LEGENDARIA],
-          tags: esMiembroCS ? [TAG_MIEMBRO_CS] : undefined,
-          vendedor: vendedor ?? undefined,
-          monto: monto ?? undefined,
-          fechaInscripcion,
-          autor: AUTOR_SISTEMA.nombre,
-          autorRol: AUTOR_SISTEMA.rol,
-          origen: "sheet",
+          vendedor,
+          monto,
+          fechaInscripcion: fechaInscripcion ? fechaInscripcion.toISOString() : null,
+          tags: esMiembroCS ? [TAG_MIEMBRO_CS] : [],
         });
-        resultado.creados++;
       }
     } catch (err) {
       resultado.errores.push(
@@ -242,10 +250,10 @@ export async function sincronizarHojaVentas(): Promise<ResultadoSincronizacion> 
   const resultado: ResultadoSincronizacion = {
     filasLeidas: 0,
     ganadoras: 0,
-    creados: 0,
     omitidos: 0,
     errores: [],
     cambiosPendientes: [],
+    nuevosPendientes: [],
   };
 
   for (const hoja of HOJAS) {
@@ -295,4 +303,37 @@ export async function aplicarCambiosPendientes(
   }
 
   return { aplicados, errores };
+}
+
+// El admin ya revisó la lista de clientes nuevos propuestos y eligió
+// cuáles crear.
+export async function aplicarNuevosPendientes(
+  nuevos: NuevoClientePendiente[]
+): Promise<{ creados: number; errores: string[] }> {
+  let creados = 0;
+  const errores: string[] = [];
+
+  for (const nuevo of nuevos) {
+    try {
+      await crearCliente({
+        nombre: nuevo.nombre,
+        email: nuevo.correo,
+        telefono: nuevo.telefono ?? undefined,
+        region: nuevo.region,
+        etiquetas: [ETIQUETA_LEGENDARIA],
+        tags: nuevo.tags.length > 0 ? nuevo.tags : undefined,
+        vendedor: nuevo.vendedor ?? undefined,
+        monto: nuevo.monto ?? undefined,
+        fechaInscripcion: nuevo.fechaInscripcion ? new Date(nuevo.fechaInscripcion) : undefined,
+        autor: AUTOR_SISTEMA.nombre,
+        autorRol: AUTOR_SISTEMA.rol,
+        origen: "sheet",
+      });
+      creados++;
+    } catch (err) {
+      errores.push(`${nuevo.correo}: ${err instanceof Error ? err.message : "error desconocido"}`);
+    }
+  }
+
+  return { creados, errores };
 }
