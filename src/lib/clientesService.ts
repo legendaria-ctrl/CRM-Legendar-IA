@@ -201,15 +201,41 @@ export async function enviarInvitacion(
   // flujo si falla (ej. correo repetido en Skool); ya se registró en el CRM.
   if (clienteCorreo) {
     try {
-      await fetch("/api/skool-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ correo: clienteCorreo }),
-      });
+      await dispararInvitacionSkool(clienteCorreo);
     } catch {
       // Ignorar: el CRM ya quedó marcado, solo falló el aviso a Skool.
     }
   }
+}
+
+async function dispararInvitacionSkool(correo: string) {
+  const res = await fetch("/api/skool-invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ correo }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || "No se pudo invitar a Skool");
+  }
+}
+
+// Botón manual en el perfil: útil cuando se corrige el correo del cliente
+// y hay que volver a mandarle el link de invitación de Skool.
+export async function reenviarInvitacionSkool(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  correo: string
+) {
+  await dispararInvitacionSkool(correo);
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.INVITACION_ENVIADA,
+    autor,
+    `Se reenvió la invitación de Skool a ${correo}.`
+  );
 }
 
 export async function deshacerInvitacion(clienteId: string, clienteNombre: string, autor: Autor) {

@@ -23,6 +23,7 @@ import {
   pausarMembresia,
   reanudarMembresia,
   agregarDiasMembresia,
+  reenviarInvitacionSkool,
 } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
 
@@ -49,6 +50,7 @@ export function ClientActions({
   const [loading, setLoading] = useState<string | null>(null);
   const [nota, setNota] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [skoolReenviado, setSkoolReenviado] = useState(false);
 
   async function run(action: string, notaTexto?: string) {
     setError(null);
@@ -81,6 +83,11 @@ export function ClientActions({
         await reanudarMembresia(clienteId, clienteNombre, autor, fechaVencimiento, fechaPausa);
       if (action === "agregar_dias" && fechaVencimiento)
         await agregarDiasMembresia(clienteId, clienteNombre, autor, fechaVencimiento, 30);
+      if (action === "reenviar_skool" && clienteCorreo) {
+        await reenviarInvitacionSkool(clienteId, clienteNombre, autor, clienteCorreo);
+        setSkoolReenviado(true);
+        setTimeout(() => setSkoolReenviado(false), 3000);
+      }
     } catch (err) {
       console.error(err);
       setError(
@@ -99,9 +106,21 @@ export function ClientActions({
         </h3>
 
         {error && <p className="text-sm text-danger">{error}</p>}
+        {skoolReenviado && (
+          <p className="text-sm text-success">Invitación de Skool reenviada.</p>
+        )}
         {cargando && <p className="text-sm text-muted">Verificando tu sesión…</p>}
 
         <div className="flex flex-wrap gap-3">
+          {clienteCorreo && (
+            <UndoButton
+              icon={Send}
+              label="Reenviar invitación a Skool"
+              loading={loading === "reenviar_skool"}
+              onClick={() => run("reenviar_skool")}
+            />
+          )}
+
           {estado === ESTADOS_CLIENTE.NUEVO && (
             <ActionButton
               icon={Send}
