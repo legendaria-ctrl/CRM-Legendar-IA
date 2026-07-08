@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const url = `${webhookUrl}?email=${encodeURIComponent(correo)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { method: "POST" });
     if (!res.ok) {
       return NextResponse.json(
         { error: `Skool respondió con error (status ${res.status})` },
