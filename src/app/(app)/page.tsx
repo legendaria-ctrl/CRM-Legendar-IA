@@ -392,6 +392,7 @@ export default function DashboardPage() {
           clienteId: c.clienteId,
           monto: c.monto?.nuevo,
           vendedor: c.vendedor?.nuevo,
+          agregarTagMiembroCS: c.agregarTagMiembroCS,
         }));
       const res = await fetch("/api/sync-sheet/aplicar-cambios", {
         method: "POST",
@@ -1116,6 +1117,11 @@ export default function DashboardPage() {
                             <span className="text-muted">{cambio.vendedor.actual ?? "—"}</span>
                             {" → "}
                             <span className="font-medium text-success">{cambio.vendedor.nuevo}</span>
+                          </span>
+                        )}
+                        {cambio.agregarTagMiembroCS && (
+                          <span>
+                            Agregar tag: <span className="font-medium text-success">Miembro del CS</span>
                           </span>
                         )}
                       </div>

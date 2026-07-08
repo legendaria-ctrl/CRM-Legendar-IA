@@ -4,6 +4,7 @@ import {
   buscarClientePorCorreo,
   detectarCambioMontoYVendedor,
   actualizarMontoYVendedor,
+  agregarTagsCliente,
   obtenerClientePorId,
 } from "./clientesService";
 import { CERTIFICACIONES } from "./certificaciones";
@@ -27,6 +28,11 @@ const ESTADOS_GANADORES = new Set([
 ]);
 
 const ETIQUETA_LEGENDARIA = CERTIFICACIONES[0]?.etiqueta ?? "Legendar-IA";
+
+// Solo el estado exacto "Upgrade" (no "1A Upgrade") marca al cliente con
+// el tag "Miembro del CS", ya existente en /tags.
+const TAG_MIEMBRO_CS = "Miembro del CS";
+const ESTADO_MIEMBRO_CS = "upgrade";
 
 const MESES: Record<string, number> = {
   ene: 0,
@@ -142,6 +148,7 @@ export type CambioPendiente = {
   correo: string;
   monto?: { actual: string | null; nuevo: string };
   vendedor?: { actual: string | null; nuevo: string };
+  agregarTagMiembroCS?: boolean;
 };
 
 export type ResultadoSincronizacion = {
@@ -185,18 +192,21 @@ async function sincronizarHoja(
       const existente = await buscarClientePorCorreo(fila.correo);
       const monto = fila.amount || null;
       const vendedor = resolverVendedor(fila);
+      const esMiembroCS = estado === ESTADO_MIEMBRO_CS;
 
       if (existente) {
         const cambios = detectarCambioMontoYVendedor(existente, monto, vendedor);
-        if (cambios) {
+        const necesitaTagCS = esMiembroCS && !(existente.tags ?? []).includes(TAG_MIEMBRO_CS);
+        if (cambios || necesitaTagCS) {
           resultado.cambiosPendientes.push({
             clienteId: existente.id,
             nombre: existente.nombre,
             correo: existente.email ?? fila.correo,
-            monto: cambios.monto ? { actual: existente.monto, nuevo: cambios.monto } : undefined,
-            vendedor: cambios.vendedor
+            monto: cambios?.monto ? { actual: existente.monto, nuevo: cambios.monto } : undefined,
+            vendedor: cambios?.vendedor
               ? { actual: existente.vendedor, nuevo: cambios.vendedor }
               : undefined,
+            agregarTagMiembroCS: necesitaTagCS ? true : undefined,
           });
         } else {
           resultado.omitidos++;
@@ -210,6 +220,7 @@ async function sincronizarHoja(
           telefono: telefono ?? undefined,
           region,
           etiquetas: [ETIQUETA_LEGENDARIA],
+          tags: esMiembroCS ? [TAG_MIEMBRO_CS] : undefined,
           vendedor: vendedor ?? undefined,
           monto: monto ?? undefined,
           fechaInscripcion,
@@ -248,6 +259,7 @@ export type CambioAAplicar = {
   clienteId: string;
   monto?: string;
   vendedor?: string;
+  agregarTagMiembroCS?: boolean;
 };
 
 // El admin ya revisó los cambios propuestos y eligió cuáles aplicar; se
@@ -271,7 +283,12 @@ export async function aplicarCambiosPendientes(
         cambio.monto ?? null,
         cambio.vendedor ?? null
       );
-      if (seActualizo) aplicados++;
+      let seAplicoTag = false;
+      if (cambio.agregarTagMiembroCS && !(cliente.tags ?? []).includes(TAG_MIEMBRO_CS)) {
+        await agregarTagsCliente(cliente.id, cliente.nombre, AUTOR_SISTEMA, [TAG_MIEMBRO_CS]);
+        seAplicoTag = true;
+      }
+      if (seActualizo || seAplicoTag) aplicados++;
     } catch (err) {
       errores.push(`${cambio.clienteId}: ${err instanceof Error ? err.message : "error desconocido"}`);
     }
