@@ -9,6 +9,7 @@ import {
   deshacerInvitacion,
   aceptarInvitacion,
   deshacerAceptacion,
+  reenviarInvitacionSkool,
   actualizarMensajeBienvenida,
   agregarTagsCliente,
   quitarTagCliente,
@@ -281,6 +282,17 @@ export default function DashboardPage() {
       }
       if (c.estado !== ESTADOS_CLIENTE.ACTIVO) return Promise.resolve();
       return deshacerAceptacion(c.id, c.nombre, autor);
+    });
+  }
+
+  function reenviarSkoolEnLote() {
+    if (!sesion) return;
+    const autor = { nombre: sesion.nombre, rol: sesion.rol };
+    return ejecutarEnLote((c) => {
+      if (!c.email) return Promise.resolve();
+      return reenviarInvitacionSkool(c.id, c.nombre, autor, c.email).catch(() => {
+        // No detener el lote si a uno le falla (ej. correo repetido en Skool).
+      });
     });
   }
 
@@ -828,6 +840,11 @@ export default function DashboardPage() {
                   label: "Deshacer aceptación",
                   onSelect: () => aplicarEstadoEnLote("deshacer_aceptacion"),
                   quitar: true,
+                },
+                {
+                  key: "reenviar_skool",
+                  label: "Reenviar invitación a Skool",
+                  onSelect: () => reenviarSkoolEnLote(),
                 },
               ]}
             />
