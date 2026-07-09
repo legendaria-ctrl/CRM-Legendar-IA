@@ -51,6 +51,7 @@ export function ClientActions({
   const [nota, setNota] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [skoolReenviado, setSkoolReenviado] = useState(false);
+  const [diasPersonalizados, setDiasPersonalizados] = useState("");
 
   async function run(action: string, notaTexto?: string) {
     setError(null);
@@ -83,6 +84,15 @@ export function ClientActions({
         await reanudarMembresia(clienteId, clienteNombre, autor, fechaVencimiento, fechaPausa);
       if (action === "agregar_dias" && fechaVencimiento)
         await agregarDiasMembresia(clienteId, clienteNombre, autor, fechaVencimiento, 30);
+      if (action === "agregar_dias_personalizados" && fechaVencimiento) {
+        const dias = Number(diasPersonalizados);
+        if (!dias || dias <= 0) {
+          setError("Escribe un número de días válido.");
+          return;
+        }
+        await agregarDiasMembresia(clienteId, clienteNombre, autor, fechaVencimiento, dias);
+        setDiasPersonalizados("");
+      }
       if (action === "reenviar_skool" && clienteCorreo) {
         await reenviarInvitacionSkool(clienteId, clienteNombre, autor, clienteCorreo);
         setSkoolReenviado(true);
@@ -112,15 +122,6 @@ export function ClientActions({
         {cargando && <p className="text-sm text-muted">Verificando tu sesión…</p>}
 
         <div className="flex flex-wrap gap-3">
-          {clienteCorreo && (
-            <UndoButton
-              icon={Send}
-              label="Reenviar invitación a Skool"
-              loading={loading === "reenviar_skool"}
-              onClick={() => run("reenviar_skool")}
-            />
-          )}
-
           {estado === ESTADOS_CLIENTE.NUEVO && (
             <ActionButton
               icon={Send}
@@ -164,6 +165,15 @@ export function ClientActions({
             </>
           )}
 
+          {clienteCorreo && (
+            <UndoButton
+              icon={Send}
+              label="Reenviar invitación a Skool"
+              loading={loading === "reenviar_skool"}
+              onClick={() => run("reenviar_skool")}
+            />
+          )}
+
           {fechaVencimiento && (
             <>
               {pausada ? (
@@ -190,6 +200,36 @@ export function ClientActions({
             </>
           )}
         </div>
+
+        {fechaVencimiento && (
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
+              <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Agregar días personalizados
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={1}
+                value={diasPersonalizados}
+                onChange={(e) => setDiasPersonalizados(e.target.value)}
+                placeholder="Ej. 15"
+                className="w-28 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+              />
+              <button
+                disabled={!diasPersonalizados.trim() || loading === "agregar_dias_personalizados"}
+                onClick={() => run("agregar_dias_personalizados")}
+                className="flex items-center justify-center rounded-2xl bg-surface-2 px-4 text-sm font-medium text-primary transition-all duration-500 ease-spring hover:bg-primary-dim active:scale-[0.98] disabled:opacity-40"
+              >
+                {loading === "agregar_dias_personalizados" ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                ) : (
+                  "Agregar"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-2 flex flex-col gap-2">
           <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
