@@ -47,7 +47,6 @@ import {
   REGION_LABEL,
   Region,
   beneficiosDeRegion,
-  TIPOS_EVENTO,
   PAPELERA_DIAS,
 } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
@@ -115,8 +114,6 @@ export default function ClienteDetallePage() {
   const fechaVencimiento = aFecha(cliente.fechaVencimiento);
   const fechaPausa = aFecha(cliente.fechaPausa);
   const beneficios = beneficiosDeRegion(cliente.region);
-  const ultimoEvento = eventos[eventos.length - 1];
-  const puedeDeshacerAceptacion = ultimoEvento?.tipo === TIPOS_EVENTO.INVITACION_ACEPTADA;
 
   async function handleAgregarTags(tags: string[]) {
     if (!sesion || !cliente) return;
@@ -546,7 +543,6 @@ export default function ClienteDetallePage() {
         clienteNombre={cliente.nombre}
         clienteCorreo={cliente.email}
         estado={estado}
-        puedeDeshacerAceptacion={puedeDeshacerAceptacion}
         pausada={cliente.pausada}
         fechaVencimiento={fechaVencimiento}
         fechaPausa={fechaPausa}

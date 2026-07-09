@@ -32,7 +32,6 @@ export function ClientActions({
   clienteNombre,
   clienteCorreo,
   estado,
-  puedeDeshacerAceptacion = false,
   pausada = false,
   fechaVencimiento = null,
   fechaPausa = null,
@@ -41,7 +40,6 @@ export function ClientActions({
   clienteNombre: string;
   clienteCorreo?: string | null;
   estado: EstadoCliente;
-  puedeDeshacerAceptacion?: boolean;
   pausada?: boolean;
   fechaVencimiento?: Date | null;
   fechaPausa?: Date | null;
@@ -155,13 +153,11 @@ export function ClientActions({
                 loading={loading === "renovar"}
                 onClick={() => run("renovar")}
               />
-              {puedeDeshacerAceptacion && (
-                <UndoButton
-                  label="Deshacer aceptación"
-                  loading={loading === "deshacer_aceptacion"}
-                  onClick={() => run("deshacer_aceptacion")}
-                />
-              )}
+              <UndoButton
+                label="Deshacer aceptación"
+                loading={loading === "deshacer_aceptacion"}
+                onClick={() => run("deshacer_aceptacion")}
+              />
             </>
           )}
 
