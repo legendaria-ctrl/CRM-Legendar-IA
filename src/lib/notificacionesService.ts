@@ -17,7 +17,7 @@ export type Audiencia = "TODOS" | "VENDEDORES" | "ADMINS" | "PRIVADO";
 
 export type NotificacionDoc = {
   id: string;
-  tipo: "AVISO" | "ACTIVIDAD";
+  tipo: "AVISO" | "ACTIVIDAD" | "ACTUALIZACION";
   audiencia: Audiencia;
   destinatarios: string[];
   mensaje: string;
@@ -94,6 +94,28 @@ export async function crearNotificacionActividad(
     autorRol: autor.rol,
     clienteId: clienteId ?? null,
     clienteNombre: clienteNombre ?? null,
+    fecha: serverTimestamp(),
+    leidoPor: [],
+  });
+}
+
+// Avisos de "actualización de la plataforma": solo para admins, y a
+// diferencia de un AVISO normal, se muestran como ventana emergente
+// automática al entrar (no solo en la campanita). Se disparan a mano
+// cuando el dueño decide anunciar un cambio (o varios juntos).
+export async function crearAvisoActualizacion(mensaje: string) {
+  const limpio = mensaje.trim();
+  if (!limpio) return;
+
+  await addDoc(notificacionesRef, {
+    tipo: "ACTUALIZACION",
+    audiencia: "ADMINS",
+    destinatarios: [],
+    mensaje: limpio,
+    autor: "Actualización de la plataforma",
+    autorRol: "SISTEMA",
+    clienteId: null,
+    clienteNombre: null,
     fecha: serverTimestamp(),
     leidoPor: [],
   });
