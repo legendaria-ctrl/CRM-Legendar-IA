@@ -466,16 +466,25 @@ export async function actualizarDatosCliente(
     region?: string;
     notas?: string;
     monto?: string;
+    fechaInicio?: string;
   }
 ) {
-  await updateDoc(doc(db, "clientes", clienteId), {
+  const datos: Record<string, unknown> = {
     nombre: cambios.nombre,
     email: cambios.email || null,
     telefono: cambios.telefono || null,
     region: cambios.region || null,
     notas: cambios.notas || null,
     monto: cambios.monto || null,
-  });
+  };
+
+  if (cambios.fechaInicio) {
+    const fechaLlegada = new Date(`${cambios.fechaInicio}T00:00:00`);
+    datos.fechaLlegada = Timestamp.fromDate(fechaLlegada);
+    datos.fechaVencimiento = Timestamp.fromDate(fechaVencimientoDesde(fechaLlegada));
+  }
+
+  await updateDoc(doc(db, "clientes", clienteId), datos);
   await agregarEvento(
     clienteId,
     cambios.nombre,

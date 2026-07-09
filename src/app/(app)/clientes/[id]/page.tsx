@@ -53,6 +53,13 @@ import {
 import { useSesion } from "@/lib/session-context";
 import { mensajeBienvenida, construirLinkWhatsapp } from "@/lib/whatsapp";
 
+function aFechaInputValue(fecha: Date): string {
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dia = String(fecha.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
+}
+
 export default function ClienteDetallePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -68,6 +75,7 @@ export default function ClienteDetallePage() {
     region: "",
     notas: "",
     monto: "",
+    fechaInicio: "",
   });
 
   const [cliente, setCliente] = useState<ClienteDoc | null | undefined>(undefined);
@@ -147,6 +155,7 @@ export default function ClienteDetallePage() {
 
   function abrirEdicion() {
     if (!cliente) return;
+    const llegada = aFecha(cliente.fechaLlegada);
     setFormEdicion({
       nombre: cliente.nombre,
       email: cliente.email ?? "",
@@ -154,6 +163,7 @@ export default function ClienteDetallePage() {
       region: cliente.region ?? "",
       notas: cliente.notas ?? "",
       monto: cliente.monto ?? "",
+      fechaInicio: llegada ? aFechaInputValue(llegada) : "",
     });
     setEditando(true);
   }
@@ -274,6 +284,19 @@ export default function ClienteDetallePage() {
                       setFormEdicion((f) => ({ ...f, monto: e.target.value }))
                     }
                     placeholder="$3,997 MXN"
+                    className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Fecha de inicio
+                  </span>
+                  <input
+                    type="date"
+                    value={formEdicion.fechaInicio}
+                    onChange={(e) =>
+                      setFormEdicion((f) => ({ ...f, fechaInicio: e.target.value }))
+                    }
                     className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
                   />
                 </label>
