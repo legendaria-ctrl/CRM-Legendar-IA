@@ -34,34 +34,6 @@ const ETIQUETA_LEGENDARIA = CERTIFICACIONES[0]?.etiqueta ?? "Legendar-IA";
 const TAG_MIEMBRO_CS = "Miembro del CS";
 const ESTADO_MIEMBRO_CS = "upgrade";
 
-const MESES: Record<string, number> = {
-  ene: 0,
-  feb: 1,
-  mar: 2,
-  abr: 3,
-  may: 4,
-  jun: 5,
-  jul: 6,
-  ago: 7,
-  sep: 8,
-  oct: 9,
-  nov: 10,
-  dic: 11,
-};
-
-// Las hojas guardan fechas como "1-jul" o "16-jun" (sin año). Se asume el
-// año en curso; si el mes ya pasó y estamos a inicio de año siguiente esto
-// podría desfasarse, pero es aceptable para un tracker que se revisa seguido.
-function parsearFechaHoja(texto: string): Date | null {
-  const limpio = texto.trim().toLowerCase();
-  const match = limpio.match(/^(\d{1,2})-([a-z]{3})$/);
-  if (!match) return null;
-  const [, dia, mesTexto] = match;
-  const mes = MESES[mesTexto];
-  if (mes === undefined) return null;
-  return new Date(new Date().getFullYear(), mes, Number(dia));
-}
-
 // La columna CORREGIDO ya trae el celular local limpio (10 dígitos, sin
 // código de país). Si falta, se intenta sacar de CELULAR quitando el
 // código de país correspondiente a la región de la hoja (52 para MX, 1
@@ -160,7 +132,6 @@ export type NuevoClientePendiente = {
   region: "MX" | "US";
   vendedor: string | null;
   monto: string | null;
-  fechaInscripcion: string | null;
   tags: string[];
 };
 
@@ -225,7 +196,10 @@ async function sincronizarHoja(
           resultado.omitidos++;
         }
       } else {
-        const fechaInscripcion = parsearFechaHoja(fila.fecha);
+        // La fecha de la hoja no es confiable (a veces falta o viene mal);
+        // la fecha de ingreso real es el momento en que se confirma el alta
+        // aquí, no la de la hoja. crearCliente usa "ahora" cuando no se le
+        // pasa fechaInscripcion.
         const telefono = limpiarTelefono(fila.corregido, fila.celular, region);
         resultado.nuevosPendientes.push({
           correo: fila.correo,
@@ -234,7 +208,6 @@ async function sincronizarHoja(
           region,
           vendedor,
           monto,
-          fechaInscripcion: fechaInscripcion ? fechaInscripcion.toISOString() : null,
           tags: esMiembroCS ? [TAG_MIEMBRO_CS] : [],
         });
       }
@@ -324,7 +297,6 @@ export async function aplicarNuevosPendientes(
         tags: nuevo.tags.length > 0 ? nuevo.tags : undefined,
         vendedor: nuevo.vendedor ?? undefined,
         monto: nuevo.monto ?? undefined,
-        fechaInscripcion: nuevo.fechaInscripcion ? new Date(nuevo.fechaInscripcion) : undefined,
         autor: AUTOR_SISTEMA.nombre,
         autorRol: AUTOR_SISTEMA.rol,
         origen: "sheet",
