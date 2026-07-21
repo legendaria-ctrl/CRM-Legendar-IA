@@ -24,6 +24,7 @@ import {
   reanudarMembresia,
   agregarDiasMembresia,
   reenviarInvitacionSkool,
+  establecerDiasRestantes,
 } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
 
@@ -50,6 +51,7 @@ export function ClientActions({
   const [error, setError] = useState<string | null>(null);
   const [skoolReenviado, setSkoolReenviado] = useState(false);
   const [diasPersonalizados, setDiasPersonalizados] = useState("");
+  const [diasRestantes, setDiasRestantes] = useState("");
 
   async function run(action: string, notaTexto?: string) {
     setError(null);
@@ -90,6 +92,15 @@ export function ClientActions({
         }
         await agregarDiasMembresia(clienteId, clienteNombre, autor, fechaVencimiento, dias);
         setDiasPersonalizados("");
+      }
+      if (action === "establecer_dias_restantes") {
+        const dias = Number(diasRestantes);
+        if (!Number.isFinite(dias)) {
+          setError("Escribe un número de días válido (puede ser negativo).");
+          return;
+        }
+        await establecerDiasRestantes(clienteId, clienteNombre, autor, dias);
+        setDiasRestantes("");
       }
       if (action === "reenviar_skool" && clienteCorreo) {
         await reenviarInvitacionSkool(clienteId, clienteNombre, autor, clienteCorreo);
@@ -151,7 +162,11 @@ export function ClientActions({
                 icon={RefreshCcw}
                 label="Renovar membresía (1 año)"
                 loading={loading === "renovar"}
-                onClick={() => run("renovar")}
+                onClick={() => {
+                  if (window.confirm("¿Seguro que quieres renovar? Se sumarán 365 días a la fecha de vencimiento actual.")) {
+                    run("renovar");
+                  }
+                }}
               />
               <UndoButton
                 label="Deshacer aceptación"
@@ -224,6 +239,46 @@ export function ClientActions({
                 )}
               </button>
             </div>
+          </div>
+        )}
+
+        {fechaVencimiento && (
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
+              <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Corregir días restantes (desde hoy)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={diasRestantes}
+                onChange={(e) => setDiasRestantes(e.target.value)}
+                placeholder="Ej. 20"
+                className="w-28 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+              />
+              <button
+                disabled={!diasRestantes.trim() || loading === "establecer_dias_restantes"}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `¿Establecer el tiempo restante en ${diasRestantes} días a partir de hoy? Esto reemplaza la fecha de vencimiento actual.`
+                    )
+                  ) {
+                    run("establecer_dias_restantes");
+                  }
+                }}
+                className="flex items-center justify-center rounded-2xl bg-surface-2 px-4 text-sm font-medium text-primary transition-all duration-500 ease-spring hover:bg-primary-dim active:scale-[0.98] disabled:opacity-40"
+              >
+                {loading === "establecer_dias_restantes" ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                ) : (
+                  "Corregir"
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-muted/70">
+              Usa esto para corregir el temporizador si le diste sin querer a renovar u otra acción.
+            </p>
           </div>
         )}
 

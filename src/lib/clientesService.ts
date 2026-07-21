@@ -362,6 +362,27 @@ export async function renovarMembresia(
   );
 }
 
+export async function establecerDiasRestantes(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  dias: number
+) {
+  const ahora = new Date();
+  const nuevoVencimiento = new Date(ahora);
+  nuevoVencimiento.setDate(nuevoVencimiento.getDate() + dias);
+  await updateDoc(doc(db, "clientes", clienteId), {
+    fechaVencimiento: Timestamp.fromDate(nuevoVencimiento),
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.EDICION,
+    autor,
+    `Se ajustó manualmente el tiempo restante de la membresía a ${dias} días.`
+  );
+}
+
 export async function agregarNota(
   clienteId: string,
   clienteNombre: string,
