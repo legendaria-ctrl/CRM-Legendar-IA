@@ -685,11 +685,13 @@ export default function ClienteDetallePage() {
         }))}
       />
 
-      {sesion?.rol === "ADMIN" && (
+      {puedeEditar && (
         <div className="shell rounded-[2rem] p-2 diffused-lg">
           <div className="core flex flex-col gap-3 rounded-[calc(2rem-0.5rem)] p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-sm font-medium text-foreground">Eliminar cliente</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                {esSeguimiento ? "Eliminar seguimiento" : "Eliminar cliente"}
+              </h3>
               <p className="text-sm text-muted">
                 Se envía a la papelera por {PAPELERA_DIAS} días. Desde ahí se puede restaurar tal
                 como estaba o eliminar definitivamente.

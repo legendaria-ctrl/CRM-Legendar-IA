@@ -5,6 +5,7 @@ import {
   detectarCambioMontoYVendedor,
   actualizarMontoYVendedor,
   actualizarVendedor,
+  registrarAbono,
   agregarTagsCliente,
   obtenerClientePorId,
 } from "./clientesService";
@@ -318,6 +319,12 @@ export type ResultadoSyncSeguimientos = {
   errores: string[];
 };
 
+// Estados de la columna M que se llevan como seguimiento en el CRM.
+// "apartado" es un seguimiento que ya trae un abono (columna J) — se
+// registra como tal, no como el monto total (el total lo completa el
+// vendedor a mano cuando lo sepa).
+const ESTADOS_SEGUIMIENTO = new Set(["seguimiento", "apartado"]);
+
 // A diferencia del sync de clientes ganados, este escribe directo (sin
 // revisión del admin): los leads en seguimiento no son clientes reales
 // todavía, así que el riesgo de escribir de más es bajo. Solo toca
@@ -344,8 +351,13 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
     }
 
     for (const fila of filas) {
-      if (fila.estado.trim().toLowerCase() !== "seguimiento") continue;
+      const estado = fila.estado.trim().toLowerCase();
+      if (!ESTADOS_SEGUIMIENTO.has(estado)) continue;
       if (!fila.correo) continue;
+
+      const esApartado = estado === "apartado";
+      const abono = Number(fila.amount);
+      const tieneAbono = esApartado && fila.amount && !Number.isNaN(abono) && abono > 0;
 
       try {
         const vendedor = resolverVendedor(fila);
@@ -353,23 +365,46 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
 
         if (!existente) {
           const telefono = limpiarTelefono(fila.corregido, fila.celular, hoja.region);
-          await crearCliente({
+          const id = await crearCliente({
             nombre: fila.nombre || fila.correo,
             email: fila.correo,
             telefono: telefono ?? undefined,
             region: hoja.region,
             etiquetas: [ETIQUETA_LEGENDARIA],
             vendedor: vendedor ?? undefined,
-            monto: fila.amount || undefined,
+            monto: !esApartado ? fila.amount || undefined : undefined,
             autor: AUTOR_SISTEMA.nombre,
             autorRol: AUTOR_SISTEMA.rol,
             origen: "sheet",
             estadoInicial: ESTADOS_CLIENTE.SEGUIMIENTO,
           });
+          if (tieneAbono) {
+            await registrarAbono(
+              id,
+              fila.nombre || fila.correo,
+              AUTOR_SISTEMA,
+              abono,
+              "Abono importado desde la hoja de ventas"
+            );
+          }
           resultado.creados++;
-        } else if (existente.estado === ESTADOS_CLIENTE.SEGUIMIENTO && vendedor && vendedor !== existente.vendedor) {
-          await actualizarVendedor(existente.id, existente.nombre, AUTOR_SISTEMA, vendedor);
-          resultado.actualizados++;
+        } else if (existente.estado === ESTADOS_CLIENTE.SEGUIMIENTO) {
+          let toco = false;
+          if (vendedor && vendedor !== existente.vendedor) {
+            await actualizarVendedor(existente.id, existente.nombre, AUTOR_SISTEMA, vendedor);
+            toco = true;
+          }
+          if (tieneAbono && (existente.totalAbonado ?? 0) === 0) {
+            await registrarAbono(
+              existente.id,
+              existente.nombre,
+              AUTOR_SISTEMA,
+              abono,
+              "Abono importado desde la hoja de ventas"
+            );
+            toco = true;
+          }
+          if (toco) resultado.actualizados++;
         }
       } catch (err) {
         resultado.errores.push(
