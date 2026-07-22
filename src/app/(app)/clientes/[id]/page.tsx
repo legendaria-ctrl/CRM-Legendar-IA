@@ -20,6 +20,7 @@ import { estadoActual, estadoBienvenidaDe, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Timeline } from "@/components/Timeline";
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { StopwatchApartado } from "@/components/StopwatchApartado";
 import { ClientActions } from "@/components/ClientActions";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { TagPicker } from "@/components/TagPicker";
@@ -666,13 +667,17 @@ export default function ClienteDetallePage() {
         fechaPausa={fechaPausa}
       />
 
-      {fechaLlegada && fechaVencimiento && (
+      {!esSeguimiento && !esPendiente && fechaLlegada && fechaVencimiento && (
         <CountdownTimer
           fechaInicio={fechaLlegada.toISOString()}
           fechaVencimiento={fechaVencimiento.toISOString()}
           pausada={cliente.pausada}
           fechaPausa={fechaPausa?.toISOString() ?? null}
         />
+      )}
+
+      {(esSeguimiento || esPendiente) && cliente.fechaPrimerAbono && (
+        <StopwatchApartado fechaInicio={aFecha(cliente.fechaPrimerAbono)!.toISOString()} />
       )}
 
       <Timeline
@@ -685,7 +690,7 @@ export default function ClienteDetallePage() {
         }))}
       />
 
-      {puedeEditar && (
+      {sesion?.rol === ROLES.ADMIN && (
         <div className="shell rounded-[2rem] p-2 diffused-lg">
           <div className="core flex flex-col gap-3 rounded-[calc(2rem-0.5rem)] p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>

@@ -49,6 +49,7 @@ export type ClienteDoc = {
   vendedor: string | null;
   monto: string | null;
   totalAbonado: number;
+  fechaPrimerAbono: Timestamp | null;
   creadoPor: string;
   creadoPorRol: string;
   eliminado: boolean;
@@ -157,6 +158,7 @@ export async function crearCliente(input: {
     vendedor: input.vendedor?.trim() || null,
     monto: input.monto?.trim() || null,
     totalAbonado: 0,
+    fechaPrimerAbono: null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
     eliminado: false,
@@ -214,6 +216,8 @@ export async function enviarInvitacion(
 
 // Registra un abono sobre el total de un seguimiento/pendiente y acumula el
 // monto en totalAbonado (para calcular "restante" sin sumar el historial).
+// El primer abono también marca fechaPrimerAbono: es el momento en que el
+// seguimiento se convierte en "apartado" y arranca su cronómetro.
 export async function registrarAbono(
   clienteId: string,
   clienteNombre: string,
@@ -221,9 +225,14 @@ export async function registrarAbono(
   monto: number,
   nota?: string
 ) {
-  await updateDoc(doc(db, "clientes", clienteId), {
-    totalAbonado: increment(monto),
-  });
+  const clienteRef = doc(db, "clientes", clienteId);
+  const snap = await getDoc(clienteRef);
+  const esPrimerAbono = ((snap.data() as ClienteDoc | undefined)?.totalAbonado ?? 0) === 0;
+
+  const cambios: Record<string, unknown> = { totalAbonado: increment(monto) };
+  if (esPrimerAbono) cambios.fechaPrimerAbono = serverTimestamp();
+
+  await updateDoc(clienteRef, cambios);
   await agregarEvento(
     clienteId,
     clienteNombre,
