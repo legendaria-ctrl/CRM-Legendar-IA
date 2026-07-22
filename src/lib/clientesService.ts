@@ -208,6 +208,24 @@ export async function enviarInvitacion(
   }
 }
 
+export async function marcarInvitacionEnviada(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor
+) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
+    fechaInvitacion: Timestamp.fromDate(new Date()),
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.INVITACION_ENVIADA,
+    autor,
+    "Invitación marcada como enviada (sin disparar el envío real a Skool)."
+  );
+}
+
 async function dispararInvitacionSkool(correo: string) {
   const res = await fetch("/api/skool-invite", {
     method: "POST",

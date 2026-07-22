@@ -6,6 +6,7 @@ import {
   suscribirClientes,
   ClienteDoc,
   enviarInvitacion,
+  marcarInvitacionEnviada,
   deshacerInvitacion,
   aceptarInvitacion,
   deshacerAceptacion,
@@ -263,7 +264,7 @@ export default function DashboardPage() {
   }
 
   function aplicarEstadoEnLote(
-    accion: "enviar" | "deshacer_invitacion" | "aceptar" | "deshacer_aceptacion"
+    accion: "enviar" | "marcar_enviada" | "deshacer_invitacion" | "aceptar" | "deshacer_aceptacion"
   ) {
     if (!sesion) return;
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
@@ -271,6 +272,10 @@ export default function DashboardPage() {
       if (accion === "enviar") {
         if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
         return enviarInvitacion(c.id, c.nombre, autor, c.email);
+      }
+      if (accion === "marcar_enviada") {
+        if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
+        return marcarInvitacionEnviada(c.id, c.nombre, autor);
       }
       if (accion === "deshacer_invitacion") {
         if (c.estado !== ESTADOS_CLIENTE.INVITACION_ENVIADA) return Promise.resolve();
@@ -821,8 +826,13 @@ export default function DashboardPage() {
               options={[
                 {
                   key: "enviar",
-                  label: "Marcar invitación enviada",
+                  label: "Enviar invitación",
                   onSelect: () => aplicarEstadoEnLote("enviar"),
+                },
+                {
+                  key: "marcar_enviada",
+                  label: "Marcar invitación enviada",
+                  onSelect: () => aplicarEstadoEnLote("marcar_enviada"),
                 },
                 {
                   key: "deshacer_invitacion",
