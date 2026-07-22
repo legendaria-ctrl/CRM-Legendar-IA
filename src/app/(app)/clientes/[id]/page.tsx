@@ -438,31 +438,42 @@ export default function ClienteDetallePage() {
                 )}
               </div>
 
-              <div className="flex flex-none flex-col items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                  Bienvenida WA Soporte
-                </span>
-                <MensajeBienvenidaToggle
-                  clienteId={cliente.id}
-                  clienteNombre={cliente.nombre}
-                  estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
-                />
-                {cliente.telefono && (
-                  <a
-                    href={construirLinkWhatsapp(
-                      cliente.telefono,
-                      mensajeBienvenida(cliente.nombre),
-                      cliente.region
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/25 active:scale-[0.98]"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
-                    Enviar bienvenida por WhatsApp
-                  </a>
-                )}
-              </div>
+              {esSeguimiento || esPendiente ? (
+                <div className="flex flex-none flex-col items-start gap-1 rounded-2xl bg-surface-2 px-4 py-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                    Abonado
+                  </span>
+                  <span className="text-xl font-semibold text-success">
+                    {formatearMonto(cliente.totalAbonado ?? 0, cliente.region)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-none flex-col items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                    Bienvenida WA Soporte
+                  </span>
+                  <MensajeBienvenidaToggle
+                    clienteId={cliente.id}
+                    clienteNombre={cliente.nombre}
+                    estado={estadoBienvenidaDe(cliente.mensajeBienvenida)}
+                  />
+                  {cliente.telefono && (
+                    <a
+                      href={construirLinkWhatsapp(
+                        cliente.telefono,
+                        mensajeBienvenida(cliente.nombre),
+                        cliente.region
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-medium text-success transition-all duration-500 ease-spring hover:bg-success/25 active:scale-[0.98]"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
+                      Enviar bienvenida por WhatsApp
+                    </a>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
