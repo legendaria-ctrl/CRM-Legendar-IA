@@ -581,9 +581,6 @@ export default function DashboardPage() {
             {sincronizando ? "Actualizando…" : "Actualizar desde hoja de ventas"}
           </button>
         )}
-        {resultadoSync && (
-          <p className="mb-2 text-center text-xs text-muted">{resultadoSync}</p>
-        )}
         <button
           onClick={exportarCSV}
           disabled={ordenados.length === 0}
@@ -639,11 +636,10 @@ export default function DashboardPage() {
               <button
                 onClick={actualizarDesdeHoja}
                 disabled={sincronizando}
-                title={resultadoSync ?? undefined}
                 className="flex items-center justify-center gap-2 rounded-full border border-silver-deep/60 bg-surface-2 px-5 py-2.5 text-sm font-medium text-muted transition-all duration-500 ease-spring hover:text-primary disabled:opacity-60"
               >
                 <RefreshCw className={`h-4 w-4 ${sincronizando ? "animate-spin" : ""}`} strokeWidth={1.75} />
-                <span>{sincronizando ? "Actualizando…" : resultadoSync ?? "Actualizar"}</span>
+                <span>{sincronizando ? "Actualizando…" : "Actualizar"}</span>
               </button>
             )}
 
@@ -1264,6 +1260,36 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {resultadoSync && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 animate-fade-in-fast"
+            onClick={() => setResultadoSync(null)}
+          />
+          <div className="animate-fade-in relative flex w-full max-w-sm flex-col gap-3 rounded-[2rem] bg-surface p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-dim px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-primary-deep">
+                <RefreshCw className="h-3 w-3" strokeWidth={2} />
+                Actualización desde la hoja
+              </span>
+              <button
+                onClick={() => setResultadoSync(null)}
+                className="flex h-8 w-8 flex-none items-center justify-center rounded-xl text-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </div>
+            <p className="text-sm text-foreground">{resultadoSync}</p>
+            <button
+              onClick={() => setResultadoSync(null)}
+              className="mt-1 self-end rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98]"
+            >
+              Entendido
+            </button>
           </div>
         </div>
       )}
