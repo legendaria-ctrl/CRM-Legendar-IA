@@ -10,6 +10,7 @@ import {
   RefreshCw,
   LoaderCircle,
   Wallet,
+  Search,
 } from "lucide-react";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
@@ -34,6 +35,7 @@ export default function SeguimientosPage() {
   const { sesion } = useSesion();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
+  const [busqueda, setBusqueda] = useState("");
   const [actualizando, setActualizando] = useState(false);
   const [resultadoActualizar, setResultadoActualizar] = useState<string | null>(null);
 
@@ -73,8 +75,19 @@ export default function SeguimientosPage() {
     );
   }, [clientes, sesion]);
 
+  const coincideBusqueda = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    return (c: ClienteDoc) =>
+      !texto ||
+      c.nombre.toLowerCase().includes(texto) ||
+      (c.email ?? "").toLowerCase().includes(texto) ||
+      (c.telefono ?? "").toLowerCase().includes(texto);
+  }, [busqueda]);
+
   const enSeguimiento = useMemo(() => {
-    const lista = propios.filter((c) => c.estado === ESTADOS_CLIENTE.SEGUIMIENTO);
+    const lista = propios.filter(
+      (c) => c.estado === ESTADOS_CLIENTE.SEGUIMIENTO && coincideBusqueda(c)
+    );
     const filtrada = lista.filter((c) => {
       const esApartado = (c.totalAbonado ?? 0) > 0;
       if (filtroTipo === "apartados") return esApartado;
@@ -86,11 +99,14 @@ export default function SeguimientosPage() {
       const apartadoB = (b.totalAbonado ?? 0) > 0 ? 1 : 0;
       return apartadoB - apartadoA;
     });
-  }, [propios, filtroTipo]);
+  }, [propios, filtroTipo, coincideBusqueda]);
 
   const enRevision = useMemo(
-    () => propios.filter((c) => c.estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION),
-    [propios]
+    () =>
+      propios.filter(
+        (c) => c.estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION && coincideBusqueda(c)
+      ),
+    [propios, coincideBusqueda]
   );
 
   return (
@@ -131,20 +147,32 @@ export default function SeguimientosPage() {
         <p className="text-sm text-muted">{resultadoActualizar}</p>
       )}
 
-      <div className="flex items-center gap-2 rounded-2xl bg-surface-2 p-1 w-fit">
-        {FILTRO_OPCIONES.map((op) => (
-          <button
-            key={op.value}
-            onClick={() => setFiltroTipo(op.value)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-500 ease-spring ${
-              filtroTipo === op.value
-                ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
-                : "text-muted"
-            }`}
-          >
-            {op.label}
-          </button>
-        ))}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 rounded-2xl bg-surface-2 p-1 w-fit">
+          {FILTRO_OPCIONES.map((op) => (
+            <button
+              key={op.value}
+              onClick={() => setFiltroTipo(op.value)}
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-500 ease-spring ${
+                filtroTipo === op.value
+                  ? "bg-surface text-primary shadow-[0_6px_16px_-6px_rgba(10,92,255,0.35)]"
+                  : "text-muted"
+              }`}
+            >
+              {op.label}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-2 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 sm:w-72">
+          <Search className="h-4 w-4 flex-none text-muted" strokeWidth={1.75} />
+          <input
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre, correo o teléfono…"
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted/60"
+          />
+        </label>
       </div>
 
       {clientes === null && (

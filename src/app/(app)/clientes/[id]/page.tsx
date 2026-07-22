@@ -494,7 +494,7 @@ export default function ClienteDetallePage() {
         </div>
       </div>
 
-      {(esSeguimiento || esPendiente) && cliente.monto && (
+      {(esSeguimiento || esPendiente) && (
         <div className="shell rounded-[2rem] p-2 diffused-lg">
           <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
             <h3 className="text-sm font-medium uppercase tracking-[0.15em] text-muted">
@@ -503,7 +503,7 @@ export default function ClienteDetallePage() {
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="rounded-2xl bg-surface-2 px-3 py-3">
                 <p className="text-xs text-muted">Total</p>
-                <p className="text-sm font-semibold text-foreground">{cliente.monto}</p>
+                <p className="text-sm font-semibold text-foreground">{cliente.monto || "—"}</p>
               </div>
               <div className="rounded-2xl bg-surface-2 px-3 py-3">
                 <p className="text-xs text-muted">Abonado</p>
