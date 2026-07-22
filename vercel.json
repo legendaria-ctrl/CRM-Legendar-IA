@@ -1,3 +1,0 @@
-{
-  "crons": [{ "path": "/api/sync-seguimientos", "schedule": "*/15 * * * *" }]
-}
