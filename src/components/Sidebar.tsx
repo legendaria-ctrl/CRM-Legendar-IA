@@ -21,6 +21,8 @@ import {
   Trash2,
   Bell,
   FolderX,
+  Clock,
+  Hourglass,
 } from "lucide-react";
 
 const NO_ASIGNADOS_HREF = "#no-asignados";
@@ -29,12 +31,14 @@ const AVISOS_ITEM = { href: "/notificaciones", label: "Avisos", icon: Bell };
 
 const links = [
   { href: "/", label: "Clientes", icon: LayoutGrid },
-  { href: "/clientes/nuevo", label: "Nuevo cliente", icon: UserPlus },
+  { href: "/seguimientos", label: "Seguimientos", icon: Clock },
   { href: "/tags", label: "Tags", icon: Tag },
 ];
 
 const linksAdmin = [
+  { href: "/clientes/nuevo", label: "Nuevo cliente", icon: UserPlus },
   { href: "/clientes/importar", label: "Importar CSV", icon: UploadCloud },
+  { href: "/pendientes", label: "Pendientes", icon: Hourglass },
   { href: "/actividad", label: "Actividad", icon: History },
   { href: "/vendedores", label: "Usuarios", icon: Users },
   { href: "/avisos", label: "Dar avisos", icon: Megaphone },

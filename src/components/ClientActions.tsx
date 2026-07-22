@@ -11,8 +11,10 @@ import {
   Pause,
   Play,
   CalendarPlus,
+  ShieldCheck,
+  Hourglass,
 } from "lucide-react";
-import { EstadoCliente, ESTADOS_CLIENTE } from "@/lib/constants";
+import { EstadoCliente, ESTADOS_CLIENTE, ROLES } from "@/lib/constants";
 import {
   enviarInvitacion,
   aceptarInvitacion,
@@ -25,6 +27,8 @@ import {
   agregarDiasMembresia,
   reenviarInvitacionSkool,
   establecerDiasRestantes,
+  enviarAAutorizacion,
+  autorizarCliente,
 } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
 
@@ -52,6 +56,10 @@ export function ClientActions({
   const [skoolReenviado, setSkoolReenviado] = useState(false);
   const [diasPersonalizados, setDiasPersonalizados] = useState("");
   const [diasRestantes, setDiasRestantes] = useState("");
+  const mostrarTemporizador =
+    !!fechaVencimiento &&
+    estado !== ESTADOS_CLIENTE.SEGUIMIENTO &&
+    estado !== ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION;
 
   async function run(action: string, notaTexto?: string) {
     setError(null);
@@ -107,6 +115,10 @@ export function ClientActions({
         setSkoolReenviado(true);
         setTimeout(() => setSkoolReenviado(false), 3000);
       }
+      if (action === "enviar_a_autorizacion")
+        await enviarAAutorizacion(clienteId, clienteNombre, autor);
+      if (action === "autorizar")
+        await autorizarCliente(clienteId, clienteNombre, autor, clienteCorreo);
     } catch (err) {
       console.error(err);
       setError(
@@ -131,6 +143,40 @@ export function ClientActions({
         {cargando && <p className="text-sm text-muted">Verificando tu sesión…</p>}
 
         <div className="flex flex-wrap gap-3">
+          {estado === ESTADOS_CLIENTE.SEGUIMIENTO && (
+            <ActionButton
+              icon={Hourglass}
+              label="Enviar a autorización"
+              loading={loading === "enviar_a_autorizacion"}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "¿Enviar este seguimiento a revisión? Ya no podrás editarlo hasta que un administrador lo autorice."
+                  )
+                ) {
+                  run("enviar_a_autorizacion");
+                }
+              }}
+            />
+          )}
+
+          {estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION && sesion?.rol === ROLES.ADMIN && (
+            <ActionButton
+              icon={ShieldCheck}
+              label="Autorizar"
+              loading={loading === "autorizar"}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "¿Autorizar a este cliente? Se le enviará la invitación real de inmediato."
+                  )
+                ) {
+                  run("autorizar");
+                }
+              }}
+            />
+          )}
+
           {estado === ESTADOS_CLIENTE.NUEVO && (
             <ActionButton
               icon={Send}
@@ -176,7 +222,9 @@ export function ClientActions({
             </>
           )}
 
-          {clienteCorreo && (
+          {clienteCorreo &&
+            estado !== ESTADOS_CLIENTE.SEGUIMIENTO &&
+            estado !== ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION && (
             <UndoButton
               icon={Send}
               label="Reenviar invitación a Skool"
@@ -185,7 +233,7 @@ export function ClientActions({
             />
           )}
 
-          {fechaVencimiento && (
+          {mostrarTemporizador && (
             <>
               {pausada ? (
                 <ActionButton
@@ -212,7 +260,7 @@ export function ClientActions({
           )}
         </div>
 
-        {fechaVencimiento && (
+        {mostrarTemporizador && (
           <div className="flex flex-col gap-2">
             <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
               <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -242,7 +290,7 @@ export function ClientActions({
           </div>
         )}
 
-        {fechaVencimiento && (
+        {mostrarTemporizador && (
           <div className="flex flex-col gap-2">
             <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
               <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />

@@ -11,6 +11,7 @@ export function VendedorSelect({
   placeholder = "Sin vendedor asignado",
   compacto = false,
   vendedoresAprobados,
+  disabled = false,
 }: {
   valor: string | null;
   onChange: (nombre: string | null) => void | Promise<void>;
@@ -19,6 +20,7 @@ export function VendedorSelect({
   /** Si ya tienes la lista (p. ej. una tabla con muchas filas), pásala aquí
    * para no abrir una suscripción de Firestore por cada instancia. */
   vendedoresAprobados?: string[];
+  disabled?: boolean;
 }) {
   const [vendedoresPropios, setVendedoresPropios] = useState<string[]>([]);
   const [abierto, setAbierto] = useState(false);
@@ -52,8 +54,9 @@ export function VendedorSelect({
     <div className="relative">
       <button
         type="button"
-        onClick={() => setAbierto((v) => !v)}
-        className={`flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-2xl border border-silver-deep/60 bg-surface-2 text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10 ${
+        onClick={() => !disabled && setAbierto((v) => !v)}
+        disabled={disabled}
+        className={`flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-2xl border border-silver-deep/60 bg-surface-2 text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60 ${
           compacto ? "min-w-[160px] px-3 py-1.5 text-xs" : "min-w-[220px] px-4 py-3 text-sm"
         }`}
       >

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verificarSesion, COOKIE_NAME } from "@/lib/session";
-import { sincronizarHojaVentas } from "@/lib/sheetSync";
+import { sincronizarHojaVentas, sincronizarSeguimientosDesdeHoja } from "@/lib/sheetSync";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,8 @@ export async function POST() {
 
   try {
     const resultado = await sincronizarHojaVentas();
-    return NextResponse.json({ ok: true, ...resultado });
+    const seguimientos = await sincronizarSeguimientosDesdeHoja();
+    return NextResponse.json({ ok: true, ...resultado, seguimientos });
   } catch (err) {
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : "Error desconocido" },

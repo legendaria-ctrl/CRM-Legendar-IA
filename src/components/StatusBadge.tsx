@@ -1,7 +1,9 @@
 import { EstadoCliente, ESTADO_LABEL } from "@/lib/constants";
-import { Circle, Send, CheckCircle2, XCircle } from "lucide-react";
+import { Circle, Send, CheckCircle2, XCircle, Clock, Hourglass } from "lucide-react";
 
 const STYLES: Record<EstadoCliente, string> = {
+  SEGUIMIENTO: "bg-cyan-500/10 text-cyan-600",
+  PENDIENTE_AUTORIZACION: "bg-purple-500/10 text-purple-600",
   NUEVO: "bg-silver text-muted",
   INVITACION_ENVIADA: "bg-warning/10 text-warning",
   ACTIVO: "bg-success/10 text-success",
@@ -9,6 +11,8 @@ const STYLES: Record<EstadoCliente, string> = {
 };
 
 const ICONS: Record<EstadoCliente, typeof Circle> = {
+  SEGUIMIENTO: Clock,
+  PENDIENTE_AUTORIZACION: Hourglass,
   NUEVO: Circle,
   INVITACION_ENVIADA: Send,
   ACTIVO: CheckCircle2,

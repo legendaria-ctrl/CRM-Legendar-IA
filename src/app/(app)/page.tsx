@@ -76,10 +76,15 @@ const OPCIONES_CRITERIOS_BUSQUEDA = [
   { value: "historial", label: "Historial" },
 ];
 
-const OPCIONES_ESTADO = Object.values(ESTADOS_CLIENTE).map((estado) => ({
-  value: estado,
-  label: ESTADO_LABEL[estado as EstadoCliente],
-}));
+const OPCIONES_ESTADO = Object.values(ESTADOS_CLIENTE)
+  .filter(
+    (estado) =>
+      estado !== ESTADOS_CLIENTE.SEGUIMIENTO && estado !== ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION
+  )
+  .map((estado) => ({
+    value: estado,
+    label: ESTADO_LABEL[estado as EstadoCliente],
+  }));
 
 const OPCIONES_BIENVENIDA = Object.values(ESTADOS_BIENVENIDA).map((estado) => ({
   value: estado,
@@ -144,7 +149,12 @@ export default function DashboardPage() {
   }, []);
 
   const clientesDeCertificacion = useMemo(() => {
-    const base = (clientes ?? []).filter((c) => !c.eliminado);
+    const base = (clientes ?? []).filter(
+      (c) =>
+        !c.eliminado &&
+        c.estado !== ESTADOS_CLIENTE.SEGUIMIENTO &&
+        c.estado !== ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION
+    );
     if (!certificacionActual) return base;
     if (certificacionActual.id === SIN_ASIGNAR_ID) {
       return base.filter((c) => (c.etiquetas ?? []).length === 0);
@@ -366,14 +376,22 @@ export default function DashboardPage() {
       }
       const cambios: CambioPendiente[] = data.cambiosPendientes ?? [];
       const nuevos: NuevoClientePendiente[] = data.nuevosPendientes ?? [];
+      const seguimientos = data.seguimientos as
+        | { creados: number; actualizados: number }
+        | undefined;
+      const resumenSeguimientos =
+        seguimientos && (seguimientos.creados > 0 || seguimientos.actualizados > 0)
+          ? ` · ${seguimientos.creados} seguimiento(s) nuevo(s), ${seguimientos.actualizados} reasignado(s)`
+          : "";
       if (cambios.length > 0 || nuevos.length > 0) {
         setCambiosPendientes(cambios);
         setSeleccionCambios(new Set(cambios.map((c) => c.clienteId)));
         setNuevosPendientes(nuevos);
         setSeleccionNuevos(new Set(nuevos.map((n) => n.correo)));
+        if (resumenSeguimientos) setResultadoSync(resumenSeguimientos.replace(/^ · /, ""));
         return;
       }
-      setResultadoSync("Sin cambios, ya estaba todo al día");
+      setResultadoSync(`Sin cambios de clientes, ya estaba todo al día${resumenSeguimientos}`);
     } catch {
       setResultadoSync("No se pudo conectar con la hoja.");
     } finally {

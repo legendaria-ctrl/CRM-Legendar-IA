@@ -12,6 +12,7 @@ import {
   quitarEtiquetaCliente,
   actualizarVendedor,
   actualizarDatosCliente,
+  registrarAbono,
   ClienteDoc,
   EventoDoc,
 } from "@/lib/clientesService";
@@ -40,6 +41,8 @@ import {
   Check,
   MessageCircle,
   DollarSign,
+  Lock,
+  Plus,
 } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
 import {
@@ -48,6 +51,8 @@ import {
   Region,
   beneficiosDeRegion,
   PAPELERA_DIAS,
+  ROLES,
+  ESTADOS_CLIENTE,
 } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 import { mensajeBienvenida, construirLinkWhatsapp } from "@/lib/whatsapp";
@@ -81,6 +86,9 @@ export default function ClienteDetallePage() {
   const [eventos, setEventos] = useState<EventoDoc[]>([]);
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const encabezadoRef = useRef<HTMLDivElement>(null);
+  const [montoAbono, setMontoAbono] = useState("");
+  const [notaAbono, setNotaAbono] = useState("");
+  const [guardandoAbono, setGuardandoAbono] = useState(false);
 
   useEffect(() => {
     const unsubCliente = suscribirCliente(id, setCliente);
@@ -114,6 +122,37 @@ export default function ClienteDetallePage() {
   const fechaVencimiento = aFecha(cliente.fechaVencimiento);
   const fechaPausa = aFecha(cliente.fechaPausa);
   const beneficios = beneficiosDeRegion(cliente.region);
+
+  const esSeguimiento = cliente.estado === ESTADOS_CLIENTE.SEGUIMIENTO;
+  const esPendiente = cliente.estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION;
+  const esDueño =
+    !!sesion && (sesion.nombre === cliente.creadoPor || sesion.nombre === cliente.vendedor);
+  const puedeEditar = sesion?.rol === ROLES.ADMIN || (esSeguimiento && esDueño);
+  const totalApartado = cliente.monto ? Number(cliente.monto) : null;
+  const restante =
+    totalApartado !== null && !Number.isNaN(totalApartado)
+      ? totalApartado - (cliente.totalAbonado ?? 0)
+      : null;
+
+  async function handleAgregarAbono() {
+    if (!sesion || !cliente || guardandoAbono) return;
+    const monto = Number(montoAbono);
+    if (!monto || monto <= 0) return;
+    setGuardandoAbono(true);
+    try {
+      await registrarAbono(
+        cliente.id,
+        cliente.nombre,
+        { nombre: sesion.nombre, rol: sesion.rol },
+        monto,
+        notaAbono.trim() || undefined
+      );
+      setMontoAbono("");
+      setNotaAbono("");
+    } finally {
+      setGuardandoAbono(false);
+    }
+  }
 
   async function handleAgregarTags(tags: string[]) {
     if (!sesion || !cliente) return;
@@ -338,13 +377,22 @@ export default function ClienteDetallePage() {
               <div>
                 <div className="mb-2 flex items-center gap-2">
                   <StatusBadge estado={estado} />
-                  <button
-                    onClick={abrirEdicion}
-                    className="flex items-center gap-1.5 rounded-full border border-silver-deep/60 px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 hover:border-primary/50 hover:text-primary"
-                  >
-                    <Pencil className="h-3 w-3" strokeWidth={2} />
-                    Editar
-                  </button>
+                  {puedeEditar ? (
+                    <button
+                      onClick={abrirEdicion}
+                      className="flex items-center gap-1.5 rounded-full border border-silver-deep/60 px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 hover:border-primary/50 hover:text-primary"
+                    >
+                      <Pencil className="h-3 w-3" strokeWidth={2} />
+                      Editar
+                    </button>
+                  ) : (
+                    esPendiente && (
+                      <span className="flex items-center gap-1.5 rounded-full bg-silver px-3 py-1 text-xs font-medium text-muted">
+                        <Lock className="h-3 w-3" strokeWidth={2} />
+                        En revisión, bloqueado para ti
+                      </span>
+                    )
+                  )}
                 </div>
                 <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
                   {cliente.nombre}
@@ -427,7 +475,11 @@ export default function ClienteDetallePage() {
         <div className="core flex flex-wrap items-center gap-3 rounded-[calc(2rem-0.5rem)] p-6 sm:flex-nowrap sm:justify-between">
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium uppercase tracking-wider text-muted">Vendedor</span>
-            <VendedorSelect valor={cliente.vendedor} onChange={handleCambiarVendedor} />
+            <VendedorSelect
+              valor={cliente.vendedor}
+              onChange={handleCambiarVendedor}
+              disabled={!puedeEditar}
+            />
           </div>
           {cliente.monto && (
             <div className="flex flex-col items-start gap-1.5 sm:items-end">
@@ -441,6 +493,65 @@ export default function ClienteDetallePage() {
         </div>
       </div>
 
+      {(esSeguimiento || esPendiente) && cliente.monto && (
+        <div className="shell rounded-[2rem] p-2 diffused-lg">
+          <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
+            <h3 className="text-sm font-medium uppercase tracking-[0.15em] text-muted">
+              Total / Abonos / Restante
+            </h3>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-2xl bg-surface-2 px-3 py-3">
+                <p className="text-xs text-muted">Total</p>
+                <p className="text-sm font-semibold text-foreground">{cliente.monto}</p>
+              </div>
+              <div className="rounded-2xl bg-surface-2 px-3 py-3">
+                <p className="text-xs text-muted">Abonado</p>
+                <p className="text-sm font-semibold text-success">
+                  ${(cliente.totalAbonado ?? 0).toLocaleString("es-MX")}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-surface-2 px-3 py-3">
+                <p className="text-xs text-muted">Restante</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {restante !== null ? `$${restante.toLocaleString("es-MX")}` : "—"}
+                </p>
+              </div>
+            </div>
+
+            {puedeEditar && (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="number"
+                  min={1}
+                  value={montoAbono}
+                  onChange={(e) => setMontoAbono(e.target.value)}
+                  placeholder="Monto del abono"
+                  className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                />
+                <input
+                  value={notaAbono}
+                  onChange={(e) => setNotaAbono(e.target.value)}
+                  placeholder="Nota (opcional)"
+                  className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                />
+                <button
+                  onClick={handleAgregarAbono}
+                  disabled={guardandoAbono || !montoAbono.trim()}
+                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98] disabled:opacity-50"
+                >
+                  {guardandoAbono ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <Plus className="h-4 w-4" strokeWidth={1.75} />
+                  )}
+                  Agregar abono
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="shell rounded-[2rem] p-2 diffused-lg">
         <div className="core flex flex-wrap items-center gap-2 rounded-[calc(2rem-0.5rem)] p-6">
           <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted">Tags</span>
@@ -453,17 +564,21 @@ export default function ClienteDetallePage() {
               >
                 <TagIcon className="h-3 w-3" strokeWidth={2} />
                 {tag}
-                <button
-                  onClick={() => handleQuitarTag(tag)}
-                  className="ml-0.5 rounded-full p-0.5 transition-colors duration-200 hover:bg-black/10"
-                  title="Quitar tag"
-                >
-                  <X className="h-3 w-3" strokeWidth={2.5} />
-                </button>
+                {puedeEditar && (
+                  <button
+                    onClick={() => handleQuitarTag(tag)}
+                    className="ml-0.5 rounded-full p-0.5 transition-colors duration-200 hover:bg-black/10"
+                    title="Quitar tag"
+                  >
+                    <X className="h-3 w-3" strokeWidth={2.5} />
+                  </button>
+                )}
               </span>
             );
           })}
-          <TagPicker seleccionados={cliente.tags ?? []} onAgregar={handleAgregarTags} />
+          {puedeEditar && (
+            <TagPicker seleccionados={cliente.tags ?? []} onAgregar={handleAgregarTags} />
+          )}
         </div>
       </div>
 
@@ -488,18 +603,21 @@ export default function ClienteDetallePage() {
                 >
                   <Layers className="h-3 w-3" strokeWidth={2} />
                   {cert?.nombre ?? etiqueta}
-                  <button
-                    onClick={() => handleQuitarEtiqueta(etiqueta)}
-                    className="ml-0.5 rounded-full p-0.5 transition-colors duration-200 hover:bg-black/10"
-                    title="Quitar de esta certificación"
-                  >
-                    <X className="h-3 w-3" strokeWidth={2.5} />
-                  </button>
+                  {puedeEditar && (
+                    <button
+                      onClick={() => handleQuitarEtiqueta(etiqueta)}
+                      className="ml-0.5 rounded-full p-0.5 transition-colors duration-200 hover:bg-black/10"
+                      title="Quitar de esta certificación"
+                    >
+                      <X className="h-3 w-3" strokeWidth={2.5} />
+                    </button>
+                  )}
                 </span>
               );
             })
           )}
-          {CERTIFICACIONES.filter((c) => !(cliente.etiquetas ?? []).includes(c.etiqueta)).map(
+          {puedeEditar &&
+            CERTIFICACIONES.filter((c) => !(cliente.etiquetas ?? []).includes(c.etiqueta)).map(
             (cert) => (
               <button
                 key={cert.id}

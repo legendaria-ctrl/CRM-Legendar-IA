@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   onSnapshot,
   orderBy,
   query,
@@ -47,6 +48,7 @@ export type ClienteDoc = {
   etiquetas: string[];
   vendedor: string | null;
   monto: string | null;
+  totalAbonado: number;
   creadoPor: string;
   creadoPorRol: string;
   eliminado: boolean;
@@ -129,6 +131,7 @@ export async function crearCliente(input: {
   autor: string;
   autorRol: string;
   origen?: "manual" | "csv" | "sheet";
+  estadoInicial?: string;
 }) {
   const fechaLlegada = input.fechaInscripcion ?? new Date();
   const vencimiento = fechaVencimientoDesde(fechaLlegada);
@@ -139,7 +142,7 @@ export async function crearCliente(input: {
     telefono: input.telefono || null,
     notas: input.notas || null,
     region: input.region || null,
-    estado: ESTADOS_CLIENTE.NUEVO,
+    estado: input.estadoInicial ?? ESTADOS_CLIENTE.NUEVO,
     fechaLlegada: Timestamp.fromDate(fechaLlegada),
     fechaInvitacion: null,
     fechaAceptacion: null,
@@ -153,6 +156,7 @@ export async function crearCliente(input: {
     etiquetas: input.etiquetas?.length ? Array.from(new Set(input.etiquetas)) : [],
     vendedor: input.vendedor?.trim() || null,
     monto: input.monto?.trim() || null,
+    totalAbonado: 0,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
     eliminado: false,
@@ -206,6 +210,59 @@ export async function enviarInvitacion(
       // Ignorar: el CRM ya quedó marcado, solo falló el aviso a Skool.
     }
   }
+}
+
+// Registra un abono sobre el total de un seguimiento/pendiente y acumula el
+// monto en totalAbonado (para calcular "restante" sin sumar el historial).
+export async function registrarAbono(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  monto: number,
+  nota?: string
+) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    totalAbonado: increment(monto),
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.ABONO,
+    autor,
+    `Abono de $${monto.toLocaleString("es-MX")}${nota ? ` — ${nota}` : ""}`
+  );
+}
+
+export async function enviarAAutorizacion(clienteId: string, clienteNombre: string, autor: Autor) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    estado: ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION,
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.ENVIO_REVISION,
+    autor,
+    "Seguimiento enviado a revisión del administrador."
+  );
+}
+
+// Aprueba un pendiente (seguimiento convertido o alta directa de vendedor):
+// registra quién autorizó y reutiliza enviarInvitacion para dejarlo como
+// cliente normal en INVITACION_ENVIADA y disparar la invitación real.
+export async function autorizarCliente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  clienteCorreo?: string | null
+) {
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.AUTORIZACION,
+    autor,
+    `Autorizado por ${autor.nombre}.`
+  );
+  await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
 }
 
 export async function marcarInvitacionEnviada(

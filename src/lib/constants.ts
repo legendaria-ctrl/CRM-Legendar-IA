@@ -5,6 +5,8 @@ export const ROLES = {
 export type Rol = (typeof ROLES)[keyof typeof ROLES];
 
 export const ESTADOS_CLIENTE = {
+  SEGUIMIENTO: "SEGUIMIENTO",
+  PENDIENTE_AUTORIZACION: "PENDIENTE_AUTORIZACION",
   NUEVO: "NUEVO",
   INVITACION_ENVIADA: "INVITACION_ENVIADA",
   ACTIVO: "ACTIVO",
@@ -13,6 +15,8 @@ export const ESTADOS_CLIENTE = {
 export type EstadoCliente = (typeof ESTADOS_CLIENTE)[keyof typeof ESTADOS_CLIENTE];
 
 export const ESTADO_LABEL: Record<EstadoCliente, string> = {
+  SEGUIMIENTO: "Seguimiento",
+  PENDIENTE_AUTORIZACION: "Pendiente de autorización",
   NUEVO: "Nuevo",
   INVITACION_ENVIADA: "Invitación enviada",
   ACTIVO: "Miembro",
@@ -53,6 +57,9 @@ export const TIPOS_EVENTO = {
   PAPELERA: "PAPELERA",
   RESTAURACION_PAPELERA: "RESTAURACION_PAPELERA",
   ELIMINACION_PERMANENTE: "ELIMINACION_PERMANENTE",
+  ABONO: "ABONO",
+  ENVIO_REVISION: "ENVIO_REVISION",
+  AUTORIZACION: "AUTORIZACION",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -77,6 +84,9 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   PAPELERA: "Enviado a la papelera",
   RESTAURACION_PAPELERA: "Restaurado de la papelera",
   ELIMINACION_PERMANENTE: "Eliminado definitivamente",
+  ABONO: "Abono registrado",
+  ENVIO_REVISION: "Enviado a autorización",
+  AUTORIZACION: "Autorizado por administración",
 };
 
 export const COLORES_TAG = [

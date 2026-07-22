@@ -4,10 +4,12 @@ import {
   buscarClientePorCorreo,
   detectarCambioMontoYVendedor,
   actualizarMontoYVendedor,
+  actualizarVendedor,
   agregarTagsCliente,
   obtenerClientePorId,
 } from "./clientesService";
 import { CERTIFICACIONES } from "./certificaciones";
+import { ESTADOS_CLIENTE } from "./constants";
 
 // Trackers de ventas de Legendar-IA (misma estructura de columnas en ambas
 // hojas, una por región).
@@ -308,4 +310,74 @@ export async function aplicarNuevosPendientes(
   }
 
   return { creados, errores };
+}
+
+export type ResultadoSyncSeguimientos = {
+  creados: number;
+  actualizados: number;
+  errores: string[];
+};
+
+// A diferencia del sync de clientes ganados, este escribe directo (sin
+// revisión del admin): los leads en seguimiento no son clientes reales
+// todavía, así que el riesgo de escribir de más es bajo. Solo toca
+// registros cuyo estado siga siendo SEGUIMIENTO; si ya avanzaron (pendiente
+// de autorización o cliente real) se dejan intactos aunque la hoja cambie.
+export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncSeguimientos> {
+  const resultado: ResultadoSyncSeguimientos = { creados: 0, actualizados: 0, errores: [] };
+
+  for (const hoja of HOJAS) {
+    const url = `https://docs.google.com/spreadsheets/d/${hoja.sheetId}/export?format=csv&gid=${hoja.gid}`;
+    let filas: FilaHoja[];
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        resultado.errores.push(`Hoja ${hoja.region}: no se pudo leer (status ${res.status})`);
+        continue;
+      }
+      filas = filasAObjetos(parsearCSV(await res.text()));
+    } catch (err) {
+      resultado.errores.push(
+        `Hoja ${hoja.region}: ${err instanceof Error ? err.message : "error desconocido"}`
+      );
+      continue;
+    }
+
+    for (const fila of filas) {
+      if (fila.estado.trim().toLowerCase() !== "seguimiento") continue;
+      if (!fila.correo) continue;
+
+      try {
+        const vendedor = resolverVendedor(fila);
+        const existente = await buscarClientePorCorreo(fila.correo);
+
+        if (!existente) {
+          const telefono = limpiarTelefono(fila.corregido, fila.celular, hoja.region);
+          await crearCliente({
+            nombre: fila.nombre || fila.correo,
+            email: fila.correo,
+            telefono: telefono ?? undefined,
+            region: hoja.region,
+            etiquetas: [ETIQUETA_LEGENDARIA],
+            vendedor: vendedor ?? undefined,
+            monto: fila.amount || undefined,
+            autor: AUTOR_SISTEMA.nombre,
+            autorRol: AUTOR_SISTEMA.rol,
+            origen: "sheet",
+            estadoInicial: ESTADOS_CLIENTE.SEGUIMIENTO,
+          });
+          resultado.creados++;
+        } else if (existente.estado === ESTADOS_CLIENTE.SEGUIMIENTO && vendedor && vendedor !== existente.vendedor) {
+          await actualizarVendedor(existente.id, existente.nombre, AUTOR_SISTEMA, vendedor);
+          resultado.actualizados++;
+        }
+      } catch (err) {
+        resultado.errores.push(
+          `${fila.correo}: ${err instanceof Error ? err.message : "error desconocido"}`
+        );
+      }
+    }
+  }
+
+  return resultado;
 }

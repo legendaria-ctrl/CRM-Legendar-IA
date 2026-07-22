@@ -19,6 +19,9 @@ import {
   Pencil,
   Recycle,
   RotateCcw,
+  DollarSign,
+  Hourglass,
+  ShieldCheck,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -42,6 +45,9 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   PAPELERA: Recycle,
   RESTAURACION_PAPELERA: RotateCcw,
   ELIMINACION_PERMANENTE: Trash2,
+  ABONO: DollarSign,
+  ENVIO_REVISION: Hourglass,
+  AUTORIZACION: ShieldCheck,
 };
 
 export type EventoTimelineItem = {
