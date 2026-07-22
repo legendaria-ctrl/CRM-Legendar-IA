@@ -129,11 +129,6 @@ export default function ClienteDetallePage() {
   const esDueño =
     !!sesion && (sesion.nombre === cliente.creadoPor || sesion.nombre === cliente.vendedor);
   const puedeEditar = sesion?.rol === ROLES.ADMIN || (esSeguimiento && esDueño);
-  const totalApartado = cliente.monto ? Number(cliente.monto) : null;
-  const restante =
-    totalApartado !== null && !Number.isNaN(totalApartado)
-      ? totalApartado - (cliente.totalAbonado ?? 0)
-      : null;
 
   async function handleAgregarAbono() {
     if (!sesion || !cliente || guardandoAbono) return;
@@ -498,25 +493,13 @@ export default function ClienteDetallePage() {
         <div className="shell rounded-[2rem] p-2 diffused-lg">
           <div className="core flex flex-col gap-4 rounded-[calc(2rem-0.5rem)] p-6">
             <h3 className="text-sm font-medium uppercase tracking-[0.15em] text-muted">
-              Total / Abonos / Restante
+              Abonos
             </h3>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-2xl bg-surface-2 px-3 py-3">
-                <p className="text-xs text-muted">Total</p>
-                <p className="text-sm font-semibold text-foreground">{cliente.monto || "—"}</p>
-              </div>
-              <div className="rounded-2xl bg-surface-2 px-3 py-3">
-                <p className="text-xs text-muted">Abonado</p>
-                <p className="text-sm font-semibold text-success">
-                  ${(cliente.totalAbonado ?? 0).toLocaleString("es-MX")}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-surface-2 px-3 py-3">
-                <p className="text-xs text-muted">Restante</p>
-                <p className="text-sm font-semibold text-foreground">
-                  {restante !== null ? `$${restante.toLocaleString("es-MX")}` : "—"}
-                </p>
-              </div>
+            <div className="rounded-2xl bg-surface-2 px-3 py-3 text-center">
+              <p className="text-xs text-muted">Abonado</p>
+              <p className="text-sm font-semibold text-success">
+                ${(cliente.totalAbonado ?? 0).toLocaleString("es-MX")}
+              </p>
             </div>
 
             {puedeEditar && (

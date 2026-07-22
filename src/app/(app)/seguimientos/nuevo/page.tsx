@@ -8,7 +8,6 @@ import {
   LoaderCircle,
   Globe2,
   Layers,
-  DollarSign,
   Tag as TagIcon,
   Plus,
   Search,
@@ -34,7 +33,6 @@ export default function NuevoSeguimientoPage() {
   const [region, setRegion] = useState<Region>(REGIONES.MX);
   const [etiqueta, setEtiqueta] = useState<string>(CERTIFICACIONES[0]?.etiqueta ?? "");
   const etiquetaTocada = useRef(false);
-  const [total, setTotal] = useState("");
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const [tagsAbierto, setTagsAbierto] = useState(false);
   const [busquedaTag, setBusquedaTag] = useState("");
@@ -104,7 +102,6 @@ export default function NuevoSeguimientoPage() {
         region,
         etiquetas: etiqueta ? [etiqueta] : [],
         tags,
-        monto: total,
         autor: sesion.nombre,
         autorRol: sesion.rol,
         estadoInicial: ESTADOS_CLIENTE.SEGUIMIENTO,
@@ -182,19 +179,6 @@ export default function NuevoSeguimientoPage() {
               Vendedor
             </span>
             <VendedorSelect valor={vendedor} onChange={setVendedor} />
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted">
-              <DollarSign className="h-3.5 w-3.5" strokeWidth={1.5} />
-              Monto total
-            </span>
-            <input
-              value={total}
-              onChange={(e) => setTotal(e.target.value)}
-              placeholder="$3,997 MXN"
-              className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-3 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
-            />
           </label>
 
           <label className="flex flex-col gap-2">

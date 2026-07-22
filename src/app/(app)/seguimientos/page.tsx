@@ -25,12 +25,6 @@ const FILTRO_OPCIONES: { value: FiltroTipo; label: string }[] = [
   { value: "seguimientos", label: "Seguimientos" },
 ];
 
-function restanteDe(cliente: ClienteDoc): number | null {
-  const total = Number(cliente.monto);
-  if (!cliente.monto || Number.isNaN(total)) return null;
-  return total - (cliente.totalAbonado ?? 0);
-}
-
 export default function SeguimientosPage() {
   const { sesion } = useSesion();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
@@ -234,7 +228,6 @@ function FilaSeguimiento({
   cliente: ClienteDoc;
   soloLectura?: boolean;
 }) {
-  const restante = restanteDe(cliente);
   const esApartado = (cliente.totalAbonado ?? 0) > 0;
 
   return (
@@ -266,18 +259,11 @@ function FilaSeguimiento({
         </div>
 
         <div className="flex flex-none items-center gap-4">
-          {cliente.monto && (
-            <div className="flex flex-col items-end gap-0.5">
-              <span className="flex items-center gap-1 text-xs text-muted">
-                <DollarSign className="h-3 w-3" strokeWidth={1.5} />
-                Total {cliente.monto}
-              </span>
-              {restante !== null && (
-                <span className="text-xs font-medium text-success">
-                  {restante > 0 ? `Restan $${restante.toLocaleString("es-MX")}` : "Liquidado"}
-                </span>
-              )}
-            </div>
+          {esApartado && (
+            <span className="flex items-center gap-1 text-xs font-medium text-success">
+              <DollarSign className="h-3 w-3" strokeWidth={1.5} />
+              Abonado ${(cliente.totalAbonado ?? 0).toLocaleString("es-MX")}
+            </span>
           )}
           <ArrowUpRight className="h-4 w-4 text-muted" strokeWidth={1.75} />
         </div>

@@ -374,7 +374,6 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
             region: hoja.region,
             etiquetas: [ETIQUETA_LEGENDARIA],
             vendedor: vendedor ?? undefined,
-            monto: !esApartado ? fila.amount || undefined : undefined,
             autor: AUTOR_SISTEMA.nombre,
             autorRol: AUTOR_SISTEMA.rol,
             origen: "sheet",
