@@ -11,6 +11,7 @@ import {
 } from "./clientesService";
 import { CERTIFICACIONES } from "./certificaciones";
 import { ESTADOS_CLIENTE } from "./constants";
+import { normalizarNombre } from "./vendedoresService";
 
 // Trackers de ventas de Legendar-IA (misma estructura de columnas en ambas
 // hojas, una por región).
@@ -391,7 +392,10 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
           resultado.creados++;
         } else if (existente.estado === ESTADOS_CLIENTE.SEGUIMIENTO) {
           let toco = false;
-          if (vendedor && vendedor !== existente.vendedor) {
+          if (
+            vendedor &&
+            normalizarNombre(vendedor) !== normalizarNombre(existente.vendedor ?? "")
+          ) {
             await actualizarVendedor(existente.id, existente.nombre, AUTOR_SISTEMA, vendedor);
             toco = true;
           }

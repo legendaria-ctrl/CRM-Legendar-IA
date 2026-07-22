@@ -660,6 +660,7 @@ export default function ClienteDetallePage() {
         pausada={cliente.pausada}
         fechaVencimiento={fechaVencimiento}
         fechaPausa={fechaPausa}
+        puedeEditar={puedeEditar}
       />
 
       {!esSeguimiento && !esPendiente && fechaLlegada && fechaVencimiento && (

@@ -40,6 +40,7 @@ export function ClientActions({
   pausada = false,
   fechaVencimiento = null,
   fechaPausa = null,
+  puedeEditar = true,
 }: {
   clienteId: string;
   clienteNombre: string;
@@ -48,6 +49,9 @@ export function ClientActions({
   pausada?: boolean;
   fechaVencimiento?: Date | null;
   fechaPausa?: Date | null;
+  /** Solo aplica a acciones sobre un seguimiento (dueño o admin); el resto
+   * de acciones (invitación, membresía, etc.) no dependen de esto. */
+  puedeEditar?: boolean;
 }) {
   const { sesion, cargando } = useSesion();
   const [loading, setLoading] = useState<string | null>(null);
@@ -143,7 +147,7 @@ export function ClientActions({
         {cargando && <p className="text-sm text-muted">Verificando tu sesión…</p>}
 
         <div className="flex flex-wrap gap-3">
-          {estado === ESTADOS_CLIENTE.SEGUIMIENTO && (
+          {estado === ESTADOS_CLIENTE.SEGUIMIENTO && puedeEditar && (
             <ActionButton
               icon={Hourglass}
               label="Enviar a autorización"
