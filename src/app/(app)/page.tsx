@@ -61,6 +61,7 @@ import {
   Layers,
   SlidersHorizontal,
   RefreshCw,
+  Send,
   MessageCircle,
   Tag as TagIcon,
 } from "lucide-react";
@@ -827,6 +828,7 @@ export default function DashboardPage() {
                 {
                   key: "enviar",
                   label: "Enviar invitación",
+                  icon: Send,
                   onSelect: () => aplicarEstadoEnLote("enviar"),
                 },
                 {

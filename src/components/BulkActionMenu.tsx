@@ -9,6 +9,7 @@ export type BulkActionOption = {
   onSelect: () => void | Promise<void>;
   activo?: boolean;
   quitar?: boolean;
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 };
 
 export function BulkActionMenu({
@@ -59,27 +60,32 @@ export function BulkActionMenu({
             {options.length === 0 ? (
               <p className="px-3 py-2 text-xs text-muted">No hay opciones disponibles.</p>
             ) : (
-              options.map((opcion) => (
-                <button
-                  key={opcion.key}
-                  type="button"
-                  onClick={() => elegir(opcion)}
-                  disabled={procesando !== null}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-foreground transition-colors duration-200 hover:bg-primary-dim disabled:opacity-50"
-                >
-                  {procesando === opcion.key ? (
-                    <LoaderCircle className="h-3.5 w-3.5 flex-none animate-spin" strokeWidth={2} />
-                  ) : opcion.quitar ? (
-                    <XIcon className="h-3.5 w-3.5 flex-none text-danger" strokeWidth={2} />
-                  ) : (
-                    <Check className="h-3.5 w-3.5 flex-none text-success" strokeWidth={2} />
-                  )}
-                  <span className="truncate">{opcion.label}</span>
-                  {opcion.activo && (
-                    <span className="ml-auto h-1.5 w-1.5 flex-none rounded-full bg-primary" />
-                  )}
-                </button>
-              ))
+              options.map((opcion) => {
+                const OpcionIcon = opcion.icon;
+                return (
+                  <button
+                    key={opcion.key}
+                    type="button"
+                    onClick={() => elegir(opcion)}
+                    disabled={procesando !== null}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-foreground transition-colors duration-200 hover:bg-primary-dim disabled:opacity-50"
+                  >
+                    {procesando === opcion.key ? (
+                      <LoaderCircle className="h-3.5 w-3.5 flex-none animate-spin" strokeWidth={2} />
+                    ) : OpcionIcon ? (
+                      <OpcionIcon className="h-3.5 w-3.5 flex-none text-primary" strokeWidth={2} />
+                    ) : opcion.quitar ? (
+                      <XIcon className="h-3.5 w-3.5 flex-none text-danger" strokeWidth={2} />
+                    ) : (
+                      <Check className="h-3.5 w-3.5 flex-none text-success" strokeWidth={2} />
+                    )}
+                    <span className="truncate">{opcion.label}</span>
+                    {opcion.activo && (
+                      <span className="ml-auto h-1.5 w-1.5 flex-none rounded-full bg-primary" />
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
         </>
