@@ -356,8 +356,10 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
       if (!fila.correo) continue;
 
       const esApartado = estado === "apartado";
-      const abono = Number(fila.amount);
-      const tieneAbono = esApartado && fila.amount && !Number.isNaN(abono) && abono > 0;
+      // La columna J viene como "$3,997": hay que quitar el signo y las comas
+      // antes de convertir a número.
+      const abono = Number(fila.amount.replace(/[^0-9.]/g, ""));
+      const tieneAbono = esApartado && !Number.isNaN(abono) && abono > 0;
 
       try {
         const vendedor = resolverVendedor(fila);
