@@ -23,6 +23,7 @@ import {
   EstadoBienvenida,
   TIPOS_EVENTO,
   PAPELERA_DIAS,
+  formatearMonto,
 } from "./constants";
 import { fechaVencimientoDesde } from "./membership";
 import { registrarActividad } from "./activityService";
@@ -227,7 +228,8 @@ export async function registrarAbono(
 ) {
   const clienteRef = doc(db, "clientes", clienteId);
   const snap = await getDoc(clienteRef);
-  const esPrimerAbono = ((snap.data() as ClienteDoc | undefined)?.totalAbonado ?? 0) === 0;
+  const datos = snap.data() as ClienteDoc | undefined;
+  const esPrimerAbono = (datos?.totalAbonado ?? 0) === 0;
 
   const cambios: Record<string, unknown> = { totalAbonado: increment(monto) };
   if (esPrimerAbono) cambios.fechaPrimerAbono = serverTimestamp();
@@ -238,7 +240,7 @@ export async function registrarAbono(
     clienteNombre,
     TIPOS_EVENTO.ABONO,
     autor,
-    `Abono de $${monto.toLocaleString("es-MX")}${nota ? ` — ${nota}` : ""}`
+    `Abono de ${formatearMonto(monto, datos?.region ?? null)}${nota ? ` — ${nota}` : ""}`
   );
 }
 

@@ -54,6 +54,7 @@ import {
   PAPELERA_DIAS,
   ROLES,
   ESTADOS_CLIENTE,
+  formatearMonto,
 } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 import { mensajeBienvenida, construirLinkWhatsapp } from "@/lib/whatsapp";
@@ -498,7 +499,7 @@ export default function ClienteDetallePage() {
             <div className="rounded-2xl bg-surface-2 px-3 py-3 text-center">
               <p className="text-xs text-muted">Abonado</p>
               <p className="text-sm font-semibold text-success">
-                ${(cliente.totalAbonado ?? 0).toLocaleString("es-MX")}
+                {formatearMonto(cliente.totalAbonado ?? 0, cliente.region)}
               </p>
             </div>
 

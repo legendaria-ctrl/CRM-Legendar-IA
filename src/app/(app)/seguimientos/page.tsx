@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
-import { ESTADOS_CLIENTE, ROLES, EstadoCliente } from "@/lib/constants";
+import { ESTADOS_CLIENTE, ROLES, EstadoCliente, formatearMonto } from "@/lib/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 
 type FiltroTipo = "todos" | "apartados" | "seguimientos";
@@ -262,7 +262,7 @@ function FilaSeguimiento({
           {esApartado && (
             <span className="flex items-center gap-1 text-xs font-medium text-success">
               <DollarSign className="h-3 w-3" strokeWidth={1.5} />
-              Abonado ${(cliente.totalAbonado ?? 0).toLocaleString("es-MX")}
+              Abonado {formatearMonto(cliente.totalAbonado ?? 0, cliente.region)}
             </span>
           )}
           <ArrowUpRight className="h-4 w-4 text-muted" strokeWidth={1.75} />

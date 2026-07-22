@@ -114,6 +114,16 @@ export const REGION_LABEL: Record<Region, string> = {
   US: "Legendar-IA US",
 };
 
+export const MONEDA_POR_REGION: Record<Region, string> = {
+  MX: "MXN",
+  US: "USD",
+};
+
+export function formatearMonto(monto: number, region: string | null | undefined): string {
+  const moneda = region === "MX" || region === "US" ? MONEDA_POR_REGION[region] : "";
+  return `$${monto.toLocaleString("es-MX")}${moneda ? ` ${moneda}` : ""}`;
+}
+
 export type Beneficio = {
   evento: string;
   tipo: string;
