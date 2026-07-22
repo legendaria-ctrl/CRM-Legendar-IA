@@ -99,17 +99,21 @@ export async function crearNotificacionActividad(
   });
 }
 
-// Avisos de "actualización de la plataforma": solo para admins, y a
-// diferencia de un AVISO normal, se muestran como ventana emergente
-// automática al entrar (no solo en la campanita). Se disparan a mano
-// cuando el dueño decide anunciar un cambio (o varios juntos).
-export async function crearAvisoActualizacion(mensaje: string) {
+// Avisos de "actualización de la plataforma": a diferencia de un AVISO
+// normal, se muestran como ventana emergente automática al entrar (no solo
+// en la campanita). Se disparan a mano cuando el dueño decide anunciar un
+// cambio (o varios juntos). Por defecto le llega a todos; se puede limitar
+// a "ADMINS" si el cambio no le aplica a los vendedores.
+export async function crearAvisoActualizacion(
+  mensaje: string,
+  audiencia: "TODOS" | "ADMINS" = "TODOS"
+) {
   const limpio = mensaje.trim();
   if (!limpio) return;
 
   await addDoc(notificacionesRef, {
     tipo: "ACTUALIZACION",
-    audiencia: "ADMINS",
+    audiencia,
     destinatarios: [],
     mensaje: limpio,
     autor: "Actualización de la plataforma",

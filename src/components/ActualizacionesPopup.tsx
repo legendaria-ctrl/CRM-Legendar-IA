@@ -10,23 +10,26 @@ import {
 } from "@/lib/notificacionesService";
 import { aFecha } from "@/lib/membership";
 
-// Ventana emergente automática (no requiere abrir la campanita) para avisar
-// a los admins de actualizaciones de la plataforma. Se muestra sola al
-// entrar mientras haya avisos tipo ACTUALIZACION sin leer.
+// Ventana emergente automática (no requiere abrir la campanita) para avisos
+// mandados a propósito: AVISO (manual, página "Dar avisos") y ACTUALIZACION
+// (anuncios de cambios en la plataforma). Se muestra sola al entrar, o al
+// instante si ya se tenía la app abierta, mientras haya alguno sin leer.
+// La actividad automática de vendedores (tipo ACTIVIDAD) no dispara esto:
+// esa se queda solo en la campanita para no llenar de popups a los admins.
 export function ActualizacionesPopup() {
   const { sesion } = useSesion();
   const [notificaciones, setNotificaciones] = useState<NotificacionDoc[]>([]);
 
   useEffect(() => {
-    if (!sesion || sesion.rol !== "ADMIN") return;
+    if (!sesion) return;
     const unsub = suscribirNotificaciones(sesion, setNotificaciones);
     return () => unsub();
   }, [sesion]);
 
-  if (!sesion || sesion.rol !== "ADMIN") return null;
+  if (!sesion) return null;
 
   const pendientes = notificaciones.filter(
-    (n) => n.tipo === "ACTUALIZACION" && !n.leidoPor.includes(sesion.nombre)
+    (n) => (n.tipo === "ACTUALIZACION" || n.tipo === "AVISO") && !n.leidoPor.includes(sesion.nombre)
   );
 
   if (pendientes.length === 0) return null;
@@ -43,7 +46,7 @@ export function ActualizacionesPopup() {
         <div className="flex items-start justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-dim px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-primary-deep">
             <Sparkles className="h-3 w-3" strokeWidth={2} />
-            Actualización de la plataforma
+            {actual.tipo === "AVISO" ? `Aviso de ${actual.autor}` : "Actualización de la plataforma"}
           </span>
           <button
             onClick={cerrar}
