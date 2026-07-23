@@ -47,6 +47,7 @@ export function TagPicker({
     try {
       await onAgregar([nombre]);
       setBusqueda("");
+      setAbierto(false);
     } finally {
       setProcesando(false);
     }
@@ -59,6 +60,7 @@ export function TagPicker({
       const tag = await crearTag(busqueda, sesion.nombre);
       if (tag) await onAgregar([tag.nombre]);
       setBusqueda("");
+      setAbierto(false);
     } finally {
       setProcesando(false);
     }

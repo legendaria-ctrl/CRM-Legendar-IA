@@ -64,6 +64,7 @@ export default function NuevoSeguimientoPage() {
   function agregarTagLocal(nombre: string) {
     setTags((t) => (t.includes(nombre) ? t : [...t, nombre]));
     setBusquedaTag("");
+    setTagsAbierto(false);
   }
 
   async function crearYAgregarTag() {
