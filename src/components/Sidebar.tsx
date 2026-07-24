@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
 import { useMobileActions } from "@/lib/mobile-actions-context";
 import { useSidebarDrawer } from "@/lib/sidebar-drawer-context";
 import { SIN_ASIGNAR_ID } from "@/lib/certificaciones";
+import { suscribirPendientesAutorizacion } from "@/lib/clientesService";
 import {
   LayoutGrid,
   UserPlus,
@@ -56,6 +58,13 @@ export function Sidebar() {
   const { abierto, setAbierto } = useSidebarDrawer();
   const itemsNav =
     sesion?.rol === "ADMIN" ? [...links, ...linksAdmin] : [...links, AVISOS_ITEM];
+  const [pendientesCount, setPendientesCount] = useState(0);
+
+  useEffect(() => {
+    if (sesion?.rol !== "ADMIN") return;
+    const unsub = suscribirPendientesAutorizacion(setPendientesCount);
+    return () => unsub();
+  }, [sesion?.rol]);
 
   function irAInicio() {
     setCertificacionActual(null);
@@ -129,6 +138,15 @@ export function Sidebar() {
                       strokeWidth={1.5}
                     />
                     {label}
+                    {href === "/pendientes" && pendientesCount > 0 && (
+                      <span
+                        className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${
+                          active ? "bg-white/20 text-white" : "bg-danger text-white"
+                        }`}
+                      >
+                        {pendientesCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -200,15 +218,27 @@ export function Sidebar() {
                 active ? "text-white" : "text-muted"
               }`;
 
+              const badge = href === "/pendientes" && pendientesCount > 0 && (
+                <span
+                  className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${
+                    active ? "bg-white/20 text-white" : "bg-danger text-white"
+                  }`}
+                >
+                  {pendientesCount}
+                </span>
+              );
+
               return href === NO_ASIGNADOS_HREF ? (
                 <button key={href} onClick={() => irA(href)} className={`text-left ${itemClassName}`}>
                   <Icon className={iconClassName} strokeWidth={1.5} />
                   {label}
+                  {badge}
                 </button>
               ) : (
                 <Link key={href} href={href} className={itemClassName}>
                   <Icon className={iconClassName} strokeWidth={1.5} />
                   {label}
+                  {badge}
                 </Link>
               );
             })}

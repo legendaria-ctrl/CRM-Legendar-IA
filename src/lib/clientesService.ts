@@ -684,6 +684,15 @@ export function suscribirPapelera(callback: (clientes: ClienteDoc[]) => void) {
   });
 }
 
+// Usado para la burbuja de conteo en el menú lateral: solo trae los
+// pendientes de autorización, no toda la colección de clientes.
+export function suscribirPendientesAutorizacion(callback: (cantidad: number) => void) {
+  const q = query(clientesRef, where("estado", "==", ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION));
+  return onSnapshot(q, (snap) => {
+    callback(snap.size);
+  });
+}
+
 // Usado por la sincronización con la hoja de ventas: busca un cliente ya
 // existente por correo (para no duplicarlo) y, si lo encuentra, le completa
 // el monto pagado y el vendedor asignado sin tocar el resto de sus datos.
