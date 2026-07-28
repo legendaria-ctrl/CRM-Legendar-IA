@@ -436,6 +436,7 @@ export default function DashboardPage() {
           clienteId: c.clienteId,
           monto: c.monto?.nuevo,
           vendedor: c.vendedor?.nuevo,
+          telefono: c.telefono?.nuevo,
           agregarTagMiembroCS: c.agregarTagMiembroCS,
         }));
       const nuevos = nuevosPendientes.filter((n) => seleccionNuevos.has(n.correo));
@@ -1224,6 +1225,14 @@ export default function DashboardPage() {
                                 <span className="text-muted">{cambio.vendedor.actual ?? "—"}</span>
                                 {" → "}
                                 <span className="font-medium text-success">{cambio.vendedor.nuevo}</span>
+                              </span>
+                            )}
+                            {cambio.telefono && (
+                              <span>
+                                Teléfono:{" "}
+                                <span className="text-muted">{cambio.telefono.actual ?? "—"}</span>
+                                {" → "}
+                                <span className="font-medium text-success">{cambio.telefono.nuevo}</span>
                               </span>
                             )}
                             {cambio.agregarTagMiembroCS && (

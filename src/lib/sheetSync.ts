@@ -141,6 +141,7 @@ export type CambioPendiente = {
   correo: string;
   monto?: { actual: string | null; nuevo: string };
   vendedor?: { actual: string | null; nuevo: string };
+  telefono?: { actual: string | null; nuevo: string };
   agregarTagMiembroCS?: boolean;
 };
 
@@ -198,10 +199,11 @@ async function sincronizarHoja(
       const existente = await buscarExistente(fila);
       const monto = fila.amount || null;
       const vendedor = resolverVendedor(fila);
+      const telefonoHoja = limpiarTelefono(fila.corregido, fila.celular, region);
       const esMiembroCS = estado === ESTADO_MIEMBRO_CS;
 
       if (existente) {
-        const cambios = detectarCambioMontoYVendedor(existente, monto, vendedor);
+        const cambios = detectarCambioMontoYVendedor(existente, monto, vendedor, telefonoHoja);
         const necesitaTagCS = esMiembroCS && !(existente.tags ?? []).includes(TAG_MIEMBRO_CS);
         if (cambios || necesitaTagCS) {
           resultado.cambiosPendientes.push({
@@ -211,6 +213,9 @@ async function sincronizarHoja(
             monto: cambios?.monto ? { actual: existente.monto, nuevo: cambios.monto } : undefined,
             vendedor: cambios?.vendedor
               ? { actual: existente.vendedor, nuevo: cambios.vendedor }
+              : undefined,
+            telefono: cambios?.telefono
+              ? { actual: existente.telefono, nuevo: cambios.telefono }
               : undefined,
             agregarTagMiembroCS: necesitaTagCS ? true : undefined,
           });
@@ -222,7 +227,7 @@ async function sincronizarHoja(
         // la fecha de ingreso real es el momento en que se confirma el alta
         // aquí, no la de la hoja. crearCliente usa "ahora" cuando no se le
         // pasa fechaInscripcion.
-        const telefono = limpiarTelefono(fila.corregido, fila.celular, region);
+        const telefono = telefonoHoja;
         resultado.nuevosPendientes.push({
           correo: fila.correo,
           nombre: fila.nombre || fila.correo,
@@ -263,6 +268,7 @@ export type CambioAAplicar = {
   clienteId: string;
   monto?: string;
   vendedor?: string;
+  telefono?: string;
   agregarTagMiembroCS?: boolean;
 };
 
@@ -285,7 +291,8 @@ export async function aplicarCambiosPendientes(
       const seActualizo = await actualizarMontoYVendedor(
         cliente,
         cambio.monto ?? null,
-        cambio.vendedor ?? null
+        cambio.vendedor ?? null,
+        cambio.telefono ?? null
       );
       let seAplicoTag = false;
       if (cambio.agregarTagMiembroCS && !(cliente.tags ?? []).includes(TAG_MIEMBRO_CS)) {

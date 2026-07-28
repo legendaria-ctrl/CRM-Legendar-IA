@@ -723,6 +723,7 @@ export async function buscarClientePorSheetRowId(sheetRowId: string): Promise<Cl
 export type CambioMontoYVendedor = {
   monto?: string;
   vendedor?: string;
+  telefono?: string;
 };
 
 // Compara sin escribir nada; se usa para mostrarle al admin qué cambiaría
@@ -730,11 +731,13 @@ export type CambioMontoYVendedor = {
 export function detectarCambioMontoYVendedor(
   cliente: ClienteDoc,
   monto: string | null,
-  vendedor: string | null
+  vendedor: string | null,
+  telefono?: string | null
 ): CambioMontoYVendedor | null {
   const cambios: CambioMontoYVendedor = {};
   if (monto && monto !== cliente.monto) cambios.monto = monto;
   if (vendedor && vendedor !== cliente.vendedor) cambios.vendedor = vendedor;
+  if (telefono && telefono !== cliente.telefono) cambios.telefono = telefono;
   return Object.keys(cambios).length > 0 ? cambios : null;
 }
 
@@ -749,9 +752,10 @@ export async function obtenerClientePorId(id: string): Promise<ClienteDoc | null
 export async function actualizarMontoYVendedor(
   cliente: ClienteDoc,
   monto: string | null,
-  vendedor: string | null
+  vendedor: string | null,
+  telefono?: string | null
 ): Promise<boolean> {
-  const cambios = detectarCambioMontoYVendedor(cliente, monto, vendedor);
+  const cambios = detectarCambioMontoYVendedor(cliente, monto, vendedor, telefono);
   if (!cambios) return false;
 
   await updateDoc(doc(db, "clientes", cliente.id), cambios);
@@ -760,7 +764,7 @@ export async function actualizarMontoYVendedor(
     cliente.nombre,
     TIPOS_EVENTO.EDICION,
     { nombre: "Sincronización automática", rol: "ADMIN" },
-    `Datos completados desde la hoja de ventas${cambios.monto ? ` · Monto: ${cambios.monto}` : ""}${cambios.vendedor ? ` · Vendedor: ${cambios.vendedor}` : ""}`
+    `Datos completados desde la hoja de ventas${cambios.monto ? ` · Monto: ${cambios.monto}` : ""}${cambios.vendedor ? ` · Vendedor: ${cambios.vendedor}` : ""}${cambios.telefono ? ` · Teléfono: ${cambios.telefono}` : ""}`
   );
   return true;
 }
