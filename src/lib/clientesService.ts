@@ -363,7 +363,12 @@ export async function graduarSeguimientoACliente(
   clienteNombre: string,
   autor: Autor
 ) {
-  await updateDoc(doc(db, "clientes", clienteId), { estado: ESTADOS_CLIENTE.NUEVO });
+  const ahora = new Date();
+  await updateDoc(doc(db, "clientes", clienteId), {
+    estado: ESTADOS_CLIENTE.NUEVO,
+    fechaLlegada: Timestamp.fromDate(ahora),
+    fechaVencimiento: Timestamp.fromDate(fechaVencimientoDesde(ahora)),
+  });
   await agregarEvento(
     clienteId,
     clienteNombre,
