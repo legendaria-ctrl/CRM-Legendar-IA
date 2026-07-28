@@ -9,6 +9,7 @@ import {
   registrarAbono,
   agregarTagsCliente,
   obtenerClientePorId,
+  graduarSeguimientoACliente,
   ClienteDoc,
   Autor,
 } from "./clientesService";
@@ -144,6 +145,10 @@ export type CambioPendiente = {
   vendedor?: { actual: string | null; nuevo: string };
   telefono?: { actual: string | null; nuevo: string };
   agregarTagMiembroCS?: boolean;
+  // El cliente todavía estaba en Seguimiento en el CRM y la hoja ya lo
+  // marca como venta ganada: al aplicar este cambio se gradúa a Cliente
+  // nuevo directo (sin pasar por Pendientes de autorización).
+  graduarDeSeguimiento?: boolean;
 };
 
 // Cliente que la hoja trae y todavía no existe en el CRM. Tampoco se crea
@@ -206,7 +211,13 @@ async function sincronizarHoja(
       if (existente) {
         const cambios = detectarCambioMontoYVendedor(existente, monto, vendedor, telefonoHoja);
         const necesitaTagCS = esMiembroCS && !(existente.tags ?? []).includes(TAG_MIEMBRO_CS);
-        if (cambios || necesitaTagCS) {
+        // Si en el CRM sigue en Seguimiento pero la hoja ya lo marca como
+        // venta ganada, hay que graduarlo aunque monto/vendedor/teléfono no
+        // hayan cambiado — si no, se queda atorado en Seguimiento para
+        // siempre porque el sync de seguimientos ya no lo toca (dejó de
+        // tener estado "seguimiento"/"apartado" en la hoja).
+        const debeGraduar = existente.estado === ESTADOS_CLIENTE.SEGUIMIENTO;
+        if (cambios || necesitaTagCS || debeGraduar) {
           resultado.cambiosPendientes.push({
             clienteId: existente.id,
             nombre: existente.nombre,
@@ -219,6 +230,7 @@ async function sincronizarHoja(
               ? { actual: existente.telefono, nuevo: cambios.telefono }
               : undefined,
             agregarTagMiembroCS: necesitaTagCS ? true : undefined,
+            graduarDeSeguimiento: debeGraduar ? true : undefined,
           });
         } else {
           resultado.omitidos++;
@@ -271,6 +283,7 @@ export type CambioAAplicar = {
   vendedor?: string;
   telefono?: string;
   agregarTagMiembroCS?: boolean;
+  graduarDeSeguimiento?: boolean;
 };
 
 // El admin ya revisó los cambios propuestos y eligió cuáles aplicar; se
@@ -302,7 +315,12 @@ export async function aplicarCambiosPendientes(
         await agregarTagsCliente(cliente.id, cliente.nombre, autor, [TAG_MIEMBRO_CS]);
         seAplicoTag = true;
       }
-      if (seActualizo || seAplicoTag) aplicados++;
+      let seGraduo = false;
+      if (cambio.graduarDeSeguimiento) {
+        await graduarSeguimientoACliente(cliente.id, cliente.nombre, autor);
+        seGraduo = true;
+      }
+      if (seActualizo || seAplicoTag || seGraduo) aplicados++;
     } catch (err) {
       errores.push(`${cambio.clienteId}: ${err instanceof Error ? err.message : "error desconocido"}`);
     }

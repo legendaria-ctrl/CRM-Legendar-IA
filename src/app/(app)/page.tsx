@@ -438,6 +438,7 @@ export default function DashboardPage() {
           vendedor: c.vendedor?.nuevo,
           telefono: c.telefono?.nuevo,
           agregarTagMiembroCS: c.agregarTagMiembroCS,
+          graduarDeSeguimiento: c.graduarDeSeguimiento,
         }));
       const nuevos = nuevosPendientes.filter((n) => seleccionNuevos.has(n.correo));
       const res = await fetch("/api/sync-sheet/aplicar-cambios", {
@@ -1238,6 +1239,11 @@ export default function DashboardPage() {
                             {cambio.agregarTagMiembroCS && (
                               <span>
                                 Agregar tag: <span className="font-medium text-success">Miembro del CS</span>
+                              </span>
+                            )}
+                            {cambio.graduarDeSeguimiento && (
+                              <span className="font-medium text-success">
+                                ✅ Venta confirmada en la hoja: pasa de Seguimiento a Cliente nuevo
                               </span>
                             )}
                           </div>

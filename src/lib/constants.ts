@@ -62,6 +62,7 @@ export const TIPOS_EVENTO = {
   ABONO_ELIMINADO: "ABONO_ELIMINADO",
   ENVIO_REVISION: "ENVIO_REVISION",
   AUTORIZACION: "AUTORIZACION",
+  GRADUACION: "GRADUACION",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -91,6 +92,7 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   ABONO_ELIMINADO: "Abono eliminado",
   ENVIO_REVISION: "Enviado a autorización",
   AUTORIZACION: "Autorizado por administración",
+  GRADUACION: "Venta confirmada en la hoja",
 };
 
 export const COLORES_TAG = [

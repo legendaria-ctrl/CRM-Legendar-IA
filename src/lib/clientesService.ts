@@ -353,6 +353,26 @@ export async function enviarAAutorizacion(clienteId: string, clienteNombre: stri
   );
 }
 
+// Cuando el sync de "ganadores" del sheet detecta que un seguimiento ya
+// existente se marcó como vendido (SEG. VENDIDO, etc.), se gradúa directo a
+// cliente normal (NUEVO) — sin pasar por PENDIENTE_AUTORIZACION, porque
+// este sync solo lo dispara el admin y el propio modal de revisión de
+// cambios ya es su paso de aprobación.
+export async function graduarSeguimientoACliente(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor
+) {
+  await updateDoc(doc(db, "clientes", clienteId), { estado: ESTADOS_CLIENTE.NUEVO });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.GRADUACION,
+    autor,
+    "Se marcó como venta confirmada en la hoja: pasa de Seguimiento a Cliente nuevo."
+  );
+}
+
 // Aprueba un pendiente (seguimiento convertido o alta directa de vendedor):
 // registra quién autorizó y reutiliza enviarInvitacion para dejarlo como
 // cliente normal en INVITACION_ENVIADA y disparar la invitación real.

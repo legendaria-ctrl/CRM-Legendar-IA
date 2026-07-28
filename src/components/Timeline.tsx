@@ -22,6 +22,7 @@ import {
   DollarSign,
   Hourglass,
   ShieldCheck,
+  TrendingUp,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -50,6 +51,7 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   ABONO_ELIMINADO: Trash2,
   ENVIO_REVISION: Hourglass,
   AUTORIZACION: ShieldCheck,
+  GRADUACION: TrendingUp,
 };
 
 export type EventoTimelineItem = {
