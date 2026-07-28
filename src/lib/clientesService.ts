@@ -66,6 +66,14 @@ export type EventoDoc = {
   autor: string;
 };
 
+export type AbonoDoc = {
+  id: string;
+  monto: number;
+  nota: string | null;
+  autor: string;
+  fecha: Timestamp | null;
+};
+
 const clientesRef = collection(db, "clientes");
 
 export function suscribirClientes(callback: (clientes: ClienteDoc[]) => void) {
@@ -91,6 +99,14 @@ export function suscribirEventos(clienteId: string, callback: (eventos: EventoDo
   return onSnapshot(q, (snap) => {
     const eventos = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as EventoDoc);
     callback(eventos);
+  });
+}
+
+export function suscribirAbonos(clienteId: string, callback: (abonos: AbonoDoc[]) => void) {
+  const q = query(collection(db, "clientes", clienteId, "abonos"), orderBy("fecha", "asc"));
+  return onSnapshot(q, (snap) => {
+    const abonos = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as AbonoDoc);
+    callback(abonos);
   });
 }
 
@@ -218,10 +234,14 @@ export async function enviarInvitacion(
   }
 }
 
-// Registra un abono sobre el total de un seguimiento/pendiente y acumula el
+// Registra un abono sobre el total de un seguimiento/pendiente: guarda un
+// doc individual en abonos/ (editable/eliminable después) y acumula el
 // monto en totalAbonado (para calcular "restante" sin sumar el historial).
 // El primer abono también marca fechaPrimerAbono: es el momento en que el
-// seguimiento se convierte en "apartado" y arranca su cronómetro.
+// seguimiento se convierte en "apartado" y arranca su cronómetro. Un monto
+// negativo sirve como ajuste/reembolso cuando no hay un abono puntual que
+// corregir (p. ej. clientes con totalAbonado de antes de que existiera esta
+// subcolección).
 export async function registrarAbono(
   clienteId: string,
   clienteNombre: string,
@@ -237,13 +257,86 @@ export async function registrarAbono(
   const cambios: Record<string, unknown> = { totalAbonado: increment(monto) };
   if (esPrimerAbono) cambios.fechaPrimerAbono = serverTimestamp();
 
-  await updateDoc(clienteRef, cambios);
+  await Promise.all([
+    updateDoc(clienteRef, cambios),
+    addDoc(collection(db, "clientes", clienteId, "abonos"), {
+      monto,
+      nota: nota || null,
+      autor: autor.nombre,
+      fecha: serverTimestamp(),
+    }),
+  ]);
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.ABONO,
     autor,
     `Abono de ${formatearMonto(monto, datos?.region ?? null)}${nota ? ` — ${nota}` : ""}`
+  );
+}
+
+// Solo para ADMIN: corrige un abono ya registrado (monto capturado mal,
+// etc.) sin perder el registro individual. Ajusta totalAbonado por el
+// delta, no por el monto nuevo completo.
+export async function corregirAbono(
+  clienteId: string,
+  abonoId: string,
+  clienteNombre: string,
+  autor: Autor,
+  montoNuevo: number,
+  notaNueva?: string
+) {
+  const clienteRef = doc(db, "clientes", clienteId);
+  const abonoRef = doc(db, "clientes", clienteId, "abonos", abonoId);
+  const [clienteSnap, abonoSnap] = await Promise.all([getDoc(clienteRef), getDoc(abonoRef)]);
+  const region = (clienteSnap.data() as ClienteDoc | undefined)?.region ?? null;
+  const montoAnterior = (abonoSnap.data() as AbonoDoc | undefined)?.monto ?? 0;
+  const delta = montoNuevo - montoAnterior;
+
+  await Promise.all([
+    updateDoc(abonoRef, { monto: montoNuevo, nota: notaNueva || null }),
+    updateDoc(clienteRef, { totalAbonado: increment(delta) }),
+  ]);
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.ABONO_CORREGIDO,
+    autor,
+    `Abono corregido: ${formatearMonto(montoAnterior, region)} → ${formatearMonto(montoNuevo, region)}`
+  );
+}
+
+// Solo para ADMIN: elimina un abono (error de captura, reembolso total del
+// abono). Resta su monto de totalAbonado y recalcula fechaPrimerAbono con
+// el abono restante más antiguo (o lo limpia si ya no queda ninguno, para
+// que el cronómetro de StopwatchApartado no quede huérfano).
+export async function eliminarAbono(
+  clienteId: string,
+  abonoId: string,
+  clienteNombre: string,
+  autor: Autor
+) {
+  const clienteRef = doc(db, "clientes", clienteId);
+  const abonoRef = doc(db, "clientes", clienteId, "abonos", abonoId);
+  const [clienteSnap, abonoSnap] = await Promise.all([getDoc(clienteRef), getDoc(abonoRef)]);
+  const region = (clienteSnap.data() as ClienteDoc | undefined)?.region ?? null;
+  const abono = abonoSnap.data() as AbonoDoc | undefined;
+  if (!abono) return;
+
+  await Promise.all([deleteDoc(abonoRef), updateDoc(clienteRef, { totalAbonado: increment(-abono.monto) })]);
+
+  const restantesSnap = await getDocs(
+    query(collection(db, "clientes", clienteId, "abonos"), orderBy("fecha", "asc"))
+  );
+  const siguiente = restantesSnap.docs[0]?.data() as AbonoDoc | undefined;
+  await updateDoc(clienteRef, { fechaPrimerAbono: siguiente?.fecha ?? null });
+
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.ABONO_ELIMINADO,
+    autor,
+    `Abono de ${formatearMonto(abono.monto, region)} eliminado${abono.nota ? ` (nota original: "${abono.nota}")` : ""}`
   );
 }
 
@@ -565,6 +658,13 @@ export async function quitarEtiquetaCliente(
   );
 }
 
+function aFechaInputValue(fecha: Date): string {
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dia = String(fecha.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
+}
+
 export async function actualizarDatosCliente(
   clienteId: string,
   clienteNombre: string,
@@ -577,7 +677,8 @@ export async function actualizarDatosCliente(
     notas?: string;
     monto?: string;
     fechaInicio?: string;
-  }
+  },
+  clienteAnterior: ClienteDoc
 ) {
   const datos: Record<string, unknown> = {
     nombre: cambios.nombre,
@@ -595,29 +696,45 @@ export async function actualizarDatosCliente(
   }
 
   await updateDoc(doc(db, "clientes", clienteId), datos);
-  await agregarEvento(
-    clienteId,
-    cambios.nombre,
-    TIPOS_EVENTO.EDICION,
-    autor,
-    "Se editaron los datos del cliente."
-  );
+
+  const CAMPOS: { label: string; anterior: string; nuevo: string }[] = [
+    { label: "Nombre", anterior: clienteAnterior.nombre, nuevo: cambios.nombre },
+    { label: "Correo", anterior: clienteAnterior.email ?? "—", nuevo: cambios.email || "—" },
+    { label: "Teléfono", anterior: clienteAnterior.telefono ?? "—", nuevo: cambios.telefono || "—" },
+    { label: "Región", anterior: clienteAnterior.region ?? "—", nuevo: cambios.region || "—" },
+    { label: "Notas", anterior: clienteAnterior.notas ?? "—", nuevo: cambios.notas || "—" },
+    { label: "Monto", anterior: clienteAnterior.monto ?? "—", nuevo: cambios.monto || "—" },
+  ];
+  if (cambios.fechaInicio) {
+    const fechaAnterior = clienteAnterior.fechaLlegada
+      ? aFechaInputValue(clienteAnterior.fechaLlegada.toDate())
+      : "—";
+    CAMPOS.push({ label: "Fecha de inicio", anterior: fechaAnterior, nuevo: cambios.fechaInicio });
+  }
+  const nota = CAMPOS.filter((c) => c.anterior !== c.nuevo)
+    .map((c) => `${c.label}: "${c.anterior}" → "${c.nuevo}"`)
+    .join(" · ");
+
+  if (nota) {
+    await agregarEvento(clienteId, cambios.nombre, TIPOS_EVENTO.EDICION, autor, nota);
+  }
 }
 
 export async function actualizarVendedor(
   clienteId: string,
   clienteNombre: string,
   autor: Autor,
-  vendedor: string | null
+  vendedor: string | null,
+  vendedorAnterior?: string | null
 ) {
   await updateDoc(doc(db, "clientes", clienteId), { vendedor });
-  await agregarEvento(
-    clienteId,
-    clienteNombre,
-    TIPOS_EVENTO.VENDEDOR,
-    autor,
-    vendedor ? `Vendedor asignado: ${vendedor}` : "Se quitó el vendedor asignado"
-  );
+  const nota =
+    vendedorAnterior !== undefined
+      ? `Vendedor: "${vendedorAnterior ?? "Sin asignar"}" → "${vendedor ?? "Sin asignar"}"`
+      : vendedor
+        ? `Vendedor asignado: ${vendedor}`
+        : "Se quitó el vendedor asignado";
+  await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.VENDEDOR, autor, nota);
 }
 
 // Envía al cliente a la papelera (borrado suave). Se conserva toda su
@@ -753,7 +870,8 @@ export async function actualizarMontoYVendedor(
   cliente: ClienteDoc,
   monto: string | null,
   vendedor: string | null,
-  telefono?: string | null
+  telefono?: string | null,
+  autor?: Autor
 ): Promise<boolean> {
   const cambios = detectarCambioMontoYVendedor(cliente, monto, vendedor, telefono);
   if (!cambios) return false;
@@ -763,8 +881,8 @@ export async function actualizarMontoYVendedor(
     cliente.id,
     cliente.nombre,
     TIPOS_EVENTO.EDICION,
-    { nombre: "Sincronización automática", rol: "ADMIN" },
-    `Datos completados desde la hoja de ventas${cambios.monto ? ` · Monto: ${cambios.monto}` : ""}${cambios.vendedor ? ` · Vendedor: ${cambios.vendedor}` : ""}${cambios.telefono ? ` · Teléfono: ${cambios.telefono}` : ""}`
+    autor ?? { nombre: "Sincronización automática", rol: "ADMIN" },
+    `Datos completados desde la hoja de ventas${cambios.monto ? ` · Monto: "${cliente.monto ?? "—"}" → "${cambios.monto}"` : ""}${cambios.vendedor ? ` · Vendedor: "${cliente.vendedor ?? "—"}" → "${cambios.vendedor}"` : ""}${cambios.telefono ? ` · Teléfono: "${cliente.telefono ?? "—"}" → "${cambios.telefono}"` : ""}`
   );
   return true;
 }

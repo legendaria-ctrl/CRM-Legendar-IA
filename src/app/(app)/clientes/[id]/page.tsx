@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   suscribirCliente,
   suscribirEventos,
+  suscribirAbonos,
   eliminarCliente,
   agregarTagsCliente,
   quitarTagCliente,
@@ -13,8 +14,11 @@ import {
   actualizarVendedor,
   actualizarDatosCliente,
   registrarAbono,
+  corregirAbono,
+  eliminarAbono,
   ClienteDoc,
   EventoDoc,
+  AbonoDoc,
 } from "@/lib/clientesService";
 import { estadoActual, estadoBienvenidaDe, aFecha } from "@/lib/membership";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -86,19 +90,26 @@ export default function ClienteDetallePage() {
 
   const [cliente, setCliente] = useState<ClienteDoc | null | undefined>(undefined);
   const [eventos, setEventos] = useState<EventoDoc[]>([]);
+  const [abonos, setAbonos] = useState<AbonoDoc[]>([]);
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const encabezadoRef = useRef<HTMLDivElement>(null);
   const [montoAbono, setMontoAbono] = useState("");
   const [notaAbono, setNotaAbono] = useState("");
   const [guardandoAbono, setGuardandoAbono] = useState(false);
+  const [abonoEditando, setAbonoEditando] = useState<string | null>(null);
+  const [formAbono, setFormAbono] = useState({ monto: "", nota: "" });
+  const [guardandoAbonoEditado, setGuardandoAbonoEditado] = useState(false);
+  const [eliminandoAbono, setEliminandoAbono] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubCliente = suscribirCliente(id, setCliente);
     const unsubEventos = suscribirEventos(id, setEventos);
+    const unsubAbonos = suscribirAbonos(id, setAbonos);
     const unsubTags = suscribirTags(setCatalogoTags);
     return () => {
       unsubCliente();
       unsubEventos();
+      unsubAbonos();
       unsubTags();
     };
   }, [id]);
@@ -134,7 +145,8 @@ export default function ClienteDetallePage() {
   async function handleAgregarAbono() {
     if (!sesion || !cliente || guardandoAbono) return;
     const monto = Number(montoAbono);
-    if (!monto || monto <= 0) return;
+    if (!monto || Number.isNaN(monto)) return;
+    if (monto < 0 && sesion.rol !== ROLES.ADMIN) return;
     setGuardandoAbono(true);
     try {
       await registrarAbono(
@@ -148,6 +160,48 @@ export default function ClienteDetallePage() {
       setNotaAbono("");
     } finally {
       setGuardandoAbono(false);
+    }
+  }
+
+  function abrirEdicionAbono(abono: AbonoDoc) {
+    setFormAbono({ monto: String(abono.monto), nota: abono.nota ?? "" });
+    setAbonoEditando(abono.id);
+  }
+
+  async function handleGuardarAbonoEditado() {
+    if (!sesion || !cliente || !abonoEditando || guardandoAbonoEditado) return;
+    const monto = Number(formAbono.monto);
+    if (!formAbono.monto.trim() || Number.isNaN(monto)) return;
+    setGuardandoAbonoEditado(true);
+    try {
+      await corregirAbono(
+        cliente.id,
+        abonoEditando,
+        cliente.nombre,
+        { nombre: sesion.nombre, rol: sesion.rol },
+        monto,
+        formAbono.nota.trim() || undefined
+      );
+      setAbonoEditando(null);
+    } finally {
+      setGuardandoAbonoEditado(false);
+    }
+  }
+
+  async function handleEliminarAbono(abono: AbonoDoc) {
+    if (!sesion || !cliente || eliminandoAbono) return;
+    const confirmado = window.confirm(
+      `¿Eliminar este abono de ${formatearMonto(abono.monto, cliente.region)}? No se puede deshacer.`
+    );
+    if (!confirmado) return;
+    setEliminandoAbono(abono.id);
+    try {
+      await eliminarAbono(cliente.id, abono.id, cliente.nombre, {
+        nombre: sesion.nombre,
+        rol: sesion.rol,
+      });
+    } finally {
+      setEliminandoAbono(null);
     }
   }
 
@@ -183,7 +237,13 @@ export default function ClienteDetallePage() {
 
   async function handleCambiarVendedor(vendedor: string | null) {
     if (!sesion || !cliente) return;
-    await actualizarVendedor(cliente.id, cliente.nombre, { nombre: sesion.nombre, rol: sesion.rol }, vendedor);
+    await actualizarVendedor(
+      cliente.id,
+      cliente.nombre,
+      { nombre: sesion.nombre, rol: sesion.rol },
+      vendedor,
+      cliente.vendedor
+    );
   }
 
   function abrirEdicion() {
@@ -209,7 +269,8 @@ export default function ClienteDetallePage() {
         cliente.id,
         cliente.nombre,
         { nombre: sesion.nombre, rol: sesion.rol },
-        formEdicion
+        formEdicion,
+        cliente
       );
       setEditando(false);
     } finally {
@@ -514,11 +575,97 @@ export default function ClienteDetallePage() {
               </p>
             </div>
 
+            {abonos.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {abonos.map((abono) =>
+                  abonoEditando === abono.id ? (
+                    <div
+                      key={abono.id}
+                      className="flex flex-col gap-2 rounded-2xl border border-primary/30 bg-surface-2 p-3 sm:flex-row"
+                    >
+                      <input
+                        type="number"
+                        value={formAbono.monto}
+                        onChange={(e) => setFormAbono((f) => ({ ...f, monto: e.target.value }))}
+                        className="flex-1 rounded-xl border border-silver-deep/60 bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                      />
+                      <input
+                        value={formAbono.nota}
+                        onChange={(e) => setFormAbono((f) => ({ ...f, nota: e.target.value }))}
+                        placeholder="Nota (opcional)"
+                        className="flex-1 rounded-xl border border-silver-deep/60 bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleGuardarAbonoEditado}
+                          disabled={guardandoAbonoEditado}
+                          className="flex items-center justify-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+                        >
+                          {guardandoAbonoEditado ? (
+                            <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          )}
+                          Guardar
+                        </button>
+                        <button
+                          onClick={() => setAbonoEditando(null)}
+                          disabled={guardandoAbonoEditado}
+                          className="rounded-xl px-3 py-2 text-xs font-medium text-muted hover:text-danger disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={abono.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-surface-2 px-3 py-2.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {formatearMonto(abono.monto, cliente.region)}
+                        </p>
+                        <p className="truncate text-xs text-muted">
+                          {aFecha(abono.fecha)?.toLocaleDateString("es-MX") ?? "Guardando…"}
+                          {" · "}
+                          {abono.autor}
+                          {abono.nota ? ` · ${abono.nota}` : ""}
+                        </p>
+                      </div>
+                      {sesion?.rol === ROLES.ADMIN && (
+                        <div className="flex flex-none items-center gap-1">
+                          <button
+                            onClick={() => abrirEdicionAbono(abono)}
+                            title="Corregir abono"
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-primary-dim hover:text-primary"
+                          >
+                            <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          </button>
+                          <button
+                            onClick={() => handleEliminarAbono(abono)}
+                            disabled={eliminandoAbono === abono.id}
+                            title="Eliminar abono"
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                          >
+                            {eliminandoAbono === abono.id ? (
+                              <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
             {puedeEditar && (
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="number"
-                  min={1}
                   value={montoAbono}
                   onChange={(e) => setMontoAbono(e.target.value)}
                   placeholder="Monto del abono"

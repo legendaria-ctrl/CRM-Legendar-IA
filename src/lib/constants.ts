@@ -58,6 +58,8 @@ export const TIPOS_EVENTO = {
   RESTAURACION_PAPELERA: "RESTAURACION_PAPELERA",
   ELIMINACION_PERMANENTE: "ELIMINACION_PERMANENTE",
   ABONO: "ABONO",
+  ABONO_CORREGIDO: "ABONO_CORREGIDO",
+  ABONO_ELIMINADO: "ABONO_ELIMINADO",
   ENVIO_REVISION: "ENVIO_REVISION",
   AUTORIZACION: "AUTORIZACION",
 } as const;
@@ -85,6 +87,8 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   RESTAURACION_PAPELERA: "Restaurado de la papelera",
   ELIMINACION_PERMANENTE: "Eliminado definitivamente",
   ABONO: "Abono registrado",
+  ABONO_CORREGIDO: "Abono corregido",
+  ABONO_ELIMINADO: "Abono eliminado",
   ENVIO_REVISION: "Enviado a autorización",
   AUTORIZACION: "Autorizado por administración",
 };

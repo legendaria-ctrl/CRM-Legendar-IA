@@ -22,7 +22,10 @@ export async function POST() {
 
   try {
     const resultado = await sincronizarHojaVentas();
-    const seguimientos = await sincronizarSeguimientosDesdeHoja();
+    const seguimientos = await sincronizarSeguimientosDesdeHoja({
+      nombre: sesion.nombre,
+      rol: sesion.rol,
+    });
     return NextResponse.json({ ok: true, ...resultado, seguimientos });
   } catch (err) {
     return NextResponse.json(

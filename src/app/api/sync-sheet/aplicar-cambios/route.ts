@@ -29,10 +29,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No se recibió nada que aplicar" }, { status: 400 });
   }
 
+  const autor = { nombre: sesion.nombre, rol: sesion.rol };
+
   try {
     const [resultadoCambios, resultadoNuevos] = await Promise.all([
-      cambios.length > 0 ? aplicarCambiosPendientes(cambios) : { aplicados: 0, errores: [] },
-      nuevos.length > 0 ? aplicarNuevosPendientes(nuevos) : { creados: 0, errores: [] },
+      cambios.length > 0 ? aplicarCambiosPendientes(cambios, autor) : { aplicados: 0, errores: [] },
+      nuevos.length > 0 ? aplicarNuevosPendientes(nuevos, autor) : { creados: 0, errores: [] },
     ]);
     return NextResponse.json({
       ok: true,

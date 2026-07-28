@@ -10,6 +10,7 @@ import {
   agregarTagsCliente,
   obtenerClientePorId,
   ClienteDoc,
+  Autor,
 } from "./clientesService";
 import { CERTIFICACIONES } from "./certificaciones";
 import { ESTADOS_CLIENTE } from "./constants";
@@ -276,7 +277,8 @@ export type CambioAAplicar = {
 // vuelve a leer cada cliente antes de escribir por si cambió algo más
 // mientras tanto.
 export async function aplicarCambiosPendientes(
-  cambios: CambioAAplicar[]
+  cambios: CambioAAplicar[],
+  autor: Autor = AUTOR_SISTEMA
 ): Promise<{ aplicados: number; errores: string[] }> {
   let aplicados = 0;
   const errores: string[] = [];
@@ -292,11 +294,12 @@ export async function aplicarCambiosPendientes(
         cliente,
         cambio.monto ?? null,
         cambio.vendedor ?? null,
-        cambio.telefono ?? null
+        cambio.telefono ?? null,
+        autor
       );
       let seAplicoTag = false;
       if (cambio.agregarTagMiembroCS && !(cliente.tags ?? []).includes(TAG_MIEMBRO_CS)) {
-        await agregarTagsCliente(cliente.id, cliente.nombre, AUTOR_SISTEMA, [TAG_MIEMBRO_CS]);
+        await agregarTagsCliente(cliente.id, cliente.nombre, autor, [TAG_MIEMBRO_CS]);
         seAplicoTag = true;
       }
       if (seActualizo || seAplicoTag) aplicados++;
@@ -311,7 +314,8 @@ export async function aplicarCambiosPendientes(
 // El admin ya revisó la lista de clientes nuevos propuestos y eligió
 // cuáles crear.
 export async function aplicarNuevosPendientes(
-  nuevos: NuevoClientePendiente[]
+  nuevos: NuevoClientePendiente[],
+  autor: Autor = AUTOR_SISTEMA
 ): Promise<{ creados: number; errores: string[] }> {
   let creados = 0;
   const errores: string[] = [];
@@ -327,8 +331,8 @@ export async function aplicarNuevosPendientes(
         tags: nuevo.tags.length > 0 ? nuevo.tags : undefined,
         vendedor: nuevo.vendedor ?? undefined,
         monto: nuevo.monto ?? undefined,
-        autor: AUTOR_SISTEMA.nombre,
-        autorRol: AUTOR_SISTEMA.rol,
+        autor: autor.nombre,
+        autorRol: autor.rol,
         origen: "sheet",
         sheetRowId: nuevo.sheetRowId ?? undefined,
       });
@@ -358,7 +362,9 @@ const ESTADOS_SEGUIMIENTO = new Set(["seguimiento", "apartado"]);
 // todavía, así que el riesgo de escribir de más es bajo. Solo toca
 // registros cuyo estado siga siendo SEGUIMIENTO; si ya avanzaron (pendiente
 // de autorización o cliente real) se dejan intactos aunque la hoja cambie.
-export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncSeguimientos> {
+export async function sincronizarSeguimientosDesdeHoja(
+  autor: Autor = AUTOR_SISTEMA
+): Promise<ResultadoSyncSeguimientos> {
   const resultado: ResultadoSyncSeguimientos = { creados: 0, actualizados: 0, errores: [] };
 
   for (const hoja of HOJAS) {
@@ -402,8 +408,8 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
             region: hoja.region,
             etiquetas: [ETIQUETA_LEGENDARIA],
             vendedor: vendedor ?? undefined,
-            autor: AUTOR_SISTEMA.nombre,
-            autorRol: AUTOR_SISTEMA.rol,
+            autor: autor.nombre,
+            autorRol: autor.rol,
             origen: "sheet",
             estadoInicial: ESTADOS_CLIENTE.SEGUIMIENTO,
             sheetRowId: fila.id || undefined,
@@ -412,7 +418,7 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
             await registrarAbono(
               id,
               fila.nombre || fila.correo,
-              AUTOR_SISTEMA,
+              autor,
               abono,
               "Abono importado desde la hoja de ventas"
             );
@@ -424,14 +430,20 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
             vendedor &&
             normalizarNombre(vendedor) !== normalizarNombre(existente.vendedor ?? "")
           ) {
-            await actualizarVendedor(existente.id, existente.nombre, AUTOR_SISTEMA, vendedor);
+            await actualizarVendedor(
+              existente.id,
+              existente.nombre,
+              autor,
+              vendedor,
+              existente.vendedor
+            );
             toco = true;
           }
           if (tieneAbono && (existente.totalAbonado ?? 0) === 0) {
             await registrarAbono(
               existente.id,
               existente.nombre,
-              AUTOR_SISTEMA,
+              autor,
               abono,
               "Abono importado desde la hoja de ventas"
             );

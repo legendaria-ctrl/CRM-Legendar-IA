@@ -46,6 +46,8 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   RESTAURACION_PAPELERA: RotateCcw,
   ELIMINACION_PERMANENTE: Trash2,
   ABONO: DollarSign,
+  ABONO_CORREGIDO: Pencil,
+  ABONO_ELIMINADO: Trash2,
   ENVIO_REVISION: Hourglass,
   AUTORIZACION: ShieldCheck,
 };
