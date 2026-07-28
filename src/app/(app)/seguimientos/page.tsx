@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   UserPlus,
   DollarSign,
@@ -11,11 +12,14 @@ import {
   LoaderCircle,
   Wallet,
   Search,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
 import { ESTADOS_CLIENTE, ROLES, EstadoCliente, formatearMonto } from "@/lib/constants";
 import { StatusBadge } from "@/components/StatusBadge";
+import { construirLinkWhatsapp } from "@/lib/whatsapp";
 
 type FiltroTipo = "todos" | "apartados" | "seguimientos";
 
@@ -228,12 +232,13 @@ function FilaSeguimiento({
   cliente: ClienteDoc;
   soloLectura?: boolean;
 }) {
+  const router = useRouter();
   const esApartado = (cliente.totalAbonado ?? 0) > 0;
 
   return (
-    <Link
-      href={`/clientes/${cliente.id}`}
-      className="shell rounded-[1.75rem] p-2 diffused transition-transform duration-500 ease-spring hover:scale-[1.005]"
+    <div
+      onClick={() => router.push(`/clientes/${cliente.id}`)}
+      className="shell cursor-pointer rounded-[1.75rem] p-2 diffused transition-transform duration-500 ease-spring hover:scale-[1.005]"
     >
       <div className="core flex flex-wrap items-center justify-between gap-3 rounded-[calc(1.75rem-0.5rem)] p-5">
         <div className="min-w-0">
@@ -258,16 +263,38 @@ function FilaSeguimiento({
           )}
         </div>
 
-        <div className="flex flex-none items-center gap-4">
+        <div className="flex flex-none items-center gap-3">
           {esApartado && (
             <span className="flex items-center gap-1 text-xs font-medium text-success">
               <DollarSign className="h-3 w-3" strokeWidth={1.5} />
               Abonado {formatearMonto(cliente.totalAbonado ?? 0, cliente.region)}
             </span>
           )}
+          {cliente.telefono && (
+            <>
+              <a
+                href={construirLinkWhatsapp(cliente.telefono, "", cliente.region)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="Enviar WhatsApp"
+                className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-success/15 text-success transition-all duration-500 ease-spring hover:bg-success/25 active:scale-[0.95]"
+              >
+                <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
+              </a>
+              <a
+                href={`tel:${cliente.telefono}`}
+                onClick={(e) => e.stopPropagation()}
+                title="Llamar"
+                className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-primary/15 text-primary transition-all duration-500 ease-spring hover:bg-primary/25 active:scale-[0.95]"
+              >
+                <Phone className="h-4 w-4" strokeWidth={1.75} />
+              </a>
+            </>
+          )}
           <ArrowUpRight className="h-4 w-4 text-muted" strokeWidth={1.75} />
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
