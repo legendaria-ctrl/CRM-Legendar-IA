@@ -2,12 +2,14 @@ import { parsearCSV } from "./csvParse";
 import {
   crearCliente,
   buscarClientePorCorreo,
+  buscarClientePorSheetRowId,
   detectarCambioMontoYVendedor,
   actualizarMontoYVendedor,
   actualizarVendedor,
   registrarAbono,
   agregarTagsCliente,
   obtenerClientePorId,
+  ClienteDoc,
 } from "./clientesService";
 import { CERTIFICACIONES } from "./certificaciones";
 import { ESTADOS_CLIENTE } from "./constants";
@@ -57,6 +59,7 @@ function limpiarTelefono(corregido: string, celular: string, region: "MX" | "US"
 }
 
 type FilaHoja = {
+  id: string;
   fecha: string;
   nombre: string;
   correo: string;
@@ -76,6 +79,7 @@ type FilaHoja = {
 // H wa.me, I método de pago, J monto ("$"), K moneda, L notas,
 // M estado del lead, N abeja seguimiento, O vendedor asignado.
 const COL = {
+  id: 0,
   fecha: 1,
   nombre: 2,
   correo: 3,
@@ -92,6 +96,7 @@ function filasAObjetos(filas: string[][]): FilaHoja[] {
   const leer = (fila: string[], i: number) => (fila[i] ?? "").trim();
 
   return filas.slice(1).map((fila) => ({
+    id: leer(fila, COL.id),
     fecha: leer(fila, COL.fecha),
     nombre: leer(fila, COL.nombre),
     correo: leer(fila, COL.correo),
@@ -113,6 +118,18 @@ function resolverVendedor(fila: FilaHoja): string | null {
   const esVacioOEmpresa = !asignado || asignado.toLowerCase() === "empresa";
   if (esVacioOEmpresa && fila.abejaSeguimiento) return fila.abejaSeguimiento;
   return asignado || null;
+}
+
+// Busca primero por el id de la fila del sheet (estable aunque después se
+// corrija el correo en el CRM) y solo si no lo encuentra cae al correo,
+// para no crear un duplicado cuando alguien le corrige el correo a un
+// cliente ya importado y luego se vuelve a sincronizar.
+async function buscarExistente(fila: FilaHoja): Promise<ClienteDoc | null> {
+  if (fila.id) {
+    const porId = await buscarClientePorSheetRowId(fila.id);
+    if (porId) return porId;
+  }
+  return buscarClientePorCorreo(fila.correo);
 }
 
 // Cambio detectado en un cliente que YA existe en el CRM (monto y/o
@@ -137,6 +154,7 @@ export type NuevoClientePendiente = {
   vendedor: string | null;
   monto: string | null;
   tags: string[];
+  sheetRowId: string | null;
 };
 
 export type ResultadoSincronizacion = {
@@ -177,7 +195,7 @@ async function sincronizarHoja(
     }
 
     try {
-      const existente = await buscarClientePorCorreo(fila.correo);
+      const existente = await buscarExistente(fila);
       const monto = fila.amount || null;
       const vendedor = resolverVendedor(fila);
       const esMiembroCS = estado === ESTADO_MIEMBRO_CS;
@@ -213,6 +231,7 @@ async function sincronizarHoja(
           vendedor,
           monto,
           tags: esMiembroCS ? [TAG_MIEMBRO_CS] : [],
+          sheetRowId: fila.id || null,
         });
       }
     } catch (err) {
@@ -304,6 +323,7 @@ export async function aplicarNuevosPendientes(
         autor: AUTOR_SISTEMA.nombre,
         autorRol: AUTOR_SISTEMA.rol,
         origen: "sheet",
+        sheetRowId: nuevo.sheetRowId ?? undefined,
       });
       creados++;
     } catch (err) {
@@ -364,7 +384,7 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
 
       try {
         const vendedor = resolverVendedor(fila);
-        const existente = await buscarClientePorCorreo(fila.correo);
+        const existente = await buscarExistente(fila);
 
         if (!existente) {
           const telefono = limpiarTelefono(fila.corregido, fila.celular, hoja.region);
@@ -379,6 +399,7 @@ export async function sincronizarSeguimientosDesdeHoja(): Promise<ResultadoSyncS
             autorRol: AUTOR_SISTEMA.rol,
             origen: "sheet",
             estadoInicial: ESTADOS_CLIENTE.SEGUIMIENTO,
+            sheetRowId: fila.id || undefined,
           });
           if (tieneAbono) {
             await registrarAbono(

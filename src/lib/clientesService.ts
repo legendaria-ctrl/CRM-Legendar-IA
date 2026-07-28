@@ -51,6 +51,7 @@ export type ClienteDoc = {
   monto: string | null;
   totalAbonado: number;
   fechaPrimerAbono: Timestamp | null;
+  sheetRowId: string | null;
   creadoPor: string;
   creadoPorRol: string;
   eliminado: boolean;
@@ -134,6 +135,7 @@ export async function crearCliente(input: {
   autorRol: string;
   origen?: "manual" | "csv" | "sheet";
   estadoInicial?: string;
+  sheetRowId?: string;
 }) {
   const fechaLlegada = input.fechaInscripcion ?? new Date();
   const vencimiento = fechaVencimientoDesde(fechaLlegada);
@@ -160,6 +162,7 @@ export async function crearCliente(input: {
     monto: input.monto?.trim() || null,
     totalAbonado: 0,
     fechaPrimerAbono: null,
+    sheetRowId: input.sheetRowId?.trim() || null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
     eliminado: false,
@@ -698,6 +701,19 @@ export function suscribirPendientesAutorizacion(callback: (cantidad: number) => 
 // el monto pagado y el vendedor asignado sin tocar el resto de sus datos.
 export async function buscarClientePorCorreo(correo: string): Promise<ClienteDoc | null> {
   const q = query(clientesRef, where("email", "==", correo));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() } as ClienteDoc;
+}
+
+// Busca por el id de la fila del sheet (columna A), no por correo. Se usa
+// primero en la sincronización para no duplicar a alguien a quien se le
+// corrigió el correo en el CRM después de haberlo importado: aunque el
+// correo ya no coincida con el de la hoja, el id de la fila sigue siendo
+// el mismo y lo sigue reconociendo como la misma persona.
+export async function buscarClientePorSheetRowId(sheetRowId: string): Promise<ClienteDoc | null> {
+  const q = query(clientesRef, where("sheetRowId", "==", sheetRowId));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   const d = snap.docs[0];
