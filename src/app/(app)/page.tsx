@@ -274,15 +274,18 @@ export default function DashboardPage() {
     }
   }
 
-  function aplicarEstadoEnLote(
+  async function aplicarEstadoEnLote(
     accion: "enviar" | "marcar_enviada" | "deshacer_invitacion" | "aceptar" | "deshacer_aceptacion"
   ) {
     if (!sesion) return;
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
-    return ejecutarEnLote((c) => {
+    const fallasSkool: string[] = [];
+    await ejecutarEnLote(async (c) => {
       if (accion === "enviar") {
-        if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
-        return enviarInvitacion(c.id, c.nombre, autor, c.email);
+        if (c.estado !== ESTADOS_CLIENTE.NUEVO) return;
+        const resultado = await enviarInvitacion(c.id, c.nombre, autor, c.email);
+        if (!resultado.skoolOk) fallasSkool.push(c.nombre);
+        return;
       }
       if (accion === "marcar_enviada") {
         if (c.estado !== ESTADOS_CLIENTE.NUEVO) return Promise.resolve();
@@ -299,6 +302,11 @@ export default function DashboardPage() {
       if (c.estado !== ESTADOS_CLIENTE.ACTIVO) return Promise.resolve();
       return deshacerAceptacion(c.id, c.nombre, autor);
     });
+    if (fallasSkool.length > 0) {
+      window.alert(
+        `Se marcaron como "Invitación enviada" en el CRM, pero el aviso real a Skool falló para: ${fallasSkool.join(", ")}. Entra a cada perfil y usa "Reenviar invitación a Skool" para reintentar.`
+      );
+    }
   }
 
   function reenviarSkoolEnLote() {

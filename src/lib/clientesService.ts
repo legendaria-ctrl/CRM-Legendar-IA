@@ -210,7 +210,7 @@ export async function enviarInvitacion(
   clienteNombre: string,
   autor: Autor,
   clienteCorreo?: string | null
-) {
+): Promise<{ skoolOk: boolean; skoolError?: string }> {
   await updateDoc(doc(db, "clientes", clienteId), {
     estado: ESTADOS_CLIENTE.INVITACION_ENVIADA,
     fechaInvitacion: Timestamp.fromDate(new Date()),
@@ -225,13 +225,24 @@ export async function enviarInvitacion(
 
   // Dispara la invitación real a la comunidad de Skool. No debe tumbar el
   // flujo si falla (ej. correo repetido en Skool); ya se registró en el CRM.
+  // Pero el fallo ya no se ignora en silencio: queda un evento visible en
+  // la línea de tiempo y se devuelve para que la UI pueda avisar.
   if (clienteCorreo) {
     try {
       await dispararInvitacionSkool(clienteCorreo);
-    } catch {
-      // Ignorar: el CRM ya quedó marcado, solo falló el aviso a Skool.
+    } catch (err) {
+      const skoolError = err instanceof Error ? err.message : "Error desconocido";
+      await agregarEvento(
+        clienteId,
+        clienteNombre,
+        TIPOS_EVENTO.NOTA,
+        autor,
+        `⚠️ Falló el aviso automático a Skool: ${skoolError}. Usa "Reenviar invitación a Skool" desde este perfil para reintentar.`
+      );
+      return { skoolOk: false, skoolError };
     }
   }
+  return { skoolOk: true };
 }
 
 // Registra un abono sobre el total de un seguimiento/pendiente: guarda un

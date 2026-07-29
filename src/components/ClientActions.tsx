@@ -78,8 +78,14 @@ export function ClientActions({
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
     setLoading(action);
     try {
-      if (action === "enviar_invitacion")
-        await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
+      if (action === "enviar_invitacion") {
+        const resultado = await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
+        if (!resultado.skoolOk) {
+          setError(
+            `El cliente quedó marcado como "Invitación enviada" en el CRM, pero el aviso real a Skool falló (${resultado.skoolError}). Usa "Reenviar invitación a Skool" abajo para reintentar.`
+          );
+        }
+      }
       if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, clienteNombre, autor);
       if (action === "renovar" && fechaVencimiento) {
         await renovarMembresia(clienteId, clienteNombre, autor, fechaVencimiento);

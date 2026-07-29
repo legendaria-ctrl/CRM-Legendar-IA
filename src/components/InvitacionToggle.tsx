@@ -34,7 +34,12 @@ export function InvitacionToggle({
       if (enviada) {
         await deshacerInvitacion(clienteId, clienteNombre, autor);
       } else {
-        await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
+        const resultado = await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
+        if (!resultado.skoolOk) {
+          window.alert(
+            `"${clienteNombre}" quedó marcado como "Invitación enviada" en el CRM, pero el aviso real a Skool falló (${resultado.skoolError}). Entra a su perfil y usa "Reenviar invitación a Skool" para reintentar.`
+          );
+        }
       }
     } finally {
       setCargando(false);
