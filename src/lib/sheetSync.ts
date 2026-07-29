@@ -218,7 +218,7 @@ async function sincronizarHoja(
         // tener estado "seguimiento"/"apartado" en la hoja).
         const debeGraduar = existente.estado === ESTADOS_CLIENTE.SEGUIMIENTO;
         if (cambios || necesitaTagCS || debeGraduar) {
-          resultado.cambiosPendientes.push({
+          const cambioPendiente: CambioPendiente = {
             clienteId: existente.id,
             nombre: existente.nombre,
             correo: existente.email ?? fila.correo,
@@ -231,7 +231,19 @@ async function sincronizarHoja(
               : undefined,
             agregarTagMiembroCS: necesitaTagCS ? true : undefined,
             graduarDeSeguimiento: debeGraduar ? true : undefined,
-          });
+          };
+          // La hoja a veces trae al mismo cliente repetido en varias filas
+          // (reingresos, duplicados de captura). Si ya se propuso un cambio
+          // para este mismo clienteId en esta corrida, se reemplaza en vez
+          // de apilar otra tarjeta idéntica en la revisión del admin.
+          const yaExisteIdx = resultado.cambiosPendientes.findIndex(
+            (c) => c.clienteId === existente.id
+          );
+          if (yaExisteIdx >= 0) {
+            resultado.cambiosPendientes[yaExisteIdx] = cambioPendiente;
+          } else {
+            resultado.cambiosPendientes.push(cambioPendiente);
+          }
         } else {
           resultado.omitidos++;
         }
@@ -241,6 +253,8 @@ async function sincronizarHoja(
         // aquí, no la de la hoja. crearCliente usa "ahora" cuando no se le
         // pasa fechaInscripcion.
         const telefono = telefonoHoja;
+        const nuevoIdx = resultado.nuevosPendientes.findIndex((n) => n.correo === fila.correo);
+        if (nuevoIdx >= 0) resultado.nuevosPendientes.splice(nuevoIdx, 1);
         resultado.nuevosPendientes.push({
           correo: fila.correo,
           nombre: fila.nombre || fila.correo,
