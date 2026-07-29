@@ -229,7 +229,14 @@ export async function enviarInvitacion(
   // la línea de tiempo y se devuelve para que la UI pueda avisar.
   if (clienteCorreo) {
     try {
-      await dispararInvitacionSkool(clienteCorreo);
+      const skoolRespuesta = await dispararInvitacionSkool(clienteCorreo);
+      await agregarEvento(
+        clienteId,
+        clienteNombre,
+        TIPOS_EVENTO.NOTA,
+        autor,
+        `Skool respondió OK a la invitación${skoolRespuesta ? `: ${skoolRespuesta}` : " (sin cuerpo en la respuesta)."}`
+      );
     } catch (err) {
       const skoolError = err instanceof Error ? err.message : "Error desconocido";
       await agregarEvento(
@@ -426,16 +433,17 @@ export async function marcarInvitacionEnviada(
   );
 }
 
-async function dispararInvitacionSkool(correo: string) {
+async function dispararInvitacionSkool(correo: string): Promise<string> {
   const res = await fetch("/api/skool-invite", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ correo }),
   });
+  const data = await res.json().catch(() => null);
   if (!res.ok) {
-    const data = await res.json().catch(() => null);
     throw new Error(data?.error || "No se pudo invitar a Skool");
   }
+  return data?.skoolRespuesta || "";
 }
 
 // Botón manual en el perfil: útil cuando se corrige el correo del cliente

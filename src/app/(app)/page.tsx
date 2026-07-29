@@ -25,6 +25,7 @@ import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
 import { InvitacionToggle } from "@/components/InvitacionToggle";
 import { FilterMultiSelect } from "@/components/FilterMultiSelect";
 import { BulkActionMenu } from "@/components/BulkActionMenu";
+import { ResultadoPopup } from "@/components/ResultadoPopup";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { suscribirVendedores } from "@/lib/vendedoresService";
 import { useSesion } from "@/lib/session-context";
@@ -124,6 +125,11 @@ export default function DashboardPage() {
   const [notasHistorial, setNotasHistorial] = useState<Record<string, string>>({});
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState<string | null>(null);
+  const [popupInvitacionLote, setPopupInvitacionLote] = useState<{
+    titulo: string;
+    mensaje: string;
+    tipo: "success" | "error";
+  } | null>(null);
   const [aceptandoIds, setAceptandoIds] = useState<Set<string>>(new Set());
   const [cambiosPendientes, setCambiosPendientes] = useState<CambioPendiente[]>([]);
   const [seleccionCambios, setSeleccionCambios] = useState<Set<string>>(new Set());
@@ -302,22 +308,45 @@ export default function DashboardPage() {
       if (c.estado !== ESTADOS_CLIENTE.ACTIVO) return Promise.resolve();
       return deshacerAceptacion(c.id, c.nombre, autor);
     });
-    if (fallasSkool.length > 0) {
-      window.alert(
-        `Se marcaron como "Invitación enviada" en el CRM, pero el aviso real a Skool falló para: ${fallasSkool.join(", ")}. Entra a cada perfil y usa "Reenviar invitación a Skool" para reintentar.`
+    if (accion === "enviar") {
+      setPopupInvitacionLote(
+        fallasSkool.length > 0
+          ? {
+              titulo: "Falló el envío a Skool",
+              mensaje: `Se marcaron como "Invitación enviada" en el CRM, pero el aviso real a Skool falló para: ${fallasSkool.join(", ")}. Entra a cada perfil y usa "Reenviar invitación a Skool" para reintentar.`,
+              tipo: "error",
+            }
+          : {
+              titulo: "Invitaciones enviadas",
+              mensaje: "Se marcaron en el CRM y Skool respondió correctamente para todos.",
+              tipo: "success",
+            }
       );
     }
   }
 
-  function reenviarSkoolEnLote() {
+  async function reenviarSkoolEnLote() {
     if (!sesion) return;
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
-    return ejecutarEnLote((c) => {
-      if (!c.email) return Promise.resolve();
-      return reenviarInvitacionSkool(c.id, c.nombre, autor, c.email).catch(() => {
+    const fallas: string[] = [];
+    await ejecutarEnLote(async (c) => {
+      if (!c.email) return;
+      try {
+        await reenviarInvitacionSkool(c.id, c.nombre, autor, c.email);
+      } catch {
         // No detener el lote si a uno le falla (ej. correo repetido en Skool).
-      });
+        fallas.push(c.nombre);
+      }
     });
+    setPopupInvitacionLote(
+      fallas.length > 0
+        ? {
+            titulo: "Falló el reenvío a Skool",
+            mensaje: `El aviso real a Skool falló para: ${fallas.join(", ")}. Entra a cada perfil y usa "Reenviar invitación a Skool" para reintentar.`,
+            tipo: "error",
+          }
+        : { titulo: "Invitaciones reenviadas", mensaje: "Skool respondió correctamente para todos.", tipo: "success" }
+    );
   }
 
   function aplicarBienvenidaEnLote(estado: EstadoBienvenida) {
@@ -1315,6 +1344,15 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {popupInvitacionLote && (
+        <ResultadoPopup
+          titulo={popupInvitacionLote.titulo}
+          mensaje={popupInvitacionLote.mensaje}
+          tipo={popupInvitacionLote.tipo}
+          onClose={() => setPopupInvitacionLote(null)}
+        />
       )}
     </div>
   );

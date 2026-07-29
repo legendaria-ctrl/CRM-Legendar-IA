@@ -31,13 +31,20 @@ export async function POST(req: NextRequest) {
   try {
     const url = `${webhookUrl}?email=${encodeURIComponent(correo)}`;
     const res = await fetch(url, { method: "POST" });
+    // Skool a veces responde 200 con un error adentro del cuerpo (correo mal
+    // formado, límite del grupo, etc.), así que no basta con revisar el
+    // status: se manda de vuelta el cuerpo real para dejar rastro en el CRM
+    // aunque el status haya sido "exitoso".
+    const cuerpo = await res.text().catch(() => "");
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Skool respondió con error (status ${res.status})` },
+        {
+          error: `Skool respondió con error (status ${res.status})${cuerpo ? `: ${cuerpo.slice(0, 300)}` : ""}`,
+        },
         { status: 502 }
       );
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, skoolRespuesta: cuerpo.slice(0, 300) });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error desconocido" },

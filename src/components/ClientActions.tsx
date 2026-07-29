@@ -31,6 +31,7 @@ import {
   autorizarCliente,
 } from "@/lib/clientesService";
 import { useSesion } from "@/lib/session-context";
+import { ResultadoPopup } from "@/components/ResultadoPopup";
 
 export function ClientActions({
   clienteId,
@@ -57,7 +58,11 @@ export function ClientActions({
   const [loading, setLoading] = useState<string | null>(null);
   const [nota, setNota] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [skoolReenviado, setSkoolReenviado] = useState(false);
+  const [popupInvitacion, setPopupInvitacion] = useState<{
+    titulo: string;
+    mensaje: string;
+    tipo: "success" | "error";
+  } | null>(null);
   const [diasPersonalizados, setDiasPersonalizados] = useState("");
   const [diasRestantes, setDiasRestantes] = useState("");
   const mostrarTemporizador =
@@ -80,10 +85,18 @@ export function ClientActions({
     try {
       if (action === "enviar_invitacion") {
         const resultado = await enviarInvitacion(clienteId, clienteNombre, autor, clienteCorreo);
-        if (!resultado.skoolOk) {
-          setError(
-            `El cliente quedó marcado como "Invitación enviada" en el CRM, pero el aviso real a Skool falló (${resultado.skoolError}). Usa "Reenviar invitación a Skool" abajo para reintentar.`
-          );
+        if (resultado.skoolOk) {
+          setPopupInvitacion({
+            titulo: "Invitación enviada",
+            mensaje: "Se marcó en el CRM y el aviso real a Skool se envió correctamente.",
+            tipo: "success",
+          });
+        } else {
+          setPopupInvitacion({
+            titulo: "Falló el envío a Skool",
+            mensaje: `El cliente quedó marcado como "Invitación enviada" en el CRM, pero el aviso real a Skool falló:\n\n${resultado.skoolError}\n\nUsa "Reenviar invitación a Skool" abajo para reintentar.`,
+            tipo: "error",
+          });
         }
       }
       if (action === "aceptar_invitacion") await aceptarInvitacion(clienteId, clienteNombre, autor);
@@ -121,9 +134,20 @@ export function ClientActions({
         setDiasRestantes("");
       }
       if (action === "reenviar_skool" && clienteCorreo) {
-        await reenviarInvitacionSkool(clienteId, clienteNombre, autor, clienteCorreo);
-        setSkoolReenviado(true);
-        setTimeout(() => setSkoolReenviado(false), 3000);
+        try {
+          await reenviarInvitacionSkool(clienteId, clienteNombre, autor, clienteCorreo);
+          setPopupInvitacion({
+            titulo: "Invitación reenviada",
+            mensaje: `Skool respondió correctamente al reenvío a ${clienteCorreo}.`,
+            tipo: "success",
+          });
+        } catch (err) {
+          setPopupInvitacion({
+            titulo: "Falló el reenvío a Skool",
+            mensaje: err instanceof Error ? err.message : "No se pudo invitar a Skool.",
+            tipo: "error",
+          });
+        }
       }
       if (action === "enviar_a_autorizacion")
         await enviarAAutorizacion(clienteId, clienteNombre, autor);
@@ -147,9 +171,6 @@ export function ClientActions({
         </h3>
 
         {error && <p className="text-sm text-danger">{error}</p>}
-        {skoolReenviado && (
-          <p className="text-sm text-success">Invitación de Skool reenviada.</p>
-        )}
         {cargando && <p className="text-sm text-muted">Verificando tu sesión…</p>}
 
         <div className="flex flex-wrap gap-3">
@@ -366,6 +387,15 @@ export function ClientActions({
           </div>
         </div>
       </div>
+
+      {popupInvitacion && (
+        <ResultadoPopup
+          titulo={popupInvitacion.titulo}
+          mensaje={popupInvitacion.mensaje}
+          tipo={popupInvitacion.tipo}
+          onClose={() => setPopupInvitacion(null)}
+        />
+      )}
     </div>
   );
 }
