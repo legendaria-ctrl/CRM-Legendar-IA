@@ -286,11 +286,30 @@ export default function DashboardPage() {
     if (!sesion) return;
     const autor = { nombre: sesion.nombre, rol: sesion.rol };
     const fallasSkool: string[] = [];
+    const enviados: string[] = [];
+    const omitidos: string[] = [];
     await ejecutarEnLote(async (c) => {
       if (accion === "enviar") {
-        if (c.estado !== ESTADOS_CLIENTE.NUEVO) return;
-        const resultado = await enviarInvitacion(c.id, c.nombre, autor, c.email);
-        if (!resultado.skoolOk) fallasSkool.push(c.nombre);
+        if (!c.email) {
+          omitidos.push(c.nombre);
+          return;
+        }
+        // Si sigue en "Nuevo" se hace el flujo completo (marca invitación
+        // enviada + manda el aviso). Si ya estaba invitado o incluso ya es
+        // miembro, no le tocamos el estado en el CRM, pero igual se le
+        // reenvía el aviso real a Skool.
+        if (c.estado === ESTADOS_CLIENTE.NUEVO) {
+          const resultado = await enviarInvitacion(c.id, c.nombre, autor, c.email);
+          if (resultado.skoolOk) enviados.push(c.nombre);
+          else fallasSkool.push(c.nombre);
+          return;
+        }
+        try {
+          await reenviarInvitacionSkool(c.id, c.nombre, autor, c.email);
+          enviados.push(c.nombre);
+        } catch {
+          fallasSkool.push(c.nombre);
+        }
         return;
       }
       if (accion === "marcar_enviada") {
@@ -309,19 +328,26 @@ export default function DashboardPage() {
       return deshacerAceptacion(c.id, c.nombre, autor);
     });
     if (accion === "enviar") {
-      setPopupInvitacionLote(
-        fallasSkool.length > 0
-          ? {
-              titulo: "Falló el envío a Skool",
-              mensaje: `Se marcaron como "Invitación enviada" en el CRM, pero el aviso real a Skool falló para: ${fallasSkool.join(", ")}. Entra a cada perfil y usa "Reenviar invitación a Skool" para reintentar.`,
-              tipo: "error",
-            }
-          : {
-              titulo: "Invitaciones enviadas",
-              mensaje: "Se marcaron en el CRM y Skool respondió correctamente para todos.",
-              tipo: "success",
-            }
-      );
+      const lineas: string[] = [];
+      if (enviados.length > 0) {
+        lineas.push(`✅ Enviada correctamente a: ${enviados.join(", ")}.`);
+      }
+      if (fallasSkool.length > 0) {
+        lineas.push(
+          `⚠️ El aviso real a Skool falló para: ${fallasSkool.join(", ")}. Usa "Reenviar invitación a Skool" en cada perfil para reintentar.`
+        );
+      }
+      if (omitidos.length > 0) {
+        lineas.push(`ℹ️ No se tocaron (sin correo registrado): ${omitidos.join(", ")}.`);
+      }
+      if (lineas.length === 0) {
+        lineas.push("No había nadie seleccionado.");
+      }
+      setPopupInvitacionLote({
+        titulo: fallasSkool.length > 0 ? "Envío con errores" : "Resultado del envío",
+        mensaje: lineas.join("\n\n"),
+        tipo: fallasSkool.length > 0 ? "error" : "success",
+      });
     }
   }
 
