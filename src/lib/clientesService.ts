@@ -454,13 +454,13 @@ export async function reenviarInvitacionSkool(
   autor: Autor,
   correo: string
 ) {
-  await dispararInvitacionSkool(correo);
+  const skoolRespuesta = await dispararInvitacionSkool(correo);
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.INVITACION_ENVIADA,
     autor,
-    `Se reenvió la invitación de Skool a ${correo}.`
+    `Se reenvió la invitación de Skool a ${correo}.${skoolRespuesta ? ` Respuesta: ${skoolRespuesta}` : " (sin cuerpo en la respuesta)."}`
   );
 }
 
