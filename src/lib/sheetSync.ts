@@ -2,7 +2,8 @@ import { parsearCSV } from "./csvParse";
 import {
   crearCliente,
   buscarClientePorCorreo,
-  buscarClientePorSheetRowId,
+  buscarClientePorTelefono,
+  ultimos10Digitos,
   detectarCambioMontoYVendedor,
   actualizarMontoYVendedor,
   actualizarVendedor,
@@ -61,7 +62,6 @@ function limpiarTelefono(corregido: string, celular: string, region: "MX" | "US"
 }
 
 type FilaHoja = {
-  id: string;
   fecha: string;
   nombre: string;
   correo: string;
@@ -80,8 +80,11 @@ type FilaHoja = {
 // A id, B fecha, C nombre, D correo, E lada, F celular, G corregido,
 // H wa.me, I método de pago, J monto ("$"), K moneda, L notas,
 // M estado del lead, N abeja seguimiento, O vendedor asignado.
+// La columna A (id) NO se usa para reconocer clientes entre sincronizaciones:
+// no es única (varias personas distintas comparten el mismo valor, ej. "x"
+// como placeholder), así que confiar en ella mezclaba a gente distinta. Ver
+// buscarExistente().
 const COL = {
-  id: 0,
   fecha: 1,
   nombre: 2,
   correo: 3,
@@ -98,7 +101,6 @@ function filasAObjetos(filas: string[][]): FilaHoja[] {
   const leer = (fila: string[], i: number) => (fila[i] ?? "").trim();
 
   return filas.slice(1).map((fila) => ({
-    id: leer(fila, COL.id),
     fecha: leer(fila, COL.fecha),
     nombre: leer(fila, COL.nombre),
     correo: leer(fila, COL.correo),
@@ -122,16 +124,21 @@ function resolverVendedor(fila: FilaHoja): string | null {
   return asignado || null;
 }
 
-// Busca primero por el id de la fila del sheet (estable aunque después se
-// corrija el correo en el CRM) y solo si no lo encuentra cae al correo,
-// para no crear un duplicado cuando alguien le corrige el correo a un
-// cliente ya importado y luego se vuelve a sincronizar.
-async function buscarExistente(fila: FilaHoja): Promise<ClienteDoc | null> {
-  if (fila.id) {
-    const porId = await buscarClientePorSheetRowId(fila.id);
-    if (porId) return porId;
-  }
-  return buscarClientePorCorreo(fila.correo);
+// Busca primero por correo (como siempre) y, si no encuentra a nadie, cae a
+// los últimos 10 dígitos del teléfono — por si a ese cliente ya existente
+// le corrigieron el correo en el CRM después de haberlo importado y ya no
+// hace match. No se usa el id de la fila del sheet para esto: esa columna
+// no es única entre personas distintas (ver comentario en COL).
+async function buscarExistente(
+  fila: FilaHoja,
+  telefonoLimpio: string | null
+): Promise<ClienteDoc | null> {
+  const porCorreo = await buscarClientePorCorreo(fila.correo);
+  if (porCorreo) return porCorreo;
+
+  const ultimos10 = ultimos10Digitos(telefonoLimpio);
+  if (!ultimos10) return null;
+  return buscarClientePorTelefono(ultimos10);
 }
 
 // Cambio detectado en un cliente que YA existe en el CRM (monto y/o
@@ -161,7 +168,6 @@ export type NuevoClientePendiente = {
   vendedor: string | null;
   monto: string | null;
   tags: string[];
-  sheetRowId: string | null;
 };
 
 export type ResultadoSincronizacion = {
@@ -202,10 +208,10 @@ async function sincronizarHoja(
     }
 
     try {
-      const existente = await buscarExistente(fila);
       const monto = fila.amount || null;
       const vendedor = resolverVendedor(fila);
       const telefonoHoja = limpiarTelefono(fila.corregido, fila.celular, region);
+      const existente = await buscarExistente(fila, telefonoHoja);
       const esMiembroCS = estado === ESTADO_MIEMBRO_CS;
 
       if (existente) {
@@ -263,7 +269,6 @@ async function sincronizarHoja(
           vendedor,
           monto,
           tags: esMiembroCS ? [TAG_MIEMBRO_CS] : [],
-          sheetRowId: fila.id || null,
         });
       }
     } catch (err) {
@@ -366,7 +371,6 @@ export async function aplicarNuevosPendientes(
         autor: autor.nombre,
         autorRol: autor.rol,
         origen: "sheet",
-        sheetRowId: nuevo.sheetRowId ?? undefined,
       });
       creados++;
     } catch (err) {
@@ -429,10 +433,10 @@ export async function sincronizarSeguimientosDesdeHoja(
 
       try {
         const vendedor = resolverVendedor(fila);
-        const existente = await buscarExistente(fila);
+        const telefono = limpiarTelefono(fila.corregido, fila.celular, hoja.region);
+        const existente = await buscarExistente(fila, telefono);
 
         if (!existente) {
-          const telefono = limpiarTelefono(fila.corregido, fila.celular, hoja.region);
           const id = await crearCliente({
             nombre: fila.nombre || fila.correo,
             email: fila.correo,
@@ -444,7 +448,6 @@ export async function sincronizarSeguimientosDesdeHoja(
             autorRol: autor.rol,
             origen: "sheet",
             estadoInicial: ESTADOS_CLIENTE.SEGUIMIENTO,
-            sheetRowId: fila.id || undefined,
           });
           if (tieneAbono) {
             await registrarAbono(

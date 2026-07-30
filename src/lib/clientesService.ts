@@ -35,6 +35,10 @@ export type ClienteDoc = {
   nombre: string;
   email: string | null;
   telefono: string | null;
+  // Últimos 10 dígitos de telefono, recalculado cada vez que cambia. Sirve
+  // para reconocer al mismo cliente cuando el correo se corrigió y ya no
+  // hace match (ver buscarClientePorTelefono).
+  telefonoBusqueda: string | null;
   estado: string;
   notas: string | null;
   region: string | null;
@@ -51,7 +55,6 @@ export type ClienteDoc = {
   monto: string | null;
   totalAbonado: number;
   fechaPrimerAbono: Timestamp | null;
-  sheetRowId: string | null;
   creadoPor: string;
   creadoPorRol: string;
   eliminado: boolean;
@@ -73,6 +76,15 @@ export type AbonoDoc = {
   autor: string;
   fecha: Timestamp | null;
 };
+
+// Últimos 10 dígitos de un teléfono (sin importar el formato/código de país
+// con el que venga). null si no quedan 10 dígitos limpios.
+export function ultimos10Digitos(telefono: string | null | undefined): string | null {
+  if (!telefono) return null;
+  const digitos = telefono.replace(/[^0-9]/g, "");
+  if (digitos.length < 10) return null;
+  return digitos.slice(-10);
+}
 
 const clientesRef = collection(db, "clientes");
 
@@ -151,7 +163,6 @@ export async function crearCliente(input: {
   autorRol: string;
   origen?: "manual" | "csv" | "sheet";
   estadoInicial?: string;
-  sheetRowId?: string;
 }) {
   const fechaLlegada = input.fechaInscripcion ?? new Date();
   const vencimiento = fechaVencimientoDesde(fechaLlegada);
@@ -160,6 +171,7 @@ export async function crearCliente(input: {
     nombre: input.nombre,
     email: input.email || null,
     telefono: input.telefono || null,
+    telefonoBusqueda: ultimos10Digitos(input.telefono),
     notas: input.notas || null,
     region: input.region || null,
     estado: input.estadoInicial ?? ESTADOS_CLIENTE.NUEVO,
@@ -178,7 +190,6 @@ export async function crearCliente(input: {
     monto: input.monto?.trim() || null,
     totalAbonado: 0,
     fechaPrimerAbono: null,
-    sheetRowId: input.sheetRowId?.trim() || null,
     creadoPor: input.autor,
     creadoPorRol: input.autorRol,
     eliminado: false,
@@ -728,6 +739,7 @@ export async function actualizarDatosCliente(
     nombre: cambios.nombre,
     email: cambios.email || null,
     telefono: cambios.telefono || null,
+    telefonoBusqueda: ultimos10Digitos(cambios.telefono),
     region: cambios.region || null,
     notas: cambios.notas || null,
     monto: cambios.monto || null,
@@ -868,13 +880,14 @@ export async function buscarClientePorCorreo(correo: string): Promise<ClienteDoc
   return { id: d.id, ...d.data() } as ClienteDoc;
 }
 
-// Busca por el id de la fila del sheet (columna A), no por correo. Se usa
-// primero en la sincronización para no duplicar a alguien a quien se le
-// corrigió el correo en el CRM después de haberlo importado: aunque el
-// correo ya no coincida con el de la hoja, el id de la fila sigue siendo
-// el mismo y lo sigue reconociendo como la misma persona.
-export async function buscarClientePorSheetRowId(sheetRowId: string): Promise<ClienteDoc | null> {
-  const q = query(clientesRef, where("sheetRowId", "==", sheetRowId));
+// Respaldo de buscarClientePorCorreo: se usa en la sincronización cuando el
+// correo de la hoja no matchea a nadie, por si a ese cliente ya existente
+// se le corrigió el correo en el CRM después de haberlo importado. Busca
+// por los últimos 10 dígitos del teléfono en vez del correo, que es más
+// confiable que cualquier ID de fila del sheet (esas columnas no siempre
+// son únicas — se repiten entre personas distintas).
+export async function buscarClientePorTelefono(ultimos10: string): Promise<ClienteDoc | null> {
+  const q = query(clientesRef, where("telefonoBusqueda", "==", ultimos10));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   const d = snap.docs[0];
@@ -920,7 +933,10 @@ export async function actualizarMontoYVendedor(
   const cambios = detectarCambioMontoYVendedor(cliente, monto, vendedor, telefono);
   if (!cambios) return false;
 
-  await updateDoc(doc(db, "clientes", cliente.id), cambios);
+  const datos: Record<string, unknown> = { ...cambios };
+  if (cambios.telefono) datos.telefonoBusqueda = ultimos10Digitos(cambios.telefono);
+
+  await updateDoc(doc(db, "clientes", cliente.id), datos);
   await agregarEvento(
     cliente.id,
     cliente.nombre,
