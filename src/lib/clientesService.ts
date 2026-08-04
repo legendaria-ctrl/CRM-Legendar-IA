@@ -213,6 +213,16 @@ export async function crearCliente(input: {
     notaOrigen
   );
 
+  // Enriquecimiento en segundo plano, no bloquea el alta: si esta persona
+  // ya es socia del Club Sinergético, le pone el tag verde/rojo según si su
+  // membresía sigue vigente. Import dinámico para evitar un ciclo (este
+  // módulo también lo importa clubSinergetico.ts).
+  import("./clubSinergetico")
+    .then(({ verificarClubSinergetico }) =>
+      verificarClubSinergetico(nuevo.id, input.nombre, input.email, input.telefono)
+    )
+    .catch((err) => console.error("No se pudo verificar Club Sinergético:", err));
+
   return nuevo.id;
 }
 

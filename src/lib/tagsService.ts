@@ -37,7 +37,11 @@ function colorParaNombre(nombre: string): string {
   return COLORES_TAG[Math.abs(hash) % COLORES_TAG.length];
 }
 
-export async function crearTag(nombre: string, autor: string): Promise<TagDoc | null> {
+export async function crearTag(
+  nombre: string,
+  autor: string,
+  colorForzado?: string
+): Promise<TagDoc | null> {
   const limpio = nombre.trim();
   if (!limpio) return null;
   const id = normalizarNombre(limpio);
@@ -46,10 +50,18 @@ export async function crearTag(nombre: string, autor: string): Promise<TagDoc | 
   const ref = doc(db, "tags", id);
   const existente = await getDoc(ref);
   if (existente.exists()) {
-    return { id: existente.id, ...existente.data() } as TagDoc;
+    const datos = existente.data() as TagDoc;
+    // Los tags de color forzado (ej. los de integraciones automáticas) se
+    // corrigen si ya existían con otro color; los tags normales (sin
+    // colorForzado) no se tocan una vez creados.
+    if (colorForzado && datos.color !== colorForzado) {
+      await setDoc(ref, { ...datos, color: colorForzado }, { merge: true });
+      return { ...datos, id: existente.id, color: colorForzado };
+    }
+    return { ...datos, id: existente.id };
   }
 
-  const color = colorParaNombre(limpio);
+  const color = colorForzado || colorParaNombre(limpio);
   await setDoc(ref, {
     nombre: limpio,
     color,
