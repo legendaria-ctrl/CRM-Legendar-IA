@@ -12,10 +12,12 @@ export function LeadSlaBar({
   estado,
   fechaAsignacion,
   alarmaFechaDato,
+  alarmaAnticipacionMin = null,
 }: {
   estado: string;
   fechaAsignacion: Date | null;
   alarmaFechaDato: Date | null;
+  alarmaAnticipacionMin?: number | null;
 }) {
   const [ahora, setAhora] = useState<number | null>(null);
 
@@ -28,7 +30,7 @@ export function LeadSlaBar({
   if (ahora === null) return null;
 
   const info = calcularSlaLead(
-    { estado, fechaAsignacion, alarmaFecha: alarmaFechaDato },
+    { estado, fechaAsignacion, alarmaFecha: alarmaFechaDato, alarmaAnticipacionMin },
     ahora
   );
 

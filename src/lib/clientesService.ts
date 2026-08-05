@@ -69,6 +69,9 @@ export type ClienteDoc = {
   // el SLA de 48h; al cumplirse, el conteo arranca desde esa fecha/hora.
   alarmaFecha: Timestamp | null;
   alarmaNota: string | null;
+  // Minutos de anticipación con los que se avisa/sube el lead antes de la
+  // alarma; editable por el vendedor al programarla (default 30).
+  alarmaAnticipacionMin: number | null;
 };
 
 export type EventoDoc = {
@@ -210,6 +213,7 @@ export async function crearCliente(input: {
       esSeguimientoNuevo && vendedorInicial ? Timestamp.fromDate(new Date()) : null,
     alarmaFecha: null,
     alarmaNota: null,
+    alarmaAnticipacionMin: null,
   });
 
   const notaOrigen =
@@ -668,6 +672,7 @@ export async function darSeguimientoLead(
     fechaAsignacion: Timestamp.fromDate(new Date()),
     alarmaFecha: null,
     alarmaNota: null,
+    alarmaAnticipacionMin: null,
   });
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.NOTA, autor, nota);
 }
@@ -677,24 +682,30 @@ export async function establecerAlarmaLead(
   clienteNombre: string,
   autor: Autor,
   fecha: Date,
-  nota: string
+  nota: string,
+  anticipacionMin: number
 ) {
   const notaLimpia = nota.trim() || null;
   await updateDoc(doc(db, "clientes", clienteId), {
     alarmaFecha: Timestamp.fromDate(fecha),
     alarmaNota: notaLimpia,
+    alarmaAnticipacionMin: anticipacionMin,
   });
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.ALARMA,
     autor,
-    `Alarma programada para ${fecha.toLocaleString("es-MX")}${notaLimpia ? `: ${notaLimpia}` : ""}`
+    `Alarma programada para ${fecha.toLocaleString("es-MX")} (aviso ${anticipacionMin} min antes)${notaLimpia ? `: ${notaLimpia}` : ""}`
   );
 }
 
 export async function cancelarAlarmaLead(clienteId: string, clienteNombre: string, autor: Autor) {
-  await updateDoc(doc(db, "clientes", clienteId), { alarmaFecha: null, alarmaNota: null });
+  await updateDoc(doc(db, "clientes", clienteId), {
+    alarmaFecha: null,
+    alarmaNota: null,
+    alarmaAnticipacionMin: null,
+  });
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.ALARMA, autor, "Alarma cancelada");
 }
 
@@ -864,6 +875,7 @@ export async function actualizarVendedor(
           fechaAsignacion: vendedor ? Timestamp.fromDate(new Date()) : null,
           alarmaFecha: null,
           alarmaNota: null,
+          alarmaAnticipacionMin: null,
         }
       : {}),
   });

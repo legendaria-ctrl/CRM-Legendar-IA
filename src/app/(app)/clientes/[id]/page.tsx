@@ -147,6 +147,7 @@ export default function ClienteDetallePage() {
     estado: cliente.estado,
     fechaAsignacion: aFecha(cliente.fechaAsignacion),
     alarmaFecha: aFecha(cliente.alarmaFecha),
+    alarmaAnticipacionMin: cliente.alarmaAnticipacionMin,
   });
   const bloqueadoSla =
     esSeguimiento && slaLead.estadoSla === "vencido" && sesion?.rol !== ROLES.ADMIN;
@@ -827,6 +828,7 @@ export default function ClienteDetallePage() {
         bloqueadoSla={bloqueadoSla}
         alarmaFecha={aFecha(cliente.alarmaFecha)}
         alarmaNota={cliente.alarmaNota}
+        alarmaAnticipacionMin={cliente.alarmaAnticipacionMin}
       />
 
       {esSeguimiento && (
@@ -834,6 +836,7 @@ export default function ClienteDetallePage() {
           estado={cliente.estado}
           fechaAsignacion={aFecha(cliente.fechaAsignacion)}
           alarmaFechaDato={aFecha(cliente.alarmaFecha)}
+          alarmaAnticipacionMin={cliente.alarmaAnticipacionMin}
         />
       )}
 

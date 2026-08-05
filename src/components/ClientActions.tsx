@@ -50,6 +50,7 @@ export function ClientActions({
   bloqueadoSla = false,
   alarmaFecha = null,
   alarmaNota = null,
+  alarmaAnticipacionMin = null,
 }: {
   clienteId: string;
   clienteNombre: string;
@@ -66,6 +67,7 @@ export function ClientActions({
   bloqueadoSla?: boolean;
   alarmaFecha?: Date | null;
   alarmaNota?: string | null;
+  alarmaAnticipacionMin?: number | null;
 }) {
   const { sesion, cargando } = useSesion();
   const [loading, setLoading] = useState<string | null>(null);
@@ -80,6 +82,7 @@ export function ClientActions({
   const [diasRestantes, setDiasRestantes] = useState("");
   const [alarmaFechaInput, setAlarmaFechaInput] = useState("");
   const [alarmaNotaInput, setAlarmaNotaInput] = useState("");
+  const [alarmaAnticipacionInput, setAlarmaAnticipacionInput] = useState("30");
   const esVendedor = sesion?.rol === ROLES.VENDEDOR;
   const esLead = estado === ESTADOS_CLIENTE.SEGUIMIENTO;
   const mostrarTemporizador =
@@ -140,9 +143,22 @@ export function ClientActions({
           setError("La alarma debe ser una fecha y hora futura.");
           return;
         }
-        await establecerAlarmaLead(clienteId, clienteNombre, autor, fecha, alarmaNotaInput);
+        const anticipacionMin = Number(alarmaAnticipacionInput);
+        if (!anticipacionMin || anticipacionMin <= 0) {
+          setError("Escribe cuántos minutos antes quieres el aviso.");
+          return;
+        }
+        await establecerAlarmaLead(
+          clienteId,
+          clienteNombre,
+          autor,
+          fecha,
+          alarmaNotaInput,
+          anticipacionMin
+        );
         setAlarmaFechaInput("");
         setAlarmaNotaInput("");
+        setAlarmaAnticipacionInput("30");
       }
       if (action === "cancelar_alarma") {
         await cancelarAlarmaLead(clienteId, clienteNombre, autor);
@@ -448,7 +464,8 @@ export function ClientActions({
                 {alarmaFecha ? (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2.5">
                     <p className="text-sm text-warning">
-                      Programada para {alarmaFecha.toLocaleString("es-MX")}
+                      Programada para {alarmaFecha.toLocaleString("es-MX")} (aviso{" "}
+                      {alarmaAnticipacionMin ?? 30} min antes)
                       {alarmaNota ? ` · ${alarmaNota}` : ""}
                     </p>
                     <button
@@ -466,8 +483,9 @@ export function ClientActions({
                 ) : (
                   <>
                     <p className="text-xs text-muted/70">
-                      Mientras esté programada, el plazo de 48h se pausa. 30 min antes, este lead
-                      sube al principio de tu lista de Seguimientos.
+                      Mientras esté programada, el plazo de 48h se pausa. Antes de que suene, este
+                      lead sube al principio de tu lista de Seguimientos y te llega una
+                      notificación.
                     </p>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <input
@@ -482,6 +500,17 @@ export function ClientActions({
                         placeholder='Ej. "Dijo que le hable el jueves 10am"'
                         className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
                       />
+                      <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted">
+                        Avisar
+                        <input
+                          type="number"
+                          min={1}
+                          value={alarmaAnticipacionInput}
+                          onChange={(e) => setAlarmaAnticipacionInput(e.target.value)}
+                          className="w-16 rounded-xl border border-silver-deep/60 bg-surface-2 px-2 py-2 text-center text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                        />
+                        min antes
+                      </label>
                       <button
                         disabled={!alarmaFechaInput || loading === "poner_alarma"}
                         onClick={() => run("poner_alarma")}

@@ -116,6 +116,7 @@ export default function SeguimientosPage() {
         estado: a.estado,
         fechaAsignacion: aFecha(a.fechaAsignacion),
         alarmaFecha: aFecha(a.alarmaFecha),
+        alarmaAnticipacionMin: a.alarmaAnticipacionMin,
       }).proximaAlarma
         ? 1
         : 0;
@@ -123,6 +124,7 @@ export default function SeguimientosPage() {
         estado: b.estado,
         fechaAsignacion: aFecha(b.fechaAsignacion),
         alarmaFecha: aFecha(b.alarmaFecha),
+        alarmaAnticipacionMin: b.alarmaAnticipacionMin,
       }).proximaAlarma
         ? 1
         : 0;
@@ -275,6 +277,7 @@ function FilaSeguimiento({
     estado: cliente.estado,
     fechaAsignacion: aFecha(cliente.fechaAsignacion),
     alarmaFecha: aFecha(cliente.alarmaFecha),
+    alarmaAnticipacionMin: cliente.alarmaAnticipacionMin,
   });
 
   const fondoSla =
@@ -288,7 +291,7 @@ function FilaSeguimiento({
     <div
       onClick={() => router.push(`/clientes/${cliente.id}`)}
       className={`shell cursor-pointer rounded-[1.75rem] p-2 diffused transition-transform duration-500 ease-spring hover:scale-[1.005] ${
-        sla.proximaAlarma ? "animate-pulse ring-2 ring-warning" : ""
+        sla.proximaAlarma ? "animate-pulse ring-2 ring-orange-500" : ""
       }`}
     >
       <div
@@ -322,7 +325,13 @@ function FilaSeguimiento({
               </span>
             )}
             {sla.estadoSla === "pausado_alarma" && sla.alarmaFecha && (
-              <span className="flex items-center gap-1 rounded-full bg-primary-dim px-2.5 py-1 text-[11px] font-medium text-primary">
+              <span
+                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  sla.proximaAlarma
+                    ? "bg-orange-500/15 text-orange-600"
+                    : "bg-primary-dim text-primary"
+                }`}
+              >
                 <AlarmClock className="h-3 w-3" strokeWidth={2} />
                 Alarma: {sla.alarmaFecha.toLocaleString("es-MX")}
               </span>

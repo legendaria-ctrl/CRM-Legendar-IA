@@ -115,7 +115,9 @@ export const PAPELERA_DIAS = 30;
 // vendedor para contactar desde que se le asigna, antes de perderlo.
 export const LEAD_SLA_HORAS = 48;
 export const LEAD_SLA_ALERTA_HORAS = 36; // últimas 12h del plazo: se pone amarillo
-export const LEAD_SLA_ALARMA_ANTICIPACION_MS = 30 * 60 * 1000;
+// Minutos por defecto de anticipación al avisar de una alarma; el vendedor
+// puede cambiarlo al programar cada alarma.
+export const LEAD_SLA_ALARMA_ANTICIPACION_MIN_DEFAULT = 30;
 
 export const REGIONES = {
   MX: "MX",

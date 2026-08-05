@@ -34,6 +34,7 @@ export default function PendientesPage() {
           estado: c.estado,
           fechaAsignacion: aFecha(c.fechaAsignacion),
           alarmaFecha: aFecha(c.alarmaFecha),
+          alarmaAnticipacionMin: c.alarmaAnticipacionMin,
         });
         return sla.estadoSla === "vencido";
       }),

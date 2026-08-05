@@ -6,6 +6,7 @@ import { MobileActionsProvider } from "@/lib/mobile-actions-context";
 import { SidebarDrawerProvider } from "@/lib/sidebar-drawer-context";
 import { FiltrosClientesProvider } from "@/lib/filtros-clientes-context";
 import { ActualizacionesPopup } from "@/components/ActualizacionesPopup";
+import { LeadAlarmNotifier } from "@/components/LeadAlarmNotifier";
 
 export default function AppLayout({
   children,
@@ -17,6 +18,7 @@ export default function AppLayout({
       <FiltrosClientesProvider>
         <SidebarDrawerProvider>
           <ActualizacionesPopup />
+          <LeadAlarmNotifier />
           <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-8 md:flex-row md:gap-6 md:px-8 md:pb-10">
             {/* Encabezado móvil fijo: barra superior + certificaciones no se mueven al hacer scroll */}
             <div className="sticky top-0 z-30 -mx-4 flex flex-col gap-3 bg-background px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] md:hidden">

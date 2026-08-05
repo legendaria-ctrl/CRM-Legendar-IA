@@ -3,7 +3,7 @@ import {
   ESTADOS_CLIENTE,
   LEAD_SLA_HORAS,
   LEAD_SLA_ALERTA_HORAS,
-  LEAD_SLA_ALARMA_ANTICIPACION_MS,
+  LEAD_SLA_ALARMA_ANTICIPACION_MIN_DEFAULT,
 } from "./constants";
 
 function aMs(valor: Timestamp | Date | null | undefined): number | null {
@@ -40,6 +40,7 @@ export function calcularSlaLead(
     estado: string;
     fechaAsignacion?: Timestamp | Date | null;
     alarmaFecha?: Timestamp | Date | null;
+    alarmaAnticipacionMin?: number | null;
   },
   ahora: number = Date.now()
 ): InfoSlaLead {
@@ -47,13 +48,15 @@ export function calcularSlaLead(
 
   const alarmaMs = aMs(cliente.alarmaFecha);
   const asignacionMs = aMs(cliente.fechaAsignacion);
+  const anticipacionMs =
+    (cliente.alarmaAnticipacionMin ?? LEAD_SLA_ALARMA_ANTICIPACION_MIN_DEFAULT) * 60 * 1000;
 
   if (alarmaMs && alarmaMs > ahora) {
     return {
       estadoSla: "pausado_alarma",
       inicio: null,
       limite: null,
-      proximaAlarma: alarmaMs - ahora <= LEAD_SLA_ALARMA_ANTICIPACION_MS,
+      proximaAlarma: alarmaMs - ahora <= anticipacionMs,
       alarmaFecha: new Date(alarmaMs),
     };
   }
