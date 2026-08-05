@@ -27,6 +27,7 @@ import {
 } from "./constants";
 import { fechaVencimientoDesde } from "./membership";
 import { registrarActividad } from "./activityService";
+import { normalizarNombre } from "./vendedoresService";
 
 export type Autor = { nombre: string; rol: string };
 
@@ -59,6 +60,15 @@ export type ClienteDoc = {
   creadoPorRol: string;
   eliminado: boolean;
   fechaEliminacion: Timestamp | null;
+  // SLA de contacto de leads (solo aplica con estado SEGUIMIENTO): momento
+  // en que se le asignó el lead al vendedor actual (arranca/reinicia el
+  // conteo de 48h). Null en leads creados antes de este campo: para esos
+  // nunca corre el SLA (no tienen de dónde contar).
+  fechaAsignacion: Timestamp | null;
+  // Alarma opcional ("háblame tal día"): mientras esté en el futuro, pausa
+  // el SLA de 48h; al cumplirse, el conteo arranca desde esa fecha/hora.
+  alarmaFecha: Timestamp | null;
+  alarmaNota: string | null;
 };
 
 export type EventoDoc = {
@@ -166,6 +176,8 @@ export async function crearCliente(input: {
 }) {
   const fechaLlegada = input.fechaInscripcion ?? new Date();
   const vencimiento = fechaVencimientoDesde(fechaLlegada);
+  const esSeguimientoNuevo = (input.estadoInicial ?? ESTADOS_CLIENTE.NUEVO) === ESTADOS_CLIENTE.SEGUIMIENTO;
+  const vendedorInicial = input.vendedor?.trim() || null;
 
   const nuevo = await addDoc(clientesRef, {
     nombre: input.nombre,
@@ -186,7 +198,7 @@ export async function crearCliente(input: {
     fechaPausa: null,
     tags: input.tags?.length ? Array.from(new Set(input.tags)) : [],
     etiquetas: input.etiquetas?.length ? Array.from(new Set(input.etiquetas)) : [],
-    vendedor: input.vendedor?.trim() || null,
+    vendedor: vendedorInicial,
     monto: input.monto?.trim() || null,
     totalAbonado: 0,
     fechaPrimerAbono: null,
@@ -194,6 +206,10 @@ export async function crearCliente(input: {
     creadoPorRol: input.autorRol,
     eliminado: false,
     fechaEliminacion: null,
+    fechaAsignacion:
+      esSeguimientoNuevo && vendedorInicial ? Timestamp.fromDate(new Date()) : null,
+    alarmaFecha: null,
+    alarmaNota: null,
   });
 
   const notaOrigen =
@@ -639,6 +655,49 @@ export async function agregarNota(
   await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.NOTA, autor, nota);
 }
 
+// Para leads (SEGUIMIENTO): agregar una nota cuenta como "dar seguimiento" y
+// reinicia el SLA de 48h (además de limpiar cualquier alarma pendiente, ya
+// que si se le dio seguimiento ahora, esa alarma ya no aplica).
+export async function darSeguimientoLead(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  nota: string
+) {
+  await updateDoc(doc(db, "clientes", clienteId), {
+    fechaAsignacion: Timestamp.fromDate(new Date()),
+    alarmaFecha: null,
+    alarmaNota: null,
+  });
+  await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.NOTA, autor, nota);
+}
+
+export async function establecerAlarmaLead(
+  clienteId: string,
+  clienteNombre: string,
+  autor: Autor,
+  fecha: Date,
+  nota: string
+) {
+  const notaLimpia = nota.trim() || null;
+  await updateDoc(doc(db, "clientes", clienteId), {
+    alarmaFecha: Timestamp.fromDate(fecha),
+    alarmaNota: notaLimpia,
+  });
+  await agregarEvento(
+    clienteId,
+    clienteNombre,
+    TIPOS_EVENTO.ALARMA,
+    autor,
+    `Alarma programada para ${fecha.toLocaleString("es-MX")}${notaLimpia ? `: ${notaLimpia}` : ""}`
+  );
+}
+
+export async function cancelarAlarmaLead(clienteId: string, clienteNombre: string, autor: Autor) {
+  await updateDoc(doc(db, "clientes", clienteId), { alarmaFecha: null, alarmaNota: null });
+  await agregarEvento(clienteId, clienteNombre, TIPOS_EVENTO.ALARMA, autor, "Alarma cancelada");
+}
+
 const BIENVENIDA_NOTA: Record<EstadoBienvenida, string> = {
   PENDIENTE: "Mensaje de bienvenida marcado como pendiente",
   ENVIADA: "Mensaje de bienvenida marcado como enviado",
@@ -793,7 +852,21 @@ export async function actualizarVendedor(
   vendedor: string | null,
   vendedorAnterior?: string | null
 ) {
-  await updateDoc(doc(db, "clientes", clienteId), { vendedor });
+  // Reasignar reinicia el SLA de contacto (48h) y borra cualquier alarma
+  // pendiente: es un vendedor nuevo empezando de cero con este lead. Es
+  // inofensivo en clientes que no son leads (SEGUIMIENTO): esos campos
+  // simplemente no se usan fuera de ese estado.
+  const cambioDeVendedor = normalizarNombre(vendedor ?? "") !== normalizarNombre(vendedorAnterior ?? "");
+  await updateDoc(doc(db, "clientes", clienteId), {
+    vendedor,
+    ...(cambioDeVendedor
+      ? {
+          fechaAsignacion: vendedor ? Timestamp.fromDate(new Date()) : null,
+          alarmaFecha: null,
+          alarmaNota: null,
+        }
+      : {}),
+  });
   const nota =
     vendedorAnterior !== undefined
       ? `Vendedor: "${vendedorAnterior ?? "Sin asignar"}" → "${vendedor ?? "Sin asignar"}"`

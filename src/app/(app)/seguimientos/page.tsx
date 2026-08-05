@@ -14,11 +14,15 @@ import {
   Search,
   MessageCircle,
   Phone,
+  Lock,
+  AlarmClock,
 } from "lucide-react";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
 import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { useSesion } from "@/lib/session-context";
 import { ESTADOS_CLIENTE, ROLES, EstadoCliente, formatearMonto } from "@/lib/constants";
+import { aFecha } from "@/lib/membership";
+import { calcularSlaLead } from "@/lib/leadSla";
 import { StatusBadge } from "@/components/StatusBadge";
 import { construirLinkWhatsapp } from "@/lib/whatsapp";
 
@@ -38,10 +42,18 @@ export default function SeguimientosPage() {
   const [busqueda, setBusqueda] = useState("");
   const [actualizando, setActualizando] = useState(false);
   const [resultadoActualizar, setResultadoActualizar] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
     return () => unsub();
+  }, []);
+
+  // Fuerza a re-evaluar el SLA/alarmas de los leads cada minuto, para que
+  // el que le toca alarma suba de lugar y parpadee sin recargar la página.
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -100,11 +112,26 @@ export default function SeguimientosPage() {
       return true;
     });
     return [...filtrada].sort((a, b) => {
+      const alarmaA = calcularSlaLead({
+        estado: a.estado,
+        fechaAsignacion: aFecha(a.fechaAsignacion),
+        alarmaFecha: aFecha(a.alarmaFecha),
+      }).proximaAlarma
+        ? 1
+        : 0;
+      const alarmaB = calcularSlaLead({
+        estado: b.estado,
+        fechaAsignacion: aFecha(b.fechaAsignacion),
+        alarmaFecha: aFecha(b.alarmaFecha),
+      }).proximaAlarma
+        ? 1
+        : 0;
+      if (alarmaA !== alarmaB) return alarmaB - alarmaA;
       const apartadoA = (a.totalAbonado ?? 0) > 0 ? 1 : 0;
       const apartadoB = (b.totalAbonado ?? 0) > 0 ? 1 : 0;
       return apartadoB - apartadoA;
     });
-  }, [propios, filtroTipo, coincideBusqueda]);
+  }, [propios, filtroTipo, coincideBusqueda, tick]);
 
   const enRevision = useMemo(
     () =>
@@ -243,13 +270,30 @@ function FilaSeguimiento({
 }) {
   const router = useRouter();
   const esApartado = (cliente.totalAbonado ?? 0) > 0;
+  const fechaLlegada = aFecha(cliente.fechaLlegada);
+  const sla = calcularSlaLead({
+    estado: cliente.estado,
+    fechaAsignacion: aFecha(cliente.fechaAsignacion),
+    alarmaFecha: aFecha(cliente.alarmaFecha),
+  });
+
+  const fondoSla =
+    sla.estadoSla === "vencido"
+      ? "!bg-danger/10"
+      : sla.estadoSla === "alerta"
+        ? "!bg-warning/10"
+        : "";
 
   return (
     <div
       onClick={() => router.push(`/clientes/${cliente.id}`)}
-      className="shell cursor-pointer rounded-[1.75rem] p-2 diffused transition-transform duration-500 ease-spring hover:scale-[1.005]"
+      className={`shell cursor-pointer rounded-[1.75rem] p-2 diffused transition-transform duration-500 ease-spring hover:scale-[1.005] ${
+        sla.proximaAlarma ? "animate-pulse ring-2 ring-warning" : ""
+      }`}
     >
-      <div className="core flex flex-wrap items-center justify-between gap-3 rounded-[calc(1.75rem-0.5rem)] p-5">
+      <div
+        className={`core flex flex-wrap items-center justify-between gap-3 rounded-[calc(1.75rem-0.5rem)] p-5 ${fondoSla}`}
+      >
         <div className="min-w-0">
           <div className="mb-1 flex items-center gap-2">
             <StatusBadge estado={cliente.estado as EstadoCliente} />
@@ -265,10 +309,33 @@ function FilaSeguimiento({
                 En revisión, bloqueado
               </span>
             )}
+            {sla.estadoSla === "vencido" && (
+              <span className="flex items-center gap-1 rounded-full bg-danger/15 px-2.5 py-1 text-[11px] font-medium text-danger">
+                <Lock className="h-3 w-3" strokeWidth={2} />
+                SLA vencido
+              </span>
+            )}
+            {sla.estadoSla === "alerta" && (
+              <span className="flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-[11px] font-medium text-warning">
+                <AlarmClock className="h-3 w-3" strokeWidth={2} />
+                Por vencer
+              </span>
+            )}
+            {sla.estadoSla === "pausado_alarma" && sla.alarmaFecha && (
+              <span className="flex items-center gap-1 rounded-full bg-primary-dim px-2.5 py-1 text-[11px] font-medium text-primary">
+                <AlarmClock className="h-3 w-3" strokeWidth={2} />
+                Alarma: {sla.alarmaFecha.toLocaleString("es-MX")}
+              </span>
+            )}
           </div>
           <p className="truncate text-sm font-medium text-foreground">{cliente.nombre}</p>
           {cliente.vendedor && (
             <p className="truncate text-xs text-muted">Vendedor: {cliente.vendedor}</p>
+          )}
+          {fechaLlegada && (
+            <p className="truncate text-xs text-muted">
+              Ingresó: {fechaLlegada.toLocaleDateString("es-MX")}
+            </p>
           )}
           {(cliente.tags ?? []).length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">

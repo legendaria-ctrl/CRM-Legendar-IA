@@ -63,6 +63,7 @@ export const TIPOS_EVENTO = {
   ENVIO_REVISION: "ENVIO_REVISION",
   AUTORIZACION: "AUTORIZACION",
   GRADUACION: "GRADUACION",
+  ALARMA: "ALARMA",
 } as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[keyof typeof TIPOS_EVENTO];
 
@@ -93,6 +94,7 @@ export const EVENTO_LABEL: Record<TipoEvento, string> = {
   ENVIO_REVISION: "Enviado a autorización",
   AUTORIZACION: "Autorizado por administración",
   GRADUACION: "Venta confirmada en la hoja",
+  ALARMA: "Alarma de seguimiento",
 };
 
 export const COLORES_TAG = [
@@ -108,6 +110,12 @@ export const COLORES_TAG = [
 
 export const MEMBRESIA_DIAS = 365;
 export const PAPELERA_DIAS = 30;
+
+// SLA de contacto para leads (estado SEGUIMIENTO): tiempo que tiene el
+// vendedor para contactar desde que se le asigna, antes de perderlo.
+export const LEAD_SLA_HORAS = 48;
+export const LEAD_SLA_ALERTA_HORAS = 36; // últimas 12h del plazo: se pone amarillo
+export const LEAD_SLA_ALARMA_ANTICIPACION_MS = 30 * 60 * 1000;
 
 export const REGIONES = {
   MX: "MX",

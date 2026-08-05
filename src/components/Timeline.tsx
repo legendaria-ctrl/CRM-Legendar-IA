@@ -23,6 +23,7 @@ import {
   Hourglass,
   ShieldCheck,
   TrendingUp,
+  AlarmClock,
 } from "lucide-react";
 
 const ICONS: Record<TipoEvento, typeof UserPlus> = {
@@ -52,6 +53,7 @@ const ICONS: Record<TipoEvento, typeof UserPlus> = {
   ENVIO_REVISION: Hourglass,
   AUTORIZACION: ShieldCheck,
   GRADUACION: TrendingUp,
+  ALARMA: AlarmClock,
 };
 
 export type EventoTimelineItem = {

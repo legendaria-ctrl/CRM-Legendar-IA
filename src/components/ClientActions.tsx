@@ -13,6 +13,8 @@ import {
   CalendarPlus,
   ShieldCheck,
   Hourglass,
+  AlarmClock,
+  Lock,
 } from "lucide-react";
 import { EstadoCliente, ESTADOS_CLIENTE, ROLES } from "@/lib/constants";
 import {
@@ -20,6 +22,9 @@ import {
   aceptarInvitacion,
   renovarMembresia,
   agregarNota,
+  darSeguimientoLead,
+  establecerAlarmaLead,
+  cancelarAlarmaLead,
   deshacerInvitacion,
   deshacerAceptacion,
   pausarMembresia,
@@ -42,6 +47,9 @@ export function ClientActions({
   fechaVencimiento = null,
   fechaPausa = null,
   puedeEditar = true,
+  bloqueadoSla = false,
+  alarmaFecha = null,
+  alarmaNota = null,
 }: {
   clienteId: string;
   clienteNombre: string;
@@ -53,6 +61,11 @@ export function ClientActions({
   /** Solo aplica a acciones sobre un seguimiento (dueño o admin); el resto
    * de acciones (invitación, membresía, etc.) no dependen de esto. */
   puedeEditar?: boolean;
+  /** Lead (SEGUIMIENTO) que superó las 48h de SLA sin que un admin lo haya
+   * reasignado: el vendedor no puede tocar nada aquí (ni nota ni alarma). */
+  bloqueadoSla?: boolean;
+  alarmaFecha?: Date | null;
+  alarmaNota?: string | null;
 }) {
   const { sesion, cargando } = useSesion();
   const [loading, setLoading] = useState<string | null>(null);
@@ -65,7 +78,10 @@ export function ClientActions({
   } | null>(null);
   const [diasPersonalizados, setDiasPersonalizados] = useState("");
   const [diasRestantes, setDiasRestantes] = useState("");
+  const [alarmaFechaInput, setAlarmaFechaInput] = useState("");
+  const [alarmaNotaInput, setAlarmaNotaInput] = useState("");
   const esVendedor = sesion?.rol === ROLES.VENDEDOR;
+  const esLead = estado === ESTADOS_CLIENTE.SEGUIMIENTO;
   const mostrarTemporizador =
     !esVendedor &&
     !!fechaVencimiento &&
@@ -107,8 +123,29 @@ export function ClientActions({
         setNota(`Renovó el ${new Date().toLocaleDateString("es-MX")}`);
       }
       if (action === "nota" && notaTexto) {
-        await agregarNota(clienteId, clienteNombre, autor, notaTexto);
+        if (esLead) {
+          await darSeguimientoLead(clienteId, clienteNombre, autor, notaTexto);
+        } else {
+          await agregarNota(clienteId, clienteNombre, autor, notaTexto);
+        }
         setNota("");
+      }
+      if (action === "poner_alarma") {
+        if (!alarmaFechaInput) {
+          setError("Elige fecha y hora para la alarma.");
+          return;
+        }
+        const fecha = new Date(alarmaFechaInput);
+        if (Number.isNaN(fecha.getTime()) || fecha.getTime() <= Date.now()) {
+          setError("La alarma debe ser una fecha y hora futura.");
+          return;
+        }
+        await establecerAlarmaLead(clienteId, clienteNombre, autor, fecha, alarmaNotaInput);
+        setAlarmaFechaInput("");
+        setAlarmaNotaInput("");
+      }
+      if (action === "cancelar_alarma") {
+        await cancelarAlarmaLead(clienteId, clienteNombre, autor);
       }
       if (action === "deshacer_invitacion") await deshacerInvitacion(clienteId, clienteNombre, autor);
       if (action === "deshacer_aceptacion") await deshacerAceptacion(clienteId, clienteNombre, autor);
@@ -363,31 +400,106 @@ export function ClientActions({
           </div>
         )}
 
-        <div className="mt-2 flex flex-col gap-2">
-          <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
-            <StickyNote className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Agregar nota
-          </label>
-          <div className="flex gap-2">
-            <input
-              value={nota}
-              onChange={(e) => setNota(e.target.value)}
-              placeholder="Escribe una nota sobre el cliente…"
-              className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
-            />
-            <button
-              disabled={!nota.trim() || loading === "nota"}
-              onClick={() => run("nota", nota)}
-              className="flex items-center justify-center rounded-2xl bg-surface-2 px-4 text-sm font-medium text-primary transition-all duration-500 ease-spring hover:bg-primary-dim active:scale-[0.98] disabled:opacity-40"
-            >
-              {loading === "nota" ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
-              ) : (
-                "Guardar"
-              )}
-            </button>
+        {bloqueadoSla ? (
+          <div className="mt-2 flex items-center gap-2 rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger">
+            <Lock className="h-4 w-4 flex-none" strokeWidth={1.75} />
+            Este lead superó las 48h sin seguimiento y quedó bloqueado. Un administrador debe
+            reasignarlo para que se pueda volver a tocar.
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="mt-2 flex flex-col gap-2">
+              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
+                <StickyNote className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Agregar nota
+                {esLead && (
+                  <span className="normal-case tracking-normal text-muted/70">
+                    (cuenta como seguimiento dado: reinicia el plazo de 48h)
+                  </span>
+                )}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  value={nota}
+                  onChange={(e) => setNota(e.target.value)}
+                  placeholder="Escribe una nota sobre el cliente…"
+                  className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                />
+                <button
+                  disabled={!nota.trim() || loading === "nota"}
+                  onClick={() => run("nota", nota)}
+                  className="flex items-center justify-center rounded-2xl bg-surface-2 px-4 text-sm font-medium text-primary transition-all duration-500 ease-spring hover:bg-primary-dim active:scale-[0.98] disabled:opacity-40"
+                >
+                  {loading === "nota" ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    "Guardar"
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {esLead && puedeEditar && (
+              <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-dashed border-silver-deep/60 p-4">
+                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
+                  <AlarmClock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  Alarma ("háblame tal día")
+                </label>
+                {alarmaFecha ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-warning/10 px-3 py-2.5">
+                    <p className="text-sm text-warning">
+                      Programada para {alarmaFecha.toLocaleString("es-MX")}
+                      {alarmaNota ? ` · ${alarmaNota}` : ""}
+                    </p>
+                    <button
+                      disabled={loading === "cancelar_alarma"}
+                      onClick={() => run("cancelar_alarma")}
+                      className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-warning transition-colors duration-200 hover:bg-warning/20 disabled:opacity-50"
+                    >
+                      {loading === "cancelar_alarma" ? (
+                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
+                      ) : (
+                        "Cancelar alarma"
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted/70">
+                      Mientras esté programada, el plazo de 48h se pausa. 30 min antes, este lead
+                      sube al principio de tu lista de Seguimientos.
+                    </p>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="datetime-local"
+                        value={alarmaFechaInput}
+                        onChange={(e) => setAlarmaFechaInput(e.target.value)}
+                        className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                      />
+                      <input
+                        value={alarmaNotaInput}
+                        onChange={(e) => setAlarmaNotaInput(e.target.value)}
+                        placeholder='Ej. "Dijo que le hable el jueves 10am"'
+                        className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                      />
+                      <button
+                        disabled={!alarmaFechaInput || loading === "poner_alarma"}
+                        onClick={() => run("poner_alarma")}
+                        className="flex items-center justify-center gap-1.5 rounded-2xl bg-warning/15 px-4 py-2.5 text-sm font-medium text-warning transition-all duration-500 ease-spring hover:bg-warning/25 active:scale-[0.98] disabled:opacity-40"
+                      >
+                        {loading === "poner_alarma" ? (
+                          <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                        ) : (
+                          "Programar"
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {popupInvitacion && (

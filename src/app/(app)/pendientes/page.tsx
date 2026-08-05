@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ShieldAlert, DollarSign, ArrowUpRight, Pencil } from "lucide-react";
+import { ShieldAlert, DollarSign, ArrowUpRight, Pencil, UserX } from "lucide-react";
 import { useSesion } from "@/lib/session-context";
-import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
+import { suscribirClientes, actualizarVendedor, ClienteDoc } from "@/lib/clientesService";
 import { ESTADOS_CLIENTE, EstadoCliente } from "@/lib/constants";
+import { aFecha } from "@/lib/membership";
+import { calcularSlaLead } from "@/lib/leadSla";
 import { StatusBadge } from "@/components/StatusBadge";
+import { VendedorSelect } from "@/components/VendedorSelect";
 
 export default function PendientesPage() {
   const { sesion, cargando } = useSesion();
@@ -22,6 +25,31 @@ export default function PendientesPage() {
     () => (clientes ?? []).filter((c) => c.estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION),
     [clientes]
   );
+
+  const perdidos = useMemo(
+    () =>
+      (clientes ?? []).filter((c) => {
+        if (c.estado !== ESTADOS_CLIENTE.SEGUIMIENTO) return false;
+        const sla = calcularSlaLead({
+          estado: c.estado,
+          fechaAsignacion: aFecha(c.fechaAsignacion),
+          alarmaFecha: aFecha(c.alarmaFecha),
+        });
+        return sla.estadoSla === "vencido";
+      }),
+    [clientes]
+  );
+
+  async function reasignar(cliente: ClienteDoc, vendedor: string | null) {
+    if (!sesion) return;
+    await actualizarVendedor(
+      cliente.id,
+      cliente.nombre,
+      { nombre: sesion.nombre, rol: sesion.rol },
+      vendedor,
+      cliente.vendedor
+    );
+  }
 
   if (cargando) {
     return <div className="py-16 text-center text-sm text-muted">Cargando…</div>;
@@ -98,6 +126,54 @@ export default function PendientesPage() {
               </div>
             </div>
           </Link>
+        ))}
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">Leads perdidos</h2>
+        <p className="text-sm text-muted">
+          Seguimientos que pasaron 48h sin contacto: el vendedor ya no puede tocarlos. Reasígnalos
+          para que vuelvan a activarse.
+        </p>
+      </div>
+
+      {clientes !== null && perdidos.length === 0 && (
+        <p className="rounded-2xl border border-dashed border-silver-deep/60 px-4 py-10 text-center text-sm text-muted">
+          No hay leads perdidos por ahora.
+        </p>
+      )}
+
+      <div className="flex flex-col gap-3">
+        {perdidos.map((c) => (
+          <div
+            key={c.id}
+            className="shell rounded-[1.75rem] p-2 diffused"
+          >
+            <div className="core flex flex-wrap items-center justify-between gap-3 rounded-[calc(1.75rem-0.5rem)] p-5">
+              <Link href={`/clientes/${c.id}`} className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <StatusBadge estado={c.estado as EstadoCliente} />
+                  <span className="flex items-center gap-1 rounded-full bg-danger/15 px-2.5 py-1 text-[11px] font-medium text-danger">
+                    <UserX className="h-3 w-3" strokeWidth={2} />
+                    SLA vencido
+                  </span>
+                </div>
+                <p className="truncate text-sm font-medium text-foreground">{c.nombre}</p>
+                {c.vendedor && (
+                  <p className="truncate text-xs text-muted">Se le perdió a: {c.vendedor}</p>
+                )}
+              </Link>
+
+              <div className="flex flex-none items-center gap-3">
+                <VendedorSelect
+                  valor={c.vendedor}
+                  onChange={(vendedor) => reasignar(c, vendedor)}
+                  compacto
+                  placeholder="Reasignar a…"
+                />
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     </div>

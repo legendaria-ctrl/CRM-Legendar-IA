@@ -21,9 +21,11 @@ import {
   AbonoDoc,
 } from "@/lib/clientesService";
 import { estadoActual, estadoBienvenidaDe, aFecha } from "@/lib/membership";
+import { calcularSlaLead } from "@/lib/leadSla";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Timeline } from "@/components/Timeline";
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { LeadSlaBar } from "@/components/LeadSlaBar";
 import { StopwatchApartado } from "@/components/StopwatchApartado";
 import { ClientActions } from "@/components/ClientActions";
 import { MensajeBienvenidaToggle } from "@/components/MensajeBienvenidaToggle";
@@ -48,6 +50,7 @@ import {
   DollarSign,
   Lock,
   Plus,
+  CalendarClock,
 } from "lucide-react";
 import { CERTIFICACIONES } from "@/lib/certificaciones";
 import {
@@ -140,7 +143,14 @@ export default function ClienteDetallePage() {
   const esPendiente = cliente.estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION;
   const esDueño =
     !!sesion && (sesion.nombre === cliente.creadoPor || sesion.nombre === cliente.vendedor);
-  const puedeEditar = sesion?.rol === ROLES.ADMIN || (esSeguimiento && esDueño);
+  const slaLead = calcularSlaLead({
+    estado: cliente.estado,
+    fechaAsignacion: aFecha(cliente.fechaAsignacion),
+    alarmaFecha: aFecha(cliente.alarmaFecha),
+  });
+  const bloqueadoSla =
+    esSeguimiento && slaLead.estadoSla === "vencido" && sesion?.rol !== ROLES.ADMIN;
+  const puedeEditar = !bloqueadoSla && (sesion?.rol === ROLES.ADMIN || (esSeguimiento && esDueño));
 
   async function handleAgregarAbono() {
     if (!sesion || !cliente || guardandoAbono) return;
@@ -487,6 +497,12 @@ export default function ClienteDetallePage() {
                     <User className="h-3.5 w-3.5" strokeWidth={1.5} />
                     Agregado por: {cliente.creadoPor}
                   </span>
+                  {fechaLlegada && (
+                    <span className="flex items-center gap-1.5">
+                      <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      Ingresó: {fechaLlegada.toLocaleDateString("es-MX")}
+                    </span>
+                  )}
                   {cliente.region && (
                     <span className="flex items-center gap-1.5">
                       <Globe2 className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -808,7 +824,18 @@ export default function ClienteDetallePage() {
         fechaVencimiento={fechaVencimiento}
         fechaPausa={fechaPausa}
         puedeEditar={puedeEditar}
+        bloqueadoSla={bloqueadoSla}
+        alarmaFecha={aFecha(cliente.alarmaFecha)}
+        alarmaNota={cliente.alarmaNota}
       />
+
+      {esSeguimiento && (
+        <LeadSlaBar
+          estado={cliente.estado}
+          fechaAsignacion={aFecha(cliente.fechaAsignacion)}
+          alarmaFechaDato={aFecha(cliente.alarmaFecha)}
+        />
+      )}
 
       {!esSeguimiento && !esPendiente && fechaLlegada && fechaVencimiento && (
         <CountdownTimer
