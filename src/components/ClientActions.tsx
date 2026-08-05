@@ -65,7 +65,9 @@ export function ClientActions({
   } | null>(null);
   const [diasPersonalizados, setDiasPersonalizados] = useState("");
   const [diasRestantes, setDiasRestantes] = useState("");
+  const esVendedor = sesion?.rol === ROLES.VENDEDOR;
   const mostrarTemporizador =
+    !esVendedor &&
     !!fechaVencimiento &&
     estado !== ESTADOS_CLIENTE.SEGUIMIENTO &&
     estado !== ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION;
@@ -174,7 +176,7 @@ export function ClientActions({
         {cargando && <p className="text-sm text-muted">Verificando tu sesión…</p>}
 
         <div className="flex flex-wrap gap-3">
-          {estado === ESTADOS_CLIENTE.SEGUIMIENTO && puedeEditar && (
+          {!esVendedor && estado === ESTADOS_CLIENTE.SEGUIMIENTO && puedeEditar && (
             <ActionButton
               icon={Hourglass}
               label="Enviar a autorización"
@@ -191,7 +193,7 @@ export function ClientActions({
             />
           )}
 
-          {estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION && sesion?.rol === ROLES.ADMIN && (
+          {!esVendedor && estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION && sesion?.rol === ROLES.ADMIN && (
             <ActionButton
               icon={ShieldCheck}
               label="Autorizar"
@@ -208,7 +210,7 @@ export function ClientActions({
             />
           )}
 
-          {estado === ESTADOS_CLIENTE.NUEVO && (
+          {!esVendedor && estado === ESTADOS_CLIENTE.NUEVO && (
             <ActionButton
               icon={Send}
               label="Enviar invitación"
@@ -217,7 +219,7 @@ export function ClientActions({
             />
           )}
 
-          {estado === ESTADOS_CLIENTE.INVITACION_ENVIADA && (
+          {!esVendedor && estado === ESTADOS_CLIENTE.INVITACION_ENVIADA && (
             <>
               <ActionButton
                 icon={CheckCircle2}
@@ -233,7 +235,7 @@ export function ClientActions({
             </>
           )}
 
-          {(estado === ESTADOS_CLIENTE.ACTIVO || estado === ESTADOS_CLIENTE.VENCIDO) && (
+          {!esVendedor && (estado === ESTADOS_CLIENTE.ACTIVO || estado === ESTADOS_CLIENTE.VENCIDO) && (
             <>
               <ActionButton
                 icon={RefreshCcw}
