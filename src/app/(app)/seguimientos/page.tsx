@@ -16,6 +16,7 @@ import {
   Phone,
 } from "lucide-react";
 import { suscribirClientes, ClienteDoc } from "@/lib/clientesService";
+import { suscribirTags, TagDoc } from "@/lib/tagsService";
 import { useSesion } from "@/lib/session-context";
 import { ESTADOS_CLIENTE, ROLES, EstadoCliente, formatearMonto } from "@/lib/constants";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -32,6 +33,7 @@ const FILTRO_OPCIONES: { value: FiltroTipo; label: string }[] = [
 export default function SeguimientosPage() {
   const { sesion } = useSesion();
   const [clientes, setClientes] = useState<ClienteDoc[] | null>(null);
+  const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
   const [busqueda, setBusqueda] = useState("");
   const [actualizando, setActualizando] = useState(false);
@@ -39,6 +41,11 @@ export default function SeguimientosPage() {
 
   useEffect(() => {
     const unsub = suscribirClientes(setClientes);
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = suscribirTags(setCatalogoTags);
     return () => unsub();
   }, []);
 
@@ -181,7 +188,7 @@ export default function SeguimientosPage() {
         <>
           <Seccion titulo="En seguimiento" vacio="No tienes apartados activos por ahora.">
             {enSeguimiento.map((c) => (
-              <FilaSeguimiento key={c.id} cliente={c} />
+              <FilaSeguimiento key={c.id} cliente={c} catalogoTags={catalogoTags} />
             ))}
           </Seccion>
 
@@ -190,7 +197,7 @@ export default function SeguimientosPage() {
             vacio="No tienes seguimientos esperando autorización."
           >
             {enRevision.map((c) => (
-              <FilaSeguimiento key={c.id} cliente={c} soloLectura />
+              <FilaSeguimiento key={c.id} cliente={c} catalogoTags={catalogoTags} soloLectura />
             ))}
           </Seccion>
         </>
@@ -227,9 +234,11 @@ function Seccion({
 
 function FilaSeguimiento({
   cliente,
+  catalogoTags,
   soloLectura = false,
 }: {
   cliente: ClienteDoc;
+  catalogoTags: TagDoc[];
   soloLectura?: boolean;
 }) {
   const router = useRouter();
@@ -260,6 +269,22 @@ function FilaSeguimiento({
           <p className="truncate text-sm font-medium text-foreground">{cliente.nombre}</p>
           {cliente.vendedor && (
             <p className="truncate text-xs text-muted">Vendedor: {cliente.vendedor}</p>
+          )}
+          {(cliente.tags ?? []).length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {(cliente.tags ?? []).map((tag) => {
+                const color =
+                  catalogoTags.find((t) => t.nombre === tag)?.color ?? "bg-silver text-muted";
+                return (
+                  <span
+                    key={tag}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${color}`}
+                  >
+                    {tag}
+                  </span>
+                );
+              })}
+            </div>
           )}
         </div>
 
