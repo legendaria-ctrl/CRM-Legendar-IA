@@ -964,6 +964,33 @@ export function suscribirPendientesAutorizacion(callback: (cantidad: number) => 
   });
 }
 
+// Usado al dar de alta un seguimiento a mano: busca si ya existe alguien
+// con ese correo o esos últimos 10 dígitos de teléfono (fuera de la
+// papelera), para avisar antes de crear un duplicado que ya es de otro
+// vendedor. Prioriza correo; si no hay match, cae al teléfono.
+export async function buscarDuplicadoParaAlta(
+  correo?: string | null,
+  telefono?: string | null
+): Promise<ClienteDoc | null> {
+  const correoLimpio = correo?.trim();
+  if (correoLimpio) {
+    const q = query(clientesRef, where("email", "==", correoLimpio));
+    const snap = await getDocs(q);
+    const match = snap.docs.find((d) => !d.data().eliminado);
+    if (match) return { id: match.id, ...match.data() } as ClienteDoc;
+  }
+
+  const ultimos10 = ultimos10Digitos(telefono);
+  if (ultimos10) {
+    const q = query(clientesRef, where("telefonoBusqueda", "==", ultimos10));
+    const snap = await getDocs(q);
+    const match = snap.docs.find((d) => !d.data().eliminado);
+    if (match) return { id: match.id, ...match.data() } as ClienteDoc;
+  }
+
+  return null;
+}
+
 // Usado por la sincronización con la hoja de ventas: busca un cliente ya
 // existente por correo (para no duplicarlo) y, si lo encuentra, le completa
 // el monto pagado y el vendedor asignado sin tocar el resto de sus datos.

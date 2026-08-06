@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   UserPlus,
   ArrowUpRight,
@@ -12,8 +13,9 @@ import {
   Plus,
   Search,
   X,
+  ShieldAlert,
 } from "lucide-react";
-import { crearCliente } from "@/lib/clientesService";
+import { crearCliente, buscarDuplicadoParaAlta, ClienteDoc } from "@/lib/clientesService";
 import { suscribirTags, crearTag, TagDoc } from "@/lib/tagsService";
 import { useSesion } from "@/lib/session-context";
 import { useCertificacion } from "@/lib/certificacion-context";
@@ -40,6 +42,7 @@ export default function NuevoSeguimientoPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicado, setDuplicado] = useState<ClienteDoc | null>(null);
 
   useEffect(() => {
     if (!etiquetaTocada.current && certificacionActual) {
@@ -94,6 +97,12 @@ export default function NuevoSeguimientoPage() {
     setError(null);
 
     try {
+      const existente = await buscarDuplicadoParaAlta(email, telefono);
+      if (existente && existente.creadoPor !== sesion.nombre && existente.vendedor !== sesion.nombre) {
+        setDuplicado(existente);
+        return;
+      }
+
       const id = await crearCliente({
         nombre,
         email,
@@ -370,6 +379,45 @@ export default function NuevoSeguimientoPage() {
           </button>
         </div>
       </form>
+
+      {duplicado && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 animate-fade-in-fast"
+            onClick={() => setDuplicado(null)}
+          />
+          <div className="animate-fade-in relative flex w-full max-w-md flex-col gap-3 rounded-[2rem] bg-surface p-6 shadow-2xl">
+            <div className="flex items-center gap-2 text-danger">
+              <ShieldAlert className="h-5 w-5" strokeWidth={1.75} />
+              <span className="text-sm font-medium uppercase tracking-wider">
+                Ya existe este seguimiento
+              </span>
+            </div>
+            <p className="text-sm text-foreground">
+              <span className="font-medium">{duplicado.nombre}</span> (correo o teléfono
+              coinciden) ya es de{" "}
+              <span className="font-medium">
+                {duplicado.vendedor || duplicado.creadoPor}
+              </span>
+              . No se creó el nuevo seguimiento para evitar duplicarlo.
+            </p>
+            <div className="mt-1 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setDuplicado(null)}
+                className="rounded-full px-4 py-2.5 text-sm font-medium text-muted transition-colors duration-200 hover:text-foreground"
+              >
+                Cerrar
+              </button>
+              <Link
+                href={`/clientes/${duplicado.id}`}
+                className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-white transition-all duration-500 ease-spring active:scale-[0.98]"
+              >
+                Ver seguimiento
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
