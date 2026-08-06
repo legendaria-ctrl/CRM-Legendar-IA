@@ -147,7 +147,14 @@ export default function SeguimientosPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Seguimientos</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
+            Seguimientos
+            {clientes !== null && (
+              <span className="rounded-full bg-primary-dim px-3 py-0.5 text-sm font-medium text-primary">
+                {enSeguimiento.length + enRevision.length}
+              </span>
+            )}
+          </h1>
           <p className="text-sm text-muted">
             Lleva tus apartados hasta que terminen de pagar y envíalos a autorización.
           </p>
@@ -215,7 +222,11 @@ export default function SeguimientosPage() {
 
       {clientes !== null && (
         <>
-          <Seccion titulo="En seguimiento" vacio="No tienes apartados activos por ahora.">
+          <Seccion
+            titulo="En seguimiento"
+            total={enSeguimiento.length}
+            vacio="No tienes apartados activos por ahora."
+          >
             {enSeguimiento.map((c) => (
               <FilaSeguimiento key={c.id} cliente={c} catalogoTags={catalogoTags} />
             ))}
@@ -223,6 +234,7 @@ export default function SeguimientosPage() {
 
           <Seccion
             titulo="Enviados a revisión"
+            total={enRevision.length}
             vacio="No tienes seguimientos esperando autorización."
           >
             {enRevision.map((c) => (
@@ -237,10 +249,12 @@ export default function SeguimientosPage() {
 
 function Seccion({
   titulo,
+  total,
   vacio,
   children,
 }: {
   titulo: string;
+  total: number;
   vacio: string;
   children: React.ReactNode;
 }) {
@@ -249,7 +263,12 @@ function Seccion({
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-medium uppercase tracking-[0.15em] text-muted">{titulo}</h2>
+      <h2 className="flex items-center gap-2 text-sm font-medium uppercase tracking-[0.15em] text-muted">
+        {titulo}
+        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-foreground">
+          {total}
+        </span>
+      </h2>
       {hayContenido ? (
         <div className="flex flex-col gap-3">{children}</div>
       ) : (
