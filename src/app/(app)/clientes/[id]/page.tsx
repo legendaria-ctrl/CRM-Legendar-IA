@@ -62,6 +62,9 @@ import {
   ROLES,
   ESTADOS_CLIENTE,
   formatearMonto,
+  formatearMontoDivisa,
+  MONEDAS_ABONO,
+  MONEDA_POR_REGION,
 } from "@/lib/constants";
 import { useSesion } from "@/lib/session-context";
 import { mensajeBienvenida, construirLinkWhatsapp } from "@/lib/whatsapp";
@@ -97,10 +100,11 @@ export default function ClienteDetallePage() {
   const [catalogoTags, setCatalogoTags] = useState<TagDoc[]>([]);
   const encabezadoRef = useRef<HTMLDivElement>(null);
   const [montoAbono, setMontoAbono] = useState("");
+  const [monedaAbono, setMonedaAbono] = useState<string | null>(null);
   const [notaAbono, setNotaAbono] = useState("");
   const [guardandoAbono, setGuardandoAbono] = useState(false);
   const [abonoEditando, setAbonoEditando] = useState<string | null>(null);
-  const [formAbono, setFormAbono] = useState({ monto: "", nota: "" });
+  const [formAbono, setFormAbono] = useState({ monto: "", moneda: "MXN", nota: "" });
   const [guardandoAbonoEditado, setGuardandoAbonoEditado] = useState(false);
   const [eliminandoAbono, setEliminandoAbono] = useState<string | null>(null);
 
@@ -138,6 +142,8 @@ export default function ClienteDetallePage() {
   const fechaVencimiento = aFecha(cliente.fechaVencimiento);
   const fechaPausa = aFecha(cliente.fechaPausa);
   const beneficios = beneficiosDeRegion(cliente.region);
+  const monedaAbonoDefault =
+    (cliente.region && MONEDA_POR_REGION[cliente.region as Region]) || MONEDAS_ABONO[0];
 
   const esSeguimiento = cliente.estado === ESTADOS_CLIENTE.SEGUIMIENTO;
   const esPendiente = cliente.estado === ESTADOS_CLIENTE.PENDIENTE_AUTORIZACION;
@@ -165,6 +171,7 @@ export default function ClienteDetallePage() {
         cliente.nombre,
         { nombre: sesion.nombre, rol: sesion.rol },
         monto,
+        monedaAbono ?? monedaAbonoDefault,
         notaAbono.trim() || undefined
       );
       setMontoAbono("");
@@ -175,7 +182,11 @@ export default function ClienteDetallePage() {
   }
 
   function abrirEdicionAbono(abono: AbonoDoc) {
-    setFormAbono({ monto: String(abono.monto), nota: abono.nota ?? "" });
+    setFormAbono({
+      monto: String(abono.monto),
+      moneda: abono.moneda ?? monedaAbonoDefault,
+      nota: abono.nota ?? "",
+    });
     setAbonoEditando(abono.id);
   }
 
@@ -191,6 +202,7 @@ export default function ClienteDetallePage() {
         cliente.nombre,
         { nombre: sesion.nombre, rol: sesion.rol },
         monto,
+        formAbono.moneda,
         formAbono.nota.trim() || undefined
       );
       setAbonoEditando(null);
@@ -202,7 +214,7 @@ export default function ClienteDetallePage() {
   async function handleEliminarAbono(abono: AbonoDoc) {
     if (!sesion || !cliente || eliminandoAbono) return;
     const confirmado = window.confirm(
-      `¿Eliminar este abono de ${formatearMonto(abono.monto, cliente.region)}? No se puede deshacer.`
+      `¿Eliminar este abono de ${abono.moneda ? formatearMontoDivisa(abono.monto, abono.moneda) : formatearMonto(abono.monto, cliente.region)}? No se puede deshacer.`
     );
     if (!confirmado) return;
     setEliminandoAbono(abono.id);
@@ -587,9 +599,27 @@ export default function ClienteDetallePage() {
             </h3>
             <div className="rounded-2xl bg-surface-2 px-3 py-3 text-center">
               <p className="text-xs text-muted">Abonado</p>
-              <p className="text-sm font-semibold text-success">
-                {formatearMonto(cliente.totalAbonado ?? 0, cliente.region)}
-              </p>
+              {abonos.length > 0 ? (
+                <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm font-semibold text-success">
+                  {Object.entries(
+                    abonos.reduce<Record<string, number>>((acc, a) => {
+                      const clave = a.moneda ?? "—";
+                      acc[clave] = (acc[clave] ?? 0) + a.monto;
+                      return acc;
+                    }, {})
+                  ).map(([moneda, total]) => (
+                    <span key={moneda}>
+                      {moneda === "—"
+                        ? formatearMonto(total, cliente.region)
+                        : formatearMontoDivisa(total, moneda)}
+                    </span>
+                  ))}
+                </p>
+              ) : (
+                <p className="text-sm font-semibold text-success">
+                  {formatearMonto(cliente.totalAbonado ?? 0, cliente.region)}
+                </p>
+              )}
             </div>
 
             {abonos.length > 0 && (
@@ -606,6 +636,17 @@ export default function ClienteDetallePage() {
                         onChange={(e) => setFormAbono((f) => ({ ...f, monto: e.target.value }))}
                         className="flex-1 rounded-xl border border-silver-deep/60 bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
                       />
+                      <select
+                        value={formAbono.moneda}
+                        onChange={(e) => setFormAbono((f) => ({ ...f, moneda: e.target.value }))}
+                        className="rounded-xl border border-silver-deep/60 bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                      >
+                        {MONEDAS_ABONO.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         value={formAbono.nota}
                         onChange={(e) => setFormAbono((f) => ({ ...f, nota: e.target.value }))}
@@ -641,7 +682,9 @@ export default function ClienteDetallePage() {
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground">
-                          {formatearMonto(abono.monto, cliente.region)}
+                          {abono.moneda
+                            ? formatearMontoDivisa(abono.monto, abono.moneda)
+                            : formatearMonto(abono.monto, cliente.region)}
                         </p>
                         <p className="truncate text-xs text-muted">
                           {aFecha(abono.fecha)?.toLocaleDateString("es-MX") ?? "Guardando…"}
@@ -688,6 +731,17 @@ export default function ClienteDetallePage() {
                   placeholder="Monto del abono"
                   className="flex-1 rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring placeholder:text-muted/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
                 />
+                <select
+                  value={monedaAbono ?? monedaAbonoDefault}
+                  onChange={(e) => setMonedaAbono(e.target.value)}
+                  className="rounded-2xl border border-silver-deep/60 bg-surface-2 px-4 py-2.5 text-sm text-foreground outline-none transition-all duration-500 ease-spring focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                >
+                  {MONEDAS_ABONO.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
                 <input
                   value={notaAbono}
                   onChange={(e) => setNotaAbono(e.target.value)}

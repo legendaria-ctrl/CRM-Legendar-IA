@@ -15,15 +15,18 @@ import {
   Autor,
 } from "./clientesService";
 import { CERTIFICACIONES } from "./certificaciones";
-import { ESTADOS_CLIENTE } from "./constants";
+import { ESTADOS_CLIENTE, MONEDA_POR_REGION, Region } from "./constants";
 import { normalizarNombre } from "./vendedoresService";
 
-// Trackers de ventas de Legendar-IA (misma estructura de columnas en ambas
-// hojas, una por región).
-const HOJAS = [
+// Trackers de ventas de Legendar-IA (misma estructura de columnas en todas
+// las hojas). MX y US son de un solo país cada una; LATAM agrupa varios
+// países en una sola hoja y por eso el código de país no se decide por hoja
+// sino fila por fila, con la columna E (lada) — ver limpiarTelefono().
+const HOJAS: { region: Region; sheetId: string; gid: string }[] = [
   { region: "MX", sheetId: "1LaldIZLNdgjt9taTDzyIXAMDSdEYYpl5By-KLJAlPLk", gid: "1759324868" },
   { region: "US", sheetId: "15FgcB4VQADP8-DEjsT-gUhZjMp6OnbdEUG6R_OaqyNs", gid: "1759324868" },
-] as const;
+  { region: "LATAM", sheetId: "1xZaHBqsGd4UA6hP5QIjzbrlbQJvlkWRAEuamat_tsI4", gid: "1759324868" },
+];
 
 // Solo estos estados de la columna ESTADO cuentan como "cliente ganado".
 // "APARTADO" (sin /PAGADO) explícitamente NO cuenta.
@@ -44,10 +47,16 @@ const TAG_MIEMBRO_CS = "Miembro del CS";
 const ESTADO_MIEMBRO_CS = "upgrade";
 
 // La columna CORREGIDO ya trae el celular local limpio (10 dígitos, sin
-// código de país). Si falta, se intenta sacar de CELULAR quitando el
-// código de país correspondiente a la región de la hoja (52 para MX, 1
-// para US) si lo trae.
-function limpiarTelefono(corregido: string, celular: string, region: "MX" | "US"): string | null {
+// código de país). Si falta, se intenta sacar de CELULAR quitando el código
+// de país. En MX/US ese código es fijo por hoja (52 para MX, 1 para US). En
+// LATAM cada fila puede ser de un país distinto, así que se usa la columna E
+// (lada) de esa misma fila en vez de un código fijo.
+function limpiarTelefono(
+  corregido: string,
+  celular: string,
+  region: Region,
+  lada: string
+): string | null {
   const deCorregido = corregido.replace(/[^0-9]/g, "");
   if (deCorregido.length === 10) return deCorregido;
 
@@ -55,8 +64,13 @@ function limpiarTelefono(corregido: string, celular: string, region: "MX" | "US"
   if (region === "MX") {
     if (digitos.length === 12 && digitos.startsWith("52")) digitos = digitos.slice(2);
     else if (digitos.length === 13 && digitos.startsWith("521")) digitos = digitos.slice(3);
-  } else if (digitos.length === 11 && digitos.startsWith("1")) {
-    digitos = digitos.slice(1);
+  } else if (region === "US") {
+    if (digitos.length === 11 && digitos.startsWith("1")) digitos = digitos.slice(1);
+  } else {
+    const codigo = lada.replace(/[^0-9]/g, "");
+    if (codigo && digitos.startsWith(codigo) && digitos.length > codigo.length) {
+      digitos = digitos.slice(codigo.length);
+    }
   }
   return digitos || null;
 }
@@ -67,6 +81,7 @@ type FilaHoja = {
   correo: string;
   celular: string;
   corregido: string;
+  lada: string;
   amount: string;
   estado: string;
   assigned: string;
@@ -88,6 +103,7 @@ const COL = {
   fecha: 1,
   nombre: 2,
   correo: 3,
+  lada: 4,
   celular: 5,
   corregido: 6,
   amount: 9,
@@ -106,6 +122,7 @@ function filasAObjetos(filas: string[][]): FilaHoja[] {
     correo: leer(fila, COL.correo),
     celular: leer(fila, COL.celular),
     corregido: leer(fila, COL.corregido),
+    lada: leer(fila, COL.lada),
     amount: leer(fila, COL.amount),
     estado: leer(fila, COL.estado),
     assigned: leer(fila, COL.assigned),
@@ -164,7 +181,7 @@ export type NuevoClientePendiente = {
   correo: string;
   nombre: string;
   telefono: string | null;
-  region: "MX" | "US";
+  region: Region;
   vendedor: string | null;
   monto: string | null;
   tags: string[];
@@ -182,7 +199,7 @@ export type ResultadoSincronizacion = {
 const AUTOR_SISTEMA = { nombre: "Sincronización automática", rol: "ADMIN" };
 
 async function sincronizarHoja(
-  region: "MX" | "US",
+  region: Region,
   sheetId: string,
   gid: string,
   resultado: ResultadoSincronizacion
@@ -210,7 +227,7 @@ async function sincronizarHoja(
     try {
       const monto = fila.amount || null;
       const vendedor = resolverVendedor(fila);
-      const telefonoHoja = limpiarTelefono(fila.corregido, fila.celular, region);
+      const telefonoHoja = limpiarTelefono(fila.corregido, fila.celular, region, fila.lada);
       const existente = await buscarExistente(fila, telefonoHoja);
       const esMiembroCS = estado === ESTADO_MIEMBRO_CS;
 
@@ -433,7 +450,7 @@ export async function sincronizarSeguimientosDesdeHoja(
 
       try {
         const vendedor = resolverVendedor(fila);
-        const telefono = limpiarTelefono(fila.corregido, fila.celular, hoja.region);
+        const telefono = limpiarTelefono(fila.corregido, fila.celular, hoja.region, fila.lada);
         const existente = await buscarExistente(fila, telefono);
 
         if (!existente) {
@@ -455,6 +472,7 @@ export async function sincronizarSeguimientosDesdeHoja(
               fila.nombre || fila.correo,
               autor,
               abono,
+              MONEDA_POR_REGION[hoja.region] || null,
               "Abono importado desde la hoja de ventas"
             );
           }
@@ -480,6 +498,7 @@ export async function sincronizarSeguimientosDesdeHoja(
               existente.nombre,
               autor,
               abono,
+              MONEDA_POR_REGION[hoja.region] || null,
               "Abono importado desde la hoja de ventas"
             );
             toco = true;

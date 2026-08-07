@@ -24,6 +24,7 @@ import {
   TIPOS_EVENTO,
   PAPELERA_DIAS,
   formatearMonto,
+  formatearMontoDivisa,
 } from "./constants";
 import { fechaVencimientoDesde } from "./membership";
 import { registrarActividad } from "./activityService";
@@ -85,6 +86,7 @@ export type EventoDoc = {
 export type AbonoDoc = {
   id: string;
   monto: number;
+  moneda: string | null;
   nota: string | null;
   autor: string;
   fecha: Timestamp | null;
@@ -306,6 +308,7 @@ export async function registrarAbono(
   clienteNombre: string,
   autor: Autor,
   monto: number,
+  moneda?: string | null,
   nota?: string
 ) {
   const clienteRef = doc(db, "clientes", clienteId);
@@ -320,6 +323,7 @@ export async function registrarAbono(
     updateDoc(clienteRef, cambios),
     addDoc(collection(db, "clientes", clienteId, "abonos"), {
       monto,
+      moneda: moneda || null,
       nota: nota || null,
       autor: autor.nombre,
       fecha: serverTimestamp(),
@@ -330,7 +334,7 @@ export async function registrarAbono(
     clienteNombre,
     TIPOS_EVENTO.ABONO,
     autor,
-    `Abono de ${formatearMonto(monto, datos?.region ?? null)}${nota ? ` — ${nota}` : ""}`
+    `Abono de ${moneda ? formatearMontoDivisa(monto, moneda) : formatearMonto(monto, datos?.region ?? null)}${nota ? ` — ${nota}` : ""}`
   );
 }
 
@@ -343,25 +347,30 @@ export async function corregirAbono(
   clienteNombre: string,
   autor: Autor,
   montoNuevo: number,
+  monedaNueva?: string | null,
   notaNueva?: string
 ) {
   const clienteRef = doc(db, "clientes", clienteId);
   const abonoRef = doc(db, "clientes", clienteId, "abonos", abonoId);
   const [clienteSnap, abonoSnap] = await Promise.all([getDoc(clienteRef), getDoc(abonoRef)]);
   const region = (clienteSnap.data() as ClienteDoc | undefined)?.region ?? null;
-  const montoAnterior = (abonoSnap.data() as AbonoDoc | undefined)?.monto ?? 0;
+  const abonoAnterior = abonoSnap.data() as AbonoDoc | undefined;
+  const montoAnterior = abonoAnterior?.monto ?? 0;
+  const monedaAnterior = abonoAnterior?.moneda ?? null;
   const delta = montoNuevo - montoAnterior;
 
   await Promise.all([
-    updateDoc(abonoRef, { monto: montoNuevo, nota: notaNueva || null }),
+    updateDoc(abonoRef, { monto: montoNuevo, moneda: monedaNueva || null, nota: notaNueva || null }),
     updateDoc(clienteRef, { totalAbonado: increment(delta) }),
   ]);
+  const formatear = (m: number, moneda: string | null) =>
+    moneda ? formatearMontoDivisa(m, moneda) : formatearMonto(m, region);
   await agregarEvento(
     clienteId,
     clienteNombre,
     TIPOS_EVENTO.ABONO_CORREGIDO,
     autor,
-    `Abono corregido: ${formatearMonto(montoAnterior, region)} → ${formatearMonto(montoNuevo, region)}`
+    `Abono corregido: ${formatear(montoAnterior, monedaAnterior)} → ${formatear(montoNuevo, monedaNueva ?? null)}`
   );
 }
 
@@ -395,7 +404,7 @@ export async function eliminarAbono(
     clienteNombre,
     TIPOS_EVENTO.ABONO_ELIMINADO,
     autor,
-    `Abono de ${formatearMonto(abono.monto, region)} eliminado${abono.nota ? ` (nota original: "${abono.nota}")` : ""}`
+    `Abono de ${abono.moneda ? formatearMontoDivisa(abono.monto, abono.moneda) : formatearMonto(abono.monto, region)} eliminado${abono.nota ? ` (nota original: "${abono.nota}")` : ""}`
   );
 }
 

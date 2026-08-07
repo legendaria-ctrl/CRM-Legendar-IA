@@ -122,21 +122,54 @@ export const LEAD_SLA_ALARMA_ANTICIPACION_MIN_DEFAULT = 30;
 export const REGIONES = {
   MX: "MX",
   US: "US",
+  LATAM: "LATAM",
 } as const;
 export type Region = (typeof REGIONES)[keyof typeof REGIONES];
 
 export const REGION_LABEL: Record<Region, string> = {
   MX: "Legendar-IA MX",
   US: "Legendar-IA US",
+  LATAM: "Legendar-IA LATAM",
 };
 
+// LATAM agrupa varios países en una sola hoja; no tiene una moneda fija, así
+// que el monto se muestra sin sufijo de moneda.
 export const MONEDA_POR_REGION: Record<Region, string> = {
   MX: "MXN",
   US: "USD",
+  LATAM: "",
 };
 
 export function formatearMonto(monto: number, region: string | null | undefined): string {
-  const moneda = region === "MX" || region === "US" ? MONEDA_POR_REGION[region] : "";
+  const moneda = region && region in MONEDA_POR_REGION ? MONEDA_POR_REGION[region as Region] : "";
+  return `$${monto.toLocaleString("es-MX")}${moneda ? ` ${moneda}` : ""}`;
+}
+
+// Divisas más comunes para capturar un abono a mano (no depende de la
+// región del cliente: un cliente MX puede pagar en USD, uno LATAM puede
+// pagar en cualquiera de estas). MXN y USD van primero por ser las más
+// usadas.
+export const MONEDAS_ABONO = [
+  "MXN",
+  "USD",
+  "COP",
+  "ARS",
+  "CLP",
+  "PEN",
+  "GTQ",
+  "DOP",
+  "BOB",
+  "PYG",
+  "UYU",
+  "CRC",
+  "HNL",
+  "BRL",
+] as const;
+export type MonedaAbono = (typeof MONEDAS_ABONO)[number];
+
+// Formatea un monto con una divisa explícita (independiente de la región del
+// cliente) — usada para abonos, donde la divisa se elige por abono.
+export function formatearMontoDivisa(monto: number, moneda: string | null | undefined): string {
   return `$${monto.toLocaleString("es-MX")}${moneda ? ` ${moneda}` : ""}`;
 }
 
@@ -154,10 +187,12 @@ export const BENEFICIOS_POR_REGION: Record<Region, Beneficio[]> = {
     { evento: "Synergy Unlimited MX", tipo: "VIP", cantidad: 1 },
     { evento: "Synergy Unlimited US", tipo: "General", cantidad: 1 },
   ],
+  // Mismos beneficios que MX hasta que se defina una regla propia.
+  LATAM: [{ evento: "Synergy Unlimited MX", tipo: "General", cantidad: 1 }],
 };
 
 export function beneficiosDeRegion(region: string | null | undefined): Beneficio[] {
-  if (region === "MX" || region === "US") return BENEFICIOS_POR_REGION[region];
+  if (region && region in BENEFICIOS_POR_REGION) return BENEFICIOS_POR_REGION[region as Region];
   return [];
 }
 
