@@ -25,6 +25,7 @@ import {
   FolderX,
   Clock,
   Hourglass,
+  Sparkles,
 } from "lucide-react";
 
 const NO_ASIGNADOS_HREF = "#no-asignados";
@@ -44,6 +45,7 @@ const linksAdmin = [
   { href: "/actividad", label: "Actividad", icon: History },
   { href: "/vendedores", label: "Usuarios", icon: Users },
   { href: "/avisos", label: "Dar avisos", icon: Megaphone },
+  { href: "/actualizaciones", label: "Actualizaciones", icon: Sparkles },
   AVISOS_ITEM,
   { href: NO_ASIGNADOS_HREF, label: "No asignados", icon: FolderX },
   { href: "/papelera", label: "Papelera", icon: Trash2 },

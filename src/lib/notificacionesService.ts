@@ -3,11 +3,13 @@ import {
   arrayUnion,
   collection,
   doc,
+  getDoc,
   limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
@@ -131,6 +133,30 @@ export function suscribirAvisosEnviados(callback: (avisos: NotificacionDoc[]) =>
     const todas = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as NotificacionDoc);
     callback(todas.filter((n) => n.tipo === "AVISO"));
   });
+}
+
+export function suscribirAvisosActualizacion(callback: (avisos: NotificacionDoc[]) => void) {
+  const q = query(notificacionesRef, orderBy("fecha", "desc"), limit(20));
+  return onSnapshot(q, (snap) => {
+    const todas = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as NotificacionDoc);
+    callback(todas.filter((n) => n.tipo === "ACTUALIZACION"));
+  });
+}
+
+// Plantilla reutilizable de la página "Actualizaciones": el admin la deja
+// editada con el borrador de las próximas novedades, y cada vez que hay algo
+// nuevo que anunciar solo la ajusta y le da "Enviar" — no hay que redactar
+// desde cero cada vez. Se guarda en un solo documento fijo (no hay historial
+// de plantillas, solo la última).
+const plantillaActualizacionRef = doc(db, "config", "plantillaActualizacion");
+
+export async function obtenerPlantillaActualizacion(): Promise<string> {
+  const snap = await getDoc(plantillaActualizacionRef);
+  return (snap.data()?.texto as string | undefined) ?? "";
+}
+
+export async function guardarPlantillaActualizacion(texto: string) {
+  await setDoc(plantillaActualizacionRef, { texto, actualizada: serverTimestamp() });
 }
 
 export async function marcarNotificacionLeida(id: string, leidoPor: string[], nombre: string) {
